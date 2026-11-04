@@ -166,7 +166,7 @@ func TestGolang(t *testing.T) {
 			want        []string
 		}{
 			{
-				name:        "declares the Failing option with its constructor beside a double that can fail",
+				name:        "declares the Failing option beside a double that can fail",
 				giveSubject: storeName,
 				want: []string{
 					"StoreGetCall", "StoreGetStub", "StoreGetReturn", "WithStoreGet",
@@ -178,7 +178,7 @@ func TestGolang(t *testing.T) {
 					"StoreCloseCall", "StoreCloseStub", "StoreCloseReturn", "WithStoreClose",
 					"StoreStubOption", "StoreStubStrict", "StoreStubDelegateTo", "StoreStubWithClock",
 					"StoreStubWithRandSource", "StoreStubBenchMode", "StoreStubWithLatency",
-					"NewStoreStub", "NewStoreStubDelayed", "StoreStubFailing", "NewStoreStubFailing",
+					"NewStoreStub", "StoreStubFailing",
 				},
 			},
 			{
@@ -189,7 +189,7 @@ func TestGolang(t *testing.T) {
 					"ClockEveryCall", "ClockEveryStub", "ClockEveryReturn", "WithClockEvery",
 					"ClockStubOption", "ClockStubStrict", "ClockStubDelegateTo", "ClockStubWithClock",
 					"ClockStubWithRandSource", "ClockStubBenchMode", "ClockStubWithLatency",
-					"NewClockStub", "NewClockStubDelayed",
+					"NewClockStub",
 				},
 			},
 		}

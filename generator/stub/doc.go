@@ -18,14 +18,15 @@
 //	store.onGet.returns(item);
 //
 // The test of a double with a method has a level for each method that another
-// package can call, for each option of the double, and for ResetCalls,
-// NewStoreStubDelayed and NewStoreStubFailing. These levels run the behaviour
-// suites of the runtime against the double. Their other cases check the
-// results of each method with a sample of each argument and of each result.
-// The test of the stub of a method has a level for each method of the stub,
-// such as Returns and Func. The test of a double without a method builds the
-// double under each option, and checks that a reset keeps the sample of each
-// property.
+// package can call, for each option of the double, and for ResetCalls. These
+// levels run the behaviour suites of the runtime against the double, with a
+// sample of each argument and of each result. The Go test of the stub of a
+// method has a level for each method of the stub beyond Returns and Func,
+// such as Yields. The TypeScript test also has the levels newDelayed and
+// newFailing, and its test of the stub of a method has a level for each
+// method of the stub, such as returns and func. The test of a double without
+// a method builds the double under each option, and checks that a reset keeps
+// the sample of each property.
 //
 // # Default results
 //

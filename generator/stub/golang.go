@@ -31,10 +31,9 @@ const (
 // StoreStub: the type of its options StoreStubOption, the options
 // StoreStubStrict, StoreStubDelegateTo, StoreStubWithClock,
 // StoreStubWithRandSource, StoreStubBenchMode and StoreStubWithLatency, and
-// the constructors NewStoreStub and NewStoreStubDelayed. A double whose
-// method can fail also has the option StoreStubFailing and the constructor
-// NewStoreStubFailing. The option of the method Get of the subject Store is
-// WithStoreGet.
+// the constructor NewStoreStub. A double whose method can fail also has the
+// option StoreStubFailing. The option of the method Get of the subject Store
+// is WithStoreGet.
 const (
 	golangOption     = "Option"
 	golangStrict     = "Strict"
@@ -45,7 +44,6 @@ const (
 	golangLatency    = "WithLatency"
 	golangFailing    = "Failing"
 	golangNew        = "New"
-	golangDelayed    = "Delayed"
 	golangWith       = "With"
 )
 
@@ -256,10 +254,10 @@ func (golangPart) declarations(double *emit.Struct, m *Model) []symbol.Symbol {
 		&emit.Alias{Origin: double.Origin, Name: name + golangOption, Visibility: double.Visibility, Defined: true},
 		function(name+golangStrict), function(name+golangDelegateTo), function(name+golangWithClock),
 		function(name+golangWithRand), function(name+golangBenchMode), function(name+golangLatency),
-		function(constructor), function(constructor+golangDelayed),
+		function(constructor),
 	)
 	if m.Fallible {
-		out = append(out, function(name+golangFailing), function(constructor+golangFailing))
+		out = append(out, function(name+golangFailing))
 	}
 	return out
 }

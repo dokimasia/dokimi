@@ -509,26 +509,6 @@ func NewEdgeStub(tb assert.TB, opts ...EdgeStubOption) *EdgeStub {
 	return s
 }
 
-// NewEdgeStubDelayed returns a double whose methods sleep d on clk before
-// they return. It applies opts after the clock and the latency.
-func NewEdgeStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...EdgeStubOption,
-) *EdgeStub {
-	return NewEdgeStub(tb, append([]EdgeStubOption{
-		EdgeStubWithClock(clk),
-		EdgeStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewEdgeStubFailing returns a double on which each call of a method that
-// can fail fails with err. It applies opts after the failure.
-func NewEdgeStubFailing(tb assert.TB, err error, opts ...EdgeStubOption) *EdgeStub {
-	return NewEdgeStub(tb, append([]EdgeStubOption{EdgeStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *EdgeStub) ResetCalls() {

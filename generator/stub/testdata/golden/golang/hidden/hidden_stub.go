@@ -141,26 +141,6 @@ func NewHostsStub(tb assert.TB, opts ...HostsStubOption) *HostsStub {
 	return s
 }
 
-// NewHostsStubDelayed returns a double whose methods sleep d on clk before
-// they return. It applies opts after the clock and the latency.
-func NewHostsStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...HostsStubOption,
-) *HostsStub {
-	return NewHostsStub(tb, append([]HostsStubOption{
-		HostsStubWithClock(clk),
-		HostsStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewHostsStubFailing returns a double on which each call of a method that
-// can fail fails with err. It applies opts after the failure.
-func NewHostsStubFailing(tb assert.TB, err error, opts ...HostsStubOption) *HostsStub {
-	return NewHostsStub(tb, append([]HostsStubOption{HostsStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *HostsStub) ResetCalls() {
@@ -374,26 +354,6 @@ func newStoreStub(tb assert.TB, opts ...storeStubOption) *storeStub {
 	return s
 }
 
-// newStoreStubDelayed returns a double whose methods sleep d on clk before
-// they return. It applies opts after the clock and the latency.
-func newStoreStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...storeStubOption,
-) *storeStub {
-	return newStoreStub(tb, append([]storeStubOption{
-		storeStubWithClock(clk),
-		storeStubWithLatency(d),
-	}, opts...)...)
-}
-
-// newStoreStubFailing returns a double on which each call of a method that
-// can fail fails with err. It applies opts after the failure.
-func newStoreStubFailing(tb assert.TB, err error, opts ...storeStubOption) *storeStub {
-	return newStoreStub(tb, append([]storeStubOption{storeStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *storeStub) ResetCalls() {
@@ -591,26 +551,6 @@ func newSessionStub(tb assert.TB, opts ...sessionStubOption) *sessionStub {
 	return s
 }
 
-// newSessionStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func newSessionStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...sessionStubOption,
-) *sessionStub {
-	return newSessionStub(tb, append([]sessionStubOption{
-		sessionStubWithClock(clk),
-		sessionStubWithLatency(d),
-	}, opts...)...)
-}
-
-// newSessionStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func newSessionStubFailing(tb assert.TB, err error, opts ...sessionStubOption) *sessionStub {
-	return newSessionStub(tb, append([]sessionStubOption{sessionStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *sessionStub) ResetCalls() {
@@ -774,32 +714,6 @@ func NewFinderStub[T any](tb assert.TB, opts ...FinderStubOption[T]) *FinderStub
 	}
 	s.group.Bind(tb)
 	return s
-}
-
-// NewFinderStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewFinderStubDelayed[T any](
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...FinderStubOption[T],
-) *FinderStub[T] {
-	return NewFinderStub[T](tb, append([]FinderStubOption[T]{
-		FinderStubWithClock[T](clk),
-		FinderStubWithLatency[T](d),
-	}, opts...)...)
-}
-
-// NewFinderStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewFinderStubFailing[T any](
-	tb assert.TB,
-	err error,
-	opts ...FinderStubOption[T],
-) *FinderStub[T] {
-	return NewFinderStub[T](
-		tb,
-		append([]FinderStubOption[T]{FinderStubFailing[T](err)}, opts...)...)
 }
 
 // ResetCalls clears the recorded calls, the counters of the faults and the

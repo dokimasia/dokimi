@@ -241,26 +241,6 @@ func NewSessionStub(tb assert.TB, opts ...SessionStubOption) *SessionStub {
 	return s
 }
 
-// NewSessionStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewSessionStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...SessionStubOption,
-) *SessionStub {
-	return NewSessionStub(tb, append([]SessionStubOption{
-		SessionStubWithClock(clk),
-		SessionStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewSessionStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewSessionStubFailing(tb assert.TB, err error, opts ...SessionStubOption) *SessionStub {
-	return NewSessionStub(tb, append([]SessionStubOption{SessionStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *SessionStub) ResetCalls() {

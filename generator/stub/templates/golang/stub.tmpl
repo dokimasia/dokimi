@@ -305,23 +305,6 @@ With a nil tb, the double reports nothing.` $new $iface))}}
 	return s
 }
 
-{{docs (wrapdocs (printf `%sDelayed returns a double whose methods sleep d on clk before they
-return. It applies opts after the clock and the latency.` $new))}}
-{{- ""}}func {{$new}}Delayed{{$tp}}(tb {{$assert}}.TB, d {{$time}}.Duration, clk {{$assert}}.Clock, opts ...{{$stub}}Option{{$ta}}) *{{$stub}}{{$ta}} {
-	return {{$new}}{{$ta}}(tb, append([]{{$stub}}Option{{$ta}}{
-		{{$stub}}WithClock{{$ta}}(clk),
-		{{$stub}}WithLatency{{$ta}}(d),
-	}, opts...)...)
-}
-{{- if $c.Fallible}}
-
-{{docs (wrapdocs (printf `%sFailing returns a double on which each call of a method that can
-fail fails with err. It applies opts after the failure.` $new))}}
-{{- ""}}func {{$new}}Failing{{$tp}}(tb {{$assert}}.TB, err error, opts ...{{$stub}}Option{{$ta}}) *{{$stub}}{{$ta}} {
-	return {{$new}}{{$ta}}(tb, append([]{{$stub}}Option{{$ta}}{ {{- $stub}}Failing{{$ta}}(err)}, opts...)...)
-}
-{{- end}}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *{{$stub}}{{$ta}}) ResetCalls() {

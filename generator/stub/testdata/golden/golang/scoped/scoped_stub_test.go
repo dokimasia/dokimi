@@ -8,7 +8,6 @@ import (
 
 	"example.com/shop/scoped"
 	assert2 "go.dokimi.dev/assert"
-	expect2 "go.dokimi.dev/assert/expect"
 	stub2 "go.dokimi.dev/stub"
 )
 
@@ -51,23 +50,35 @@ func storeStubListPins() ([]string, error) {
 	return want0, want1
 }
 
-// storeStubGetSubject returns the subject of [stub2.Behaviour] for Get.
-// The subject calls a new double that reports to tb.
+// storeStubGetSubject returns the subject of [stub2.Behaviour] and
+// [stub2.ResetBehaviour] for Get. The subject calls a new double that
+// reports to tb.
 func storeStubGetSubject(tb assert2.TB) stub2.Subject[scoped.StoreGetCall, scoped.StoreGetReturn] {
 	tb.Helper()
 	s := scoped.NewStoreStub(tb)
 	return stub2.Subject[scoped.StoreGetCall, scoped.StoreGetReturn]{
-		Stub: s.OnGet.MethodStub,
+		Stub:  s.OnGet.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = storeStubGet(tb, s)
+		},
+		Arguments: func(tb assert2.TB, c scoped.StoreGetCall) {
+			tb.Helper()
+			a0 := storeStubGetArgs(tb)
+			assert2.Equal(tb, c.ID, a0, "the call records ID")
 		},
 		Result: func() scoped.StoreGetReturn {
 			got0, got1 := storeStubGet(tb, s)
 			return scoped.StoreGetReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
-			s.OnGet.Func(func(_ string) (string, error) {
-				mark()
+		Returns: func() scoped.StoreGetReturn {
+			want0, want1 := storeStubGetPins()
+			s.OnGet.Returns(want0, want1)
+			return scoped.StoreGetReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(scoped.StoreGetCall)) {
+			s.OnGet.Func(func(p0 string) (string, error) {
+				seen(scoped.StoreGetCall{ID: p0})
 				var z0 string
 				var z1 error
 				return z0, z1
@@ -80,15 +91,17 @@ func storeStubGetSubject(tb assert2.TB) stub2.Subject[scoped.StoreGetCall, scope
 	}
 }
 
-// storeStubListSubject returns the subject of [stub2.Behaviour] for List.
-// The subject calls a new double that reports to tb.
+// storeStubListSubject returns the subject of [stub2.Behaviour] and
+// [stub2.ResetBehaviour] for List. The subject calls a new double that
+// reports to tb.
 func storeStubListSubject(
 	tb assert2.TB,
 ) stub2.Subject[scoped.StoreListCall, scoped.StoreListReturn] {
 	tb.Helper()
 	s := scoped.NewStoreStub(tb)
 	return stub2.Subject[scoped.StoreListCall, scoped.StoreListReturn]{
-		Stub: s.OnList.MethodStub,
+		Stub:  s.OnList.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_, _ = storeStubList(tb, s)
 		},
@@ -96,9 +109,14 @@ func storeStubListSubject(
 			got0, got1 := storeStubList(tb, s)
 			return scoped.StoreListReturn{Result: got0, Err: got1}
 		},
-		Override: func(mark func()) {
+		Returns: func() scoped.StoreListReturn {
+			want0, want1 := storeStubListPins()
+			s.OnList.Returns(want0, want1)
+			return scoped.StoreListReturn{Result: want0, Err: want1}
+		},
+		Override: func(seen func(scoped.StoreListCall)) {
 			s.OnList.Func(func() ([]string, error) {
-				mark()
+				seen(scoped.StoreListCall{})
 				var z0 []string
 				var z1 error
 				return z0, z1
@@ -124,7 +142,6 @@ func storeStubInstanceOf(tb assert2.TB, s *scoped.StoreStub) storeStubInstance {
 		Call: func() {
 			_, _ = storeStubGet(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -136,114 +153,24 @@ func TestStoreStub(t *testing2.T) {
 	t.Run("Get", func(t *testing2.T) {
 		t.Parallel()
 		stub2.Behaviour(t, "Get", storeStubGetSubject)
-
-		t.Run("records the arguments of the call", func(t *testing2.T) {
-			t.Parallel()
-			s := scoped.NewStoreStub(t)
-			_, _ = storeStubGet(t, s)
-			got := s.OnGet.AssertCalledOnce(t, "Get records the call")
-			a0 := storeStubGetArgs(t)
-			assert2.Equal(t, got.ID, a0, "the call records ID")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing2.T) {
-			t.Parallel()
-			s := scoped.NewStoreStub(t)
-			var seen []scoped.StoreGetCall
-			s.OnGet.OnRecord(func(c scoped.StoreGetCall) { seen = append(seen, c) })
-			_, _ = storeStubGet(t, s)
-			_, _ = storeStubGet(t, s)
-			assert2.Length(t, seen, 2, "OnRecord runs once for each call of Get")
-		})
 	})
 
 	t.Run("List", func(t *testing2.T) {
 		t.Parallel()
 		stub2.Behaviour(t, "List", storeStubListSubject)
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing2.T) {
-			t.Parallel()
-			s := scoped.NewStoreStub(t)
-			var seen []scoped.StoreListCall
-			s.OnList.OnRecord(func(c scoped.StoreListCall) { seen = append(seen, c) })
-			_, _ = storeStubList(t, s)
-			_, _ = storeStubList(t, s)
-			assert2.Length(t, seen, 2, "OnRecord runs once for each call of List")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing2.T) {
 		t.Parallel()
-		stub2.ResetBehaviour(t, func(tb assert2.TB) storeStubInstance {
-			return storeStubInstanceOf(tb, scoped.NewStoreStub(tb))
+
+		t.Run("Get", func(t *testing2.T) {
+			t.Parallel()
+			stub2.ResetBehaviour(t, "Get", storeStubGetSubject)
 		})
 
-		t.Run("clears the recorded calls of Get", func(t *testing2.T) {
+		t.Run("List", func(t *testing2.T) {
 			t.Parallel()
-			s := scoped.NewStoreStub(t)
-			_, _ = storeStubGet(t, s)
-			s.ResetCalls()
-			assert2.Equal(t, s.OnGet.CallCount(), 0, "ResetCalls clears the calls of Get")
-		})
-
-		t.Run("keeps the results of Returns of Get", func(t *testing2.T) {
-			t.Parallel()
-			s := scoped.NewStoreStub(t)
-			want0, want1 := storeStubGetPins()
-			s.OnGet.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := storeStubGet(t, s)
-			expect2.Equal(t, got0, want0, "ResetCalls keeps the Result of Get")
-			expect2.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Get")
-		})
-
-		t.Run("clears the recorded calls of List", func(t *testing2.T) {
-			t.Parallel()
-			s := scoped.NewStoreStub(t)
-			_, _ = storeStubList(t, s)
-			s.ResetCalls()
-			assert2.Equal(t, s.OnList.CallCount(), 0, "ResetCalls clears the calls of List")
-		})
-
-		t.Run("keeps the results of Returns of List", func(t *testing2.T) {
-			t.Parallel()
-			s := scoped.NewStoreStub(t)
-			want0, want1 := storeStubListPins()
-			s.OnList.Returns(want0, want1)
-			s.ResetCalls()
-			got0, got1 := storeStubList(t, s)
-			expect2.Equal(t, got0, want0, "ResetCalls keeps the Result of List")
-			expect2.ErrorIs(t, got1, want1, "ResetCalls keeps the error of List")
-		})
-	})
-
-	t.Run("NewStoreStubDelayed", func(t *testing2.T) {
-		t.Parallel()
-		stub2.LatencyBehaviour(
-			t,
-			func(tb assert2.TB, d time2.Duration, clk assert2.Clock) storeStubInstance {
-				return storeStubInstanceOf(tb, scoped.NewStoreStubDelayed(tb, d, clk))
-			},
-		)
-	})
-
-	t.Run("NewStoreStubFailing", func(t *testing2.T) {
-		t.Parallel()
-
-		t.Run("fails Get with its error", func(t *testing2.T) {
-			t.Parallel()
-			want := errors2.New("Get-failing")
-			s := scoped.NewStoreStubFailing(t, want)
-			_, r1 := storeStubGet(t, s)
-			assert2.ErrorIs(t, r1, want, "Get fails with the error of NewStoreStubFailing")
-		})
-
-		t.Run("fails List with its error", func(t *testing2.T) {
-			t.Parallel()
-			want := errors2.New("List-failing")
-			s := scoped.NewStoreStubFailing(t, want)
-			_, r1 := storeStubList(t, s)
-			assert2.ErrorIs(t, r1, want, "List fails with the error of NewStoreStubFailing")
+			stub2.ResetBehaviour(t, "List", storeStubListSubject)
 		})
 	})
 
@@ -395,51 +322,6 @@ func TestStoreStub(t *testing2.T) {
 func TestStoreGetStub(t *testing2.T) {
 	t.Parallel()
 
-	t.Run("Returns", func(t *testing2.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Get", func(t *testing2.T) {
-			t.Parallel()
-			s := scoped.NewStoreStub(t)
-			want0, want1 := storeStubGetPins()
-			s.OnGet.Returns(want0, want1)
-			got0, got1 := storeStubGet(t, s)
-			expect2.Equal(t, got0, want0, "Get returns the Result that Returns sets")
-			expect2.ErrorIs(t, got1, want1, "Get returns the error that Returns sets")
-		})
-
-		t.Run("configures Get for strict mode", func(t *testing2.T) {
-			t.Parallel()
-			r := assert2.NewRecorder()
-			s := scoped.NewStoreStub(r)
-			s.OnGet.Strict()
-			var want0 string
-			var want1 error
-			s.OnGet.Returns(want0, want1)
-			_, _ = storeStubGet(t, s)
-			assert2.False(t, r.Failed(), "strict mode accepts the call of Get")
-		})
-	})
-
-	t.Run("Func", func(t *testing2.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Get to the function", func(t *testing2.T) {
-			t.Parallel()
-			s := scoped.NewStoreStub(t)
-			var got0 string
-			s.OnGet.Func(func(p0 string) (string, error) {
-				got0 = p0
-				var z0 string
-				var z1 error
-				return z0, z1
-			})
-			_, _ = storeStubGet(t, s)
-			a0 := storeStubGetArgs(t)
-			assert2.Equal(t, got0, a0, "the function receives ID")
-		})
-	})
-
 	t.Run("FaultForPartition", func(t *testing2.T) {
 		t.Parallel()
 
@@ -472,32 +354,6 @@ func TestStoreGetStub(t *testing2.T) {
 // List.
 func TestStoreListStub(t *testing2.T) {
 	t.Parallel()
-
-	t.Run("Returns", func(t *testing2.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of List", func(t *testing2.T) {
-			t.Parallel()
-			s := scoped.NewStoreStub(t)
-			want0, want1 := storeStubListPins()
-			s.OnList.Returns(want0, want1)
-			got0, got1 := storeStubList(t, s)
-			expect2.Equal(t, got0, want0, "List returns the Result that Returns sets")
-			expect2.ErrorIs(t, got1, want1, "List returns the error that Returns sets")
-		})
-
-		t.Run("configures List for strict mode", func(t *testing2.T) {
-			t.Parallel()
-			r := assert2.NewRecorder()
-			s := scoped.NewStoreStub(r)
-			s.OnList.Strict()
-			var want0 []string
-			var want1 error
-			s.OnList.Returns(want0, want1)
-			_, _ = storeStubList(t, s)
-			assert2.False(t, r.Failed(), "strict mode accepts the call of List")
-		})
-	})
 
 	t.Run("RetrySchedule", func(t *testing2.T) {
 		t.Parallel()

@@ -259,26 +259,6 @@ func NewRepoStub[T any](tb assert.TB, opts ...RepoStubOption[T]) *RepoStub[T] {
 	return s
 }
 
-// NewRepoStubDelayed returns a double whose methods sleep d on clk before
-// they return. It applies opts after the clock and the latency.
-func NewRepoStubDelayed[T any](
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...RepoStubOption[T],
-) *RepoStub[T] {
-	return NewRepoStub[T](tb, append([]RepoStubOption[T]{
-		RepoStubWithClock[T](clk),
-		RepoStubWithLatency[T](d),
-	}, opts...)...)
-}
-
-// NewRepoStubFailing returns a double on which each call of a method that
-// can fail fails with err. It applies opts after the failure.
-func NewRepoStubFailing[T any](tb assert.TB, err error, opts ...RepoStubOption[T]) *RepoStub[T] {
-	return NewRepoStub[T](tb, append([]RepoStubOption[T]{RepoStubFailing[T](err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *RepoStub[T]) ResetCalls() {
@@ -519,20 +499,6 @@ func NewPairsStub[K1 comparable, V_ any](
 	return s
 }
 
-// NewPairsStubDelayed returns a double whose methods sleep d on clk before
-// they return. It applies opts after the clock and the latency.
-func NewPairsStubDelayed[K1 comparable, V_ any](
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...PairsStubOption[K1, V_],
-) *PairsStub[K1, V_] {
-	return NewPairsStub[K1, V_](tb, append([]PairsStubOption[K1, V_]{
-		PairsStubWithClock[K1, V_](clk),
-		PairsStubWithLatency[K1, V_](d),
-	}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *PairsStub[K1, V_]) ResetCalls() {
@@ -672,20 +638,6 @@ func NewBagStub[K Keyable](tb assert.TB, opts ...BagStubOption[K]) *BagStub[K] {
 	}
 	s.group.Bind(tb)
 	return s
-}
-
-// NewBagStubDelayed returns a double whose methods sleep d on clk before
-// they return. It applies opts after the clock and the latency.
-func NewBagStubDelayed[K Keyable](
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...BagStubOption[K],
-) *BagStub[K] {
-	return NewBagStub[K](tb, append([]BagStubOption[K]{
-		BagStubWithClock[K](clk),
-		BagStubWithLatency[K](d),
-	}, opts...)...)
 }
 
 // ResetCalls clears the recorded calls, the counters of the faults and the

@@ -73,15 +73,17 @@ func tableStubTailPins() sequence.Lines {
 	return want0
 }
 
-// tableStubNamesSubject returns the subject of [stub.Behaviour] for Names.
-// The subject calls a new double that reports to tb.
+// tableStubNamesSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Names. The subject calls a new double that
+// reports to tb.
 func tableStubNamesSubject(
 	tb assert.TB,
 ) stub.Subject[sequence.TableNamesCall, sequence.TableNamesReturn] {
 	tb.Helper()
 	s := sequence.NewTableStub(tb)
 	return stub.Subject[sequence.TableNamesCall, sequence.TableNamesReturn]{
-		Stub: s.OnNames.MethodStub,
+		Stub:  s.OnNames.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = tableStubNames(tb, s)
 		},
@@ -89,9 +91,14 @@ func tableStubNamesSubject(
 			got0 := tableStubNames(tb, s)
 			return sequence.TableNamesReturn{Result: got0}
 		},
-		Override: func(mark func()) {
+		Returns: func() sequence.TableNamesReturn {
+			want0 := tableStubNamesPins()
+			s.OnNames.Returns(want0)
+			return sequence.TableNamesReturn{Result: want0}
+		},
+		Override: func(seen func(sequence.TableNamesCall)) {
 			s.OnNames.Func(func() iter.Seq[string] {
-				mark()
+				seen(sequence.TableNamesCall{})
 				var z0 iter.Seq[string]
 				return z0
 			})
@@ -99,25 +106,37 @@ func tableStubNamesSubject(
 	}
 }
 
-// tableStubRowsSubject returns the subject of [stub.Behaviour] for Rows.
-// The subject calls a new double that reports to tb.
+// tableStubRowsSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Rows. The subject calls a new double that
+// reports to tb.
 func tableStubRowsSubject(
 	tb assert.TB,
 ) stub.Subject[sequence.TableRowsCall, sequence.TableRowsReturn] {
 	tb.Helper()
 	s := sequence.NewTableStub(tb)
 	return stub.Subject[sequence.TableRowsCall, sequence.TableRowsReturn]{
-		Stub: s.OnRows.MethodStub,
+		Stub:  s.OnRows.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = tableStubRows(tb, s)
+		},
+		Arguments: func(tb assert.TB, c sequence.TableRowsCall) {
+			tb.Helper()
+			a0 := tableStubRowsArgs(tb)
+			assert.Equal(tb, c.Limit, a0, "the call records Limit")
 		},
 		Result: func() sequence.TableRowsReturn {
 			got0 := tableStubRows(tb, s)
 			return sequence.TableRowsReturn{Result: got0}
 		},
-		Override: func(mark func()) {
-			s.OnRows.Func(func(_ int) iter.Seq2[sequence.Item, error] {
-				mark()
+		Returns: func() sequence.TableRowsReturn {
+			want0 := tableStubRowsPins()
+			s.OnRows.Returns(want0)
+			return sequence.TableRowsReturn{Result: want0}
+		},
+		Override: func(seen func(sequence.TableRowsCall)) {
+			s.OnRows.Func(func(p0 int) iter.Seq2[sequence.Item, error] {
+				seen(sequence.TableRowsCall{Limit: p0})
 				var z0 iter.Seq2[sequence.Item, error]
 				return z0
 			})
@@ -125,15 +144,17 @@ func tableStubRowsSubject(
 	}
 }
 
-// tableStubCountsSubject returns the subject of [stub.Behaviour] for
-// Counts. The subject calls a new double that reports to tb.
+// tableStubCountsSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Counts. The subject calls a new double that
+// reports to tb.
 func tableStubCountsSubject(
 	tb assert.TB,
 ) stub.Subject[sequence.TableCountsCall, sequence.TableCountsReturn] {
 	tb.Helper()
 	s := sequence.NewTableStub(tb)
 	return stub.Subject[sequence.TableCountsCall, sequence.TableCountsReturn]{
-		Stub: s.OnCounts.MethodStub,
+		Stub:  s.OnCounts.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = tableStubCounts(tb, s)
 		},
@@ -141,9 +162,14 @@ func tableStubCountsSubject(
 			got0 := tableStubCounts(tb, s)
 			return sequence.TableCountsReturn{Result: got0}
 		},
-		Override: func(mark func()) {
+		Returns: func() sequence.TableCountsReturn {
+			want0 := tableStubCountsPins()
+			s.OnCounts.Returns(want0)
+			return sequence.TableCountsReturn{Result: want0}
+		},
+		Override: func(seen func(sequence.TableCountsCall)) {
 			s.OnCounts.Func(func() iter.Seq2[string, int] {
-				mark()
+				seen(sequence.TableCountsCall{})
 				var z0 iter.Seq2[string, int]
 				return z0
 			})
@@ -151,15 +177,17 @@ func tableStubCountsSubject(
 	}
 }
 
-// tableStubTailSubject returns the subject of [stub.Behaviour] for Tail.
-// The subject calls a new double that reports to tb.
+// tableStubTailSubject returns the subject of [stub.Behaviour] and
+// [stub.ResetBehaviour] for Tail. The subject calls a new double that
+// reports to tb.
 func tableStubTailSubject(
 	tb assert.TB,
 ) stub.Subject[sequence.TableTailCall, sequence.TableTailReturn] {
 	tb.Helper()
 	s := sequence.NewTableStub(tb)
 	return stub.Subject[sequence.TableTailCall, sequence.TableTailReturn]{
-		Stub: s.OnTail.MethodStub,
+		Stub:  s.OnTail.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			_ = tableStubTail(tb, s)
 		},
@@ -167,9 +195,14 @@ func tableStubTailSubject(
 			got0 := tableStubTail(tb, s)
 			return sequence.TableTailReturn{Result: got0}
 		},
-		Override: func(mark func()) {
+		Returns: func() sequence.TableTailReturn {
+			want0 := tableStubTailPins()
+			s.OnTail.Returns(want0)
+			return sequence.TableTailReturn{Result: want0}
+		},
+		Override: func(seen func(sequence.TableTailCall)) {
 			s.OnTail.Func(func() sequence.Lines {
-				mark()
+				seen(sequence.TableTailCall{})
 				var z0 sequence.Lines
 				return z0
 			})
@@ -190,7 +223,6 @@ func tableStubInstanceOf(tb assert.TB, s *sequence.TableStub) tableStubInstance 
 		Call: func() {
 			_ = tableStubNames(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -202,159 +234,45 @@ func TestTableStub(t *testing.T) {
 	t.Run("Names", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Names", tableStubNamesSubject)
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := sequence.NewTableStub(t)
-			var seen []sequence.TableNamesCall
-			s.OnNames.OnRecord(func(c sequence.TableNamesCall) { seen = append(seen, c) })
-			_ = tableStubNames(t, s)
-			_ = tableStubNames(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Names")
-		})
 	})
 
 	t.Run("Rows", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Rows", tableStubRowsSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := sequence.NewTableStub(t)
-			_ = tableStubRows(t, s)
-			got := s.OnRows.AssertCalledOnce(t, "Rows records the call")
-			a0 := tableStubRowsArgs(t)
-			assert.Equal(t, got.Limit, a0, "the call records Limit")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := sequence.NewTableStub(t)
-			var seen []sequence.TableRowsCall
-			s.OnRows.OnRecord(func(c sequence.TableRowsCall) { seen = append(seen, c) })
-			_ = tableStubRows(t, s)
-			_ = tableStubRows(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Rows")
-		})
 	})
 
 	t.Run("Counts", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Counts", tableStubCountsSubject)
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := sequence.NewTableStub(t)
-			var seen []sequence.TableCountsCall
-			s.OnCounts.OnRecord(func(c sequence.TableCountsCall) { seen = append(seen, c) })
-			_ = tableStubCounts(t, s)
-			_ = tableStubCounts(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Counts")
-		})
 	})
 
 	t.Run("Tail", func(t *testing.T) {
 		t.Parallel()
 		stub.Behaviour(t, "Tail", tableStubTailSubject)
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := sequence.NewTableStub(t)
-			var seen []sequence.TableTailCall
-			s.OnTail.OnRecord(func(c sequence.TableTailCall) { seen = append(seen, c) })
-			_ = tableStubTail(t, s)
-			_ = tableStubTail(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Tail")
-		})
 	})
 
 	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) tableStubInstance {
-			return tableStubInstanceOf(tb, sequence.NewTableStub(tb))
-		})
 
-		t.Run("clears the recorded calls of Names", func(t *testing.T) {
+		t.Run("Names", func(t *testing.T) {
 			t.Parallel()
-			s := sequence.NewTableStub(t)
-			_ = tableStubNames(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnNames.CallCount(), 0, "ResetCalls clears the calls of Names")
+			stub.ResetBehaviour(t, "Names", tableStubNamesSubject)
 		})
 
-		t.Run("keeps the results of Returns of Names", func(t *testing.T) {
+		t.Run("Rows", func(t *testing.T) {
 			t.Parallel()
-			s := sequence.NewTableStub(t)
-			want0 := tableStubNamesPins()
-			s.OnNames.Returns(want0)
-			s.ResetCalls()
-			got0 := tableStubNames(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Names")
+			stub.ResetBehaviour(t, "Rows", tableStubRowsSubject)
 		})
 
-		t.Run("clears the recorded calls of Rows", func(t *testing.T) {
+		t.Run("Counts", func(t *testing.T) {
 			t.Parallel()
-			s := sequence.NewTableStub(t)
-			_ = tableStubRows(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnRows.CallCount(), 0, "ResetCalls clears the calls of Rows")
+			stub.ResetBehaviour(t, "Counts", tableStubCountsSubject)
 		})
 
-		t.Run("keeps the results of Returns of Rows", func(t *testing.T) {
+		t.Run("Tail", func(t *testing.T) {
 			t.Parallel()
-			s := sequence.NewTableStub(t)
-			want0 := tableStubRowsPins()
-			s.OnRows.Returns(want0)
-			s.ResetCalls()
-			got0 := tableStubRows(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Rows")
+			stub.ResetBehaviour(t, "Tail", tableStubTailSubject)
 		})
-
-		t.Run("clears the recorded calls of Counts", func(t *testing.T) {
-			t.Parallel()
-			s := sequence.NewTableStub(t)
-			_ = tableStubCounts(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnCounts.CallCount(), 0, "ResetCalls clears the calls of Counts")
-		})
-
-		t.Run("keeps the results of Returns of Counts", func(t *testing.T) {
-			t.Parallel()
-			s := sequence.NewTableStub(t)
-			want0 := tableStubCountsPins()
-			s.OnCounts.Returns(want0)
-			s.ResetCalls()
-			got0 := tableStubCounts(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Counts")
-		})
-
-		t.Run("clears the recorded calls of Tail", func(t *testing.T) {
-			t.Parallel()
-			s := sequence.NewTableStub(t)
-			_ = tableStubTail(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnTail.CallCount(), 0, "ResetCalls clears the calls of Tail")
-		})
-
-		t.Run("keeps the results of Returns of Tail", func(t *testing.T) {
-			t.Parallel()
-			s := sequence.NewTableStub(t)
-			want0 := tableStubTailPins()
-			s.OnTail.Returns(want0)
-			s.ResetCalls()
-			got0 := tableStubTail(t, s)
-			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Tail")
-		})
-	})
-
-	t.Run("NewTableStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(
-			t,
-			func(tb assert.TB, d time.Duration, clk assert.Clock) tableStubInstance {
-				return tableStubInstanceOf(tb, sequence.NewTableStubDelayed(tb, d, clk))
-			},
-		)
 	})
 
 	t.Run("TableStubStrict", func(t *testing.T) {
@@ -517,30 +435,6 @@ func TestTableStub(t *testing.T) {
 func TestTableNamesStub(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Names", func(t *testing.T) {
-			t.Parallel()
-			s := sequence.NewTableStub(t)
-			want0 := tableStubNamesPins()
-			s.OnNames.Returns(want0)
-			got0 := tableStubNames(t, s)
-			assert.Equal(t, got0, want0, "Names returns the Result that Returns sets")
-		})
-
-		t.Run("configures Names for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := sequence.NewTableStub(r)
-			s.OnNames.Strict()
-			var want0 iter.Seq[string]
-			s.OnNames.Returns(want0)
-			_ = tableStubNames(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Names")
-		})
-	})
-
 	t.Run("Yields", func(t *testing.T) {
 		t.Parallel()
 
@@ -577,48 +471,6 @@ func TestTableNamesStub(t *testing.T) {
 // Rows.
 func TestTableRowsStub(t *testing.T) {
 	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Rows", func(t *testing.T) {
-			t.Parallel()
-			s := sequence.NewTableStub(t)
-			want0 := tableStubRowsPins()
-			s.OnRows.Returns(want0)
-			got0 := tableStubRows(t, s)
-			assert.Equal(t, got0, want0, "Rows returns the Result that Returns sets")
-		})
-
-		t.Run("configures Rows for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := sequence.NewTableStub(r)
-			s.OnRows.Strict()
-			var want0 iter.Seq2[sequence.Item, error]
-			s.OnRows.Returns(want0)
-			_ = tableStubRows(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Rows")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Rows to the function", func(t *testing.T) {
-			t.Parallel()
-			s := sequence.NewTableStub(t)
-			var got0 int
-			s.OnRows.Func(func(p0 int) iter.Seq2[sequence.Item, error] {
-				got0 = p0
-				var z0 iter.Seq2[sequence.Item, error]
-				return z0
-			})
-			_ = tableStubRows(t, s)
-			a0 := tableStubRowsArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Limit")
-		})
-	})
 
 	t.Run("Yields", func(t *testing.T) {
 		t.Parallel()
@@ -695,30 +547,6 @@ func TestTableRowsStub(t *testing.T) {
 func TestTableCountsStub(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Counts", func(t *testing.T) {
-			t.Parallel()
-			s := sequence.NewTableStub(t)
-			want0 := tableStubCountsPins()
-			s.OnCounts.Returns(want0)
-			got0 := tableStubCounts(t, s)
-			assert.Equal(t, got0, want0, "Counts returns the Result that Returns sets")
-		})
-
-		t.Run("configures Counts for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := sequence.NewTableStub(r)
-			s.OnCounts.Strict()
-			var want0 iter.Seq2[string, int]
-			s.OnCounts.Returns(want0)
-			_ = tableStubCounts(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Counts")
-		})
-	})
-
 	t.Run("Yields", func(t *testing.T) {
 		t.Parallel()
 
@@ -755,30 +583,6 @@ func TestTableCountsStub(t *testing.T) {
 // Tail.
 func TestTableTailStub(t *testing.T) {
 	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Tail", func(t *testing.T) {
-			t.Parallel()
-			s := sequence.NewTableStub(t)
-			want0 := tableStubTailPins()
-			s.OnTail.Returns(want0)
-			got0 := tableStubTail(t, s)
-			assert.Equal(t, got0, want0, "Tail returns the Result that Returns sets")
-		})
-
-		t.Run("configures Tail for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := sequence.NewTableStub(r)
-			s.OnTail.Strict()
-			var want0 sequence.Lines
-			s.OnTail.Returns(want0)
-			_ = tableStubTail(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Tail")
-		})
-	})
 
 	t.Run("Yields", func(t *testing.T) {
 		t.Parallel()

@@ -73,17 +73,28 @@ error result.` $helper $m.Name))}}
 {{- $helper := printf "%s%s" (stubCamel $stub) $m.Name}}
 {{- $call := spell (stubRef $t $m.Call)}}
 {{- $ret := "struct{}"}}{{if $m.Returns}}{{$ret = printf "%s%s" (spell (stubRef $t $m.Return)) $ta}}{{end}}
+{{- $check := $assert}}{{if gt (len $m.Params) 1}}{{$check = import "go.dokimi.dev/assert/expect"}}{{end}}
 
-{{docs (wrapdocs (printf `%sSubject returns the subject of [%s.Behaviour] for %s. The subject
-calls a new double that reports to tb.` $helper $stubpkg $m.Name))}}
+{{docs (wrapdocs (printf `%sSubject returns the subject of [%s.Behaviour] and [%s.ResetBehaviour] for
+%s. The subject calls a new double that reports to tb.` $helper $stubpkg $stubpkg $m.Name))}}
 {{- ""}}func {{$helper}}Subject{{$tp}}(tb {{$assert}}.TB) {{$stubpkg}}.Subject[{{$call}}{{$ta}}, {{$ret}}] {
 	tb.Helper()
 	s := {{$new}}{{$ta}}(tb)
 	return {{$stubpkg}}.Subject[{{$call}}{{$ta}}, {{$ret}}]{
-		Stub: s.{{$m.Field}}.MethodStub,
+		Stub:  s.{{$m.Field}}.MethodStub,
+		Reset: s.ResetCalls,
 		Call: func() {
 			{{template "stub.blanks" $m}}{{$helper}}{{$ta}}(tb, s)
 		},
+{{- if $m.Params}}
+		Arguments: func(tb {{$assert}}.TB, c {{$call}}{{$ta}}) {
+			tb.Helper()
+			{{template "stub.argnames" $m}} := {{$helper}}Args{{$ta}}(tb)
+{{- range $j, $p := $m.Params}}
+			{{$check}}.Equal(tb, c.{{$p.Field}}, a{{$j}}, "the call records {{$p.Field}}"{{if $p.Context}}, {{$check}}.ByIdentity(){{end}})
+{{- end}}
+		},
+{{- end}}
 {{- if $m.Returns}}
 		Result: func() {{$ret}} {
 			{{range $j, $r := $m.Returns}}{{if $j}}, {{end}}got{{$j}}{{end}} := {{$helper}}{{$ta}}(tb, s)
@@ -98,9 +109,16 @@ calls a new double that reports to tb.` $helper $stubpkg $m.Name))}}
 			return {{$ret}}{{"{"}}{{template "stub.testdefaults" $m}}{{"}"}}
 		},
 {{- end}}
-		Override: func(mark func()) {
-			s.{{$m.Field}}.Func(func({{template "stub.testfuncparams" $m}}){{template "stub.testresults" $m}} {
-				mark()
+{{- if or $m.Pinnable (ge $m.Err 0)}}
+		Returns: func() {{$ret}} {
+			{{range $j, $r := $m.Returns}}{{if $j}}, {{end}}want{{$j}}{{end}} := {{$helper}}Pins{{$ta}}()
+			s.{{$m.Field}}.Returns({{range $j, $r := $m.Returns}}{{if $j}}, {{end}}want{{$j}}{{end}})
+			return {{$ret}}{{"{"}}{{range $j, $r := $m.Returns}}{{if $j}}, {{end}}{{$r.Field}}: want{{$j}}{{end}}{{"}"}}
+		},
+{{- end}}
+		Override: func(seen func({{$call}}{{$ta}})) {
+			s.{{$m.Field}}.Func(func({{template "stub.funcparams" $m}}){{template "stub.testresults" $m}} {
+				seen({{$call}}{{$ta}}{ {{- range $j, $p := $m.Params}}{{if $j}}, {{end}}{{$p.Field}}: p{{$j}}{{end -}} })
 {{- template "stub.zeros" $m}}
 			})
 		},
@@ -128,7 +146,6 @@ checks call %s alone.` $instance $first.Name))}}
 		Call: func() {
 			{{template "stub.blanks" $first}}{{$helper0}}{{$ta}}(tb, s)
 		},
-		Reset: s.ResetCalls,
 	}
 }
 
@@ -145,100 +162,24 @@ checks call %s alone.` $instance $first.Name))}}
 {{- end}}
 {{- range $i, $m := $c.Methods}}
 {{- $helper := printf "%s%s" (stubCamel $stub) $m.Name}}
-{{- $call := spell (stubRef $t $m.Call)}}
-{{- $check := $assert}}{{if gt (len $m.Params) 1}}{{$check = import "go.dokimi.dev/assert/expect"}}{{end}}
 
 	t.Run("{{$m.Name}}", func(t *{{$testing}}.T) {
 		t.Parallel()
 		{{$stubpkg}}.Behaviour(t, "{{$m.Name}}", {{$helper}}Subject{{$ta}})
-{{- if $m.Params}}
-
-		t.Run("records the arguments of the call", func(t *{{$testing}}.T) {
-			t.Parallel()
-			s := {{$new}}{{$ta}}(t)
-			{{template "stub.blanks" $m}}{{$helper}}{{$ta}}(t, s)
-			got := s.{{$m.Field}}.AssertCalledOnce(t, "{{$m.Name}} records the call")
-			{{template "stub.argnames" $m}} := {{$helper}}Args{{$ta}}(t)
-{{- range $j, $p := $m.Params}}
-			{{$check}}.Equal(t, got.{{$p.Field}}, a{{$j}}, "the call records {{$p.Field}}"{{if $p.Context}}, {{$check}}.ByIdentity(){{end}})
-{{- end}}
-		})
-{{- end}}
-
-		t.Run("runs the OnRecord hook once for each call", func(t *{{$testing}}.T) {
-			t.Parallel()
-			s := {{$new}}{{$ta}}(t)
-			var seen []{{$call}}{{$ta}}
-			s.{{$m.Field}}.OnRecord(func(c {{$call}}{{$ta}}) { seen = append(seen, c) })
-			{{template "stub.blanks" $m}}{{$helper}}{{$ta}}(t, s)
-			{{template "stub.blanks" $m}}{{$helper}}{{$ta}}(t, s)
-			{{$assert}}.Length(t, seen, 2, "OnRecord runs once for each call of {{$m.Name}}")
-		})
 	})
 {{- end}}
 
 	t.Run("ResetCalls", func(t *{{$testing}}.T) {
 		t.Parallel()
-		{{$stubpkg}}.ResetBehaviour(t, func(tb {{$assert}}.TB) {{$alias}}{{$ta}} {
-			return {{$instance}}{{$ta}}(tb, {{$new}}{{$ta}}(tb))
-		})
 {{- range $i, $m := $c.Methods}}
 {{- $helper := printf "%s%s" (stubCamel $stub) $m.Name}}
 
-		t.Run("clears the recorded calls of {{$m.Name}}", func(t *{{$testing}}.T) {
+		t.Run("{{$m.Name}}", func(t *{{$testing}}.T) {
 			t.Parallel()
-			s := {{$new}}{{$ta}}(t)
-			{{template "stub.blanks" $m}}{{$helper}}{{$ta}}(t, s)
-			s.ResetCalls()
-			{{$assert}}.Equal(t, s.{{$m.Field}}.CallCount(), 0, "ResetCalls clears the calls of {{$m.Name}}")
+			{{$stubpkg}}.ResetBehaviour(t, "{{$m.Name}}", {{$helper}}Subject{{$ta}})
 		})
-{{- if or $m.Pinnable (ge $m.Err 0)}}
-{{- $check := $assert}}{{if gt $m.Checked 1}}{{$check = import "go.dokimi.dev/assert/expect"}}{{end}}
-
-		t.Run("keeps the results of Returns of {{$m.Name}}", func(t *{{$testing}}.T) {
-			t.Parallel()
-			s := {{$new}}{{$ta}}(t)
-			{{range $j, $r := $m.Returns}}{{if $j}}, {{end}}want{{$j}}{{end}} := {{$helper}}Pins{{$ta}}()
-			s.{{$m.Field}}.Returns({{range $j, $r := $m.Returns}}{{if $j}}, {{end}}want{{$j}}{{end}})
-			s.ResetCalls()
-			{{template "stub.checked" $m}} := {{$helper}}{{$ta}}(t, s)
-{{- range $j, $r := $m.Returns}}
-{{- if $r.Pinned}}
-			{{$check}}.Equal(t, got{{$j}}, want{{$j}}, "ResetCalls keeps the {{$r.Field}} of {{$m.Name}}")
-{{- else if $r.Error}}
-			{{$check}}.ErrorIs(t, got{{$j}}, want{{$j}}, "ResetCalls keeps the error of {{$m.Name}}")
-{{- end}}
-{{- end}}
-		})
-{{- end}}
 {{- end}}
 	})
-
-	t.Run("{{$constructor}}Delayed", func(t *{{$testing}}.T) {
-		t.Parallel()
-		{{$stubpkg}}.LatencyBehaviour(t, func(tb {{$assert}}.TB, d {{$time}}.Duration, clk {{$assert}}.Clock) {{$alias}}{{$ta}} {
-			return {{$instance}}{{$ta}}(tb, {{spell (stubRef $t (printf "%sDelayed" $constructor))}}{{$ta}}(tb, d, clk))
-		})
-	})
-{{- if $c.Fallible}}
-
-	t.Run("{{$constructor}}Failing", func(t *{{$testing}}.T) {
-		t.Parallel()
-{{- range $i, $m := $c.Methods}}
-{{- if ge $m.Err 0}}
-{{- $helper := printf "%s%s" (stubCamel $stub) $m.Name}}
-
-		t.Run("fails {{$m.Name}} with its error", func(t *{{$testing}}.T) {
-			t.Parallel()
-			want := {{import "errors"}}.New("{{$m.Name}}-failing")
-			s := {{spell (stubRef $t (printf "%sFailing" $constructor))}}{{$ta}}(t, want)
-			{{template "stub.fails" $m}} := {{$helper}}{{$ta}}(t, s)
-			{{$assert}}.ErrorIs(t, {{(index $m.Returns $m.Err).Local}}, want, "{{$m.Name}} fails with the error of {{$constructor}}Failing")
-		})
-{{- end}}
-{{- end}}
-	})
-{{- end}}
 
 	t.Run("{{$stub}}Strict", func(t *{{$testing}}.T) {
 		t.Parallel()
@@ -357,7 +298,7 @@ checks call %s alone.` $instance $first.Name))}}
 {{- end}}
 }
 {{- range $i, $m := $c.Methods}}
-{{- if or $m.Returns $m.Params}}
+{{- if $m.Extras}}
 {{- $helper := printf "%s%s" (stubCamel $stub) $m.Name}}
 
 {{if $c.Witnesses -}}
@@ -369,73 +310,6 @@ parameters of the double.` $m.Stub $m.Stub $m.Name))}}
 {{docs (wrapdocs (printf `Test%s checks the methods of %s, which configures %s.` $m.Stub $m.Stub $m.Name))}}
 {{- ""}}func Test{{$m.Stub}}(t *{{$testing}}.T) {
 	t.Parallel()
-{{- end}}
-{{- if $m.Returns}}
-
-	t.Run("Returns", func(t *{{$testing}}.T) {
-		t.Parallel()
-{{- if or $m.Pinnable (ge $m.Err 0)}}
-{{- $check := $assert}}{{if gt $m.Checked 1}}{{$check = import "go.dokimi.dev/assert/expect"}}{{end}}
-
-		t.Run("sets the results of each call of {{$m.Name}}", func(t *{{$testing}}.T) {
-			t.Parallel()
-			s := {{$new}}{{$ta}}(t)
-			{{range $j, $r := $m.Returns}}{{if $j}}, {{end}}want{{$j}}{{end}} := {{$helper}}Pins{{$ta}}()
-{{- range $j, $r := $m.Returns}}
-{{- if and $r.Pinned $r.Default}}
-			{{$assert}}.NotEqual(t, want{{$j}}, {{$helper}}Subject{{$ta}}(t).Default().{{$r.Field}},
-				"the sample of {{$r.Field}} differs from its default result")
-{{- end}}
-{{- end}}
-			s.{{$m.Field}}.Returns({{range $j, $r := $m.Returns}}{{if $j}}, {{end}}want{{$j}}{{end}})
-			{{template "stub.checked" $m}} := {{$helper}}{{$ta}}(t, s)
-{{- range $j, $r := $m.Returns}}
-{{- if $r.Pinned}}
-			{{$check}}.Equal(t, got{{$j}}, want{{$j}}, "{{$m.Name}} returns the {{$r.Field}} that Returns sets")
-{{- else if $r.Error}}
-			{{$check}}.ErrorIs(t, got{{$j}}, want{{$j}}, "{{$m.Name}} returns the error that Returns sets")
-{{- end}}
-{{- end}}
-		})
-{{- end}}
-
-		t.Run("configures {{$m.Name}} for strict mode", func(t *{{$testing}}.T) {
-			t.Parallel()
-			r := {{$assert}}.NewRecorder()
-			s := {{$new}}{{$ta}}(r)
-			s.{{$m.Field}}.Strict()
-{{- range $j, $r := $m.Returns}}
-			var want{{$j}} {{spell $r.Type}}
-{{- end}}
-			s.{{$m.Field}}.Returns({{range $j, $r := $m.Returns}}{{if $j}}, {{end}}want{{$j}}{{end}})
-			{{template "stub.blanks" $m}}{{$helper}}{{$ta}}(t, s)
-			{{$assert}}.False(t, r.Failed(), "strict mode accepts the call of {{$m.Name}}")
-		})
-	})
-{{- end}}
-{{- if $m.Params}}
-{{- $check := $assert}}{{if gt (len $m.Params) 1}}{{$check = import "go.dokimi.dev/assert/expect"}}{{end}}
-
-	t.Run("Func", func(t *{{$testing}}.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of {{$m.Name}} to the function", func(t *{{$testing}}.T) {
-			t.Parallel()
-			s := {{$new}}{{$ta}}(t)
-{{- range $j, $p := $m.Params}}
-			var got{{$j}} {{if $p.Variadic}}[]{{end}}{{spell $p.Type}}
-{{- end}}
-			s.{{$m.Field}}.Func(func({{template "stub.funcparams" $m}}){{template "stub.testresults" $m}} {
-				{{range $j, $p := $m.Params}}{{if $j}}, {{end}}got{{$j}}{{end}} = {{range $j, $p := $m.Params}}{{if $j}}, {{end}}p{{$j}}{{end}}
-{{- template "stub.zeros" $m}}
-			})
-			{{template "stub.blanks" $m}}{{$helper}}{{$ta}}(t, s)
-			{{template "stub.argnames" $m}} := {{$helper}}Args{{$ta}}(t)
-{{- range $j, $p := $m.Params}}
-			{{$check}}.Equal(t, got{{$j}}, a{{$j}}, "the function receives {{$p.Field}}"{{if $p.Context}}, {{$check}}.ByIdentity(){{end}})
-{{- end}}
-		})
-	})
 {{- end}}
 {{- with $q := $m.Sequence}}
 
@@ -605,7 +479,7 @@ parameters of the double.` $m.Stub $m.Stub $m.Name))}}
 	check{{$stub}}{{typeargs $c.Witnesses}}(t)
 }
 {{- range $m := $c.Methods}}
-{{- if or $m.Returns $m.Params}}
+{{- if $m.Extras}}
 
 {{docs (wrapdocs (printf `Test%s runs the checks of %s at the same witnesses.` $m.Stub $m.Stub))}}
 {{- ""}}func Test{{$m.Stub}}(t *{{$testing}}.T) {
@@ -631,10 +505,6 @@ parameters of the double.` $m.Stub $m.Stub $m.Name))}}
 
 {{- define "stub.argkey"}}
 {{- $m := .}}{{range $i, $p := .Params}}{{if $i}}, {{end}}{{if eq $i $m.Partition}}key{{else}}_{{end}}{{end}}
-{{- end}}
-
-{{- define "stub.checked"}}
-{{- range $i, $r := .Returns}}{{if $i}}, {{end}}{{if or $r.Pinned $r.Error}}got{{$i}}{{else}}_{{end}}{{end}}
 {{- end}}
 
 {{- define "stub.testdefaults"}}

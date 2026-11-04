@@ -248,16 +248,12 @@ type Method struct {
 	Defaulted     bool
 }
 
-// Checked returns the count of the results of the method that the test of
-// its fixed results compares: each result with a sample, and the error.
-func (m *Method) Checked() int {
-	n := 0
-	for _, r := range m.Returns {
-		if r.Pinned || r.Error {
-			n++
-		}
-	}
-	return n
+// Extras reports that the stub of the method has methods beyond Returns and
+// Func, which the test of the stub of the method checks: Yields and
+// YieldsError for a sequence, and for a method that can fail the helper of
+// each error value, the retry schedule and the faults of a partition.
+func (m *Method) Extras() bool {
+	return m.Sequence != nil || m.Err >= 0 && (len(m.Errors) > 0 || m.Retry > 0 || m.Partition >= 0)
 }
 
 // Param is one parameter of a method of a double: its type, its name in the

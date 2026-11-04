@@ -994,13 +994,13 @@ func TestStub(t *testing.T) {
 					name:        "names the constructor and the options of a double after its exported subject",
 					givePkg:     catalogPackage,
 					giveSubject: storeName,
-					wantNames:   []string{"WithStoreGet", "NewStoreStub", "NewStoreStubDelayed", "NewStoreStubFailing"},
+					wantNames:   []string{"WithStoreGet", "NewStoreStub"},
 				},
 				{
 					name:        "names the constructor and the options of a double of an unexported subject in camel case",
 					givePkg:     hiddenPackage,
 					giveSubject: lowerStoreName,
-					wantNames:   []string{"withStoreGet", "newStoreStub", "newStoreStubDelayed", "newStoreStubFailing"},
+					wantNames:   []string{"withStoreGet", "newStoreStub"},
 				},
 			}
 			for _, tt := range tests {
@@ -1756,6 +1756,53 @@ func TestStub(t *testing.T) {
 					gentest.Unrecorded(t, res, at)
 				})
 			}
+		}
+	})
+
+	t.Run("Extras", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give stub.Method
+			want bool
+		}{
+			{
+				name: "reports the methods of a sequence",
+				give: stub.Method{Sequence: &stub.Sequence{}, Err: -1, Partition: -1},
+				want: true,
+			},
+			{
+				name: "reports the helper of an error value",
+				give: stub.Method{Errors: []stub.ErrorValue{{}}, Err: 0, Partition: -1},
+				want: true,
+			},
+			{
+				name: "reports a retry schedule",
+				give: stub.Method{Retry: 3, Err: 0, Partition: -1},
+				want: true,
+			},
+			{
+				name: "reports the faults of a partition",
+				give: stub.Method{Err: 1, Partition: 0},
+				want: true,
+			},
+			{
+				name: "leaves out a method that can fail without a helper of its stub",
+				give: stub.Method{Err: 0, Partition: -1},
+			},
+			{
+				name: "leaves out the helpers of the faults of a method that cannot fail",
+				give: stub.Method{Errors: []stub.ErrorValue{{}}, Retry: 3, Err: -1, Partition: 0},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				assert.Equal(t, tt.give.Extras(), tt.want,
+					"Extras reports the methods of the stub of a method beyond Returns and Func")
+			})
 		}
 	})
 }

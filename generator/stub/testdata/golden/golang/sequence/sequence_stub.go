@@ -338,20 +338,6 @@ func NewTableStub(tb assert.TB, opts ...TableStubOption) *TableStub {
 	return s
 }
 
-// NewTableStubDelayed returns a double whose methods sleep d on clk before
-// they return. It applies opts after the clock and the latency.
-func NewTableStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...TableStubOption,
-) *TableStub {
-	return NewTableStub(tb, append([]TableStubOption{
-		TableStubWithClock(clk),
-		TableStubWithLatency(d),
-	}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *TableStub) ResetCalls() {

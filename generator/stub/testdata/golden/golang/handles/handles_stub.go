@@ -190,26 +190,6 @@ func NewArchiveStub(tb assert.TB, opts ...ArchiveStubOption) *ArchiveStub {
 	return s
 }
 
-// NewArchiveStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewArchiveStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...ArchiveStubOption,
-) *ArchiveStub {
-	return NewArchiveStub(tb, append([]ArchiveStubOption{
-		ArchiveStubWithClock(clk),
-		ArchiveStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewArchiveStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewArchiveStubFailing(tb assert.TB, err error, opts ...ArchiveStubOption) *ArchiveStub {
-	return NewArchiveStub(tb, append([]ArchiveStubOption{ArchiveStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *ArchiveStub) ResetCalls() {
@@ -405,26 +385,6 @@ func NewLogStub(tb assert.TB, opts ...LogStubOption) *LogStub {
 	}
 	s.group.Bind(tb)
 	return s
-}
-
-// NewLogStubDelayed returns a double whose methods sleep d on clk before
-// they return. It applies opts after the clock and the latency.
-func NewLogStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...LogStubOption,
-) *LogStub {
-	return NewLogStub(tb, append([]LogStubOption{
-		LogStubWithClock(clk),
-		LogStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewLogStubFailing returns a double on which each call of a method that
-// can fail fails with err. It applies opts after the failure.
-func NewLogStubFailing(tb assert.TB, err error, opts ...LogStubOption) *LogStub {
-	return NewLogStub(tb, append([]LogStubOption{LogStubFailing(err)}, opts...)...)
 }
 
 // ResetCalls clears the recorded calls, the counters of the faults and the
@@ -774,26 +734,6 @@ func NewProducerStub(tb assert.TB, opts ...ProducerStubOption) *ProducerStub {
 	return s
 }
 
-// NewProducerStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewProducerStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...ProducerStubOption,
-) *ProducerStub {
-	return NewProducerStub(tb, append([]ProducerStubOption{
-		ProducerStubWithClock(clk),
-		ProducerStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewProducerStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewProducerStubFailing(tb assert.TB, err error, opts ...ProducerStubOption) *ProducerStub {
-	return NewProducerStub(tb, append([]ProducerStubOption{ProducerStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *ProducerStub) ResetCalls() {
@@ -1130,26 +1070,6 @@ func NewCursorStub(tb assert.TB, opts ...CursorStubOption) *CursorStub {
 	return s
 }
 
-// NewCursorStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewCursorStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...CursorStubOption,
-) *CursorStub {
-	return NewCursorStub(tb, append([]CursorStubOption{
-		CursorStubWithClock(clk),
-		CursorStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewCursorStubFailing returns a double on which each call of a method
-// that can fail fails with err. It applies opts after the failure.
-func NewCursorStubFailing(tb assert.TB, err error, opts ...CursorStubOption) *CursorStub {
-	return NewCursorStub(tb, append([]CursorStubOption{CursorStubFailing(err)}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *CursorStub) ResetCalls() {
@@ -1334,20 +1254,6 @@ func NewReaderStub(tb assert.TB, opts ...ReaderStubOption) *ReaderStub {
 	return s
 }
 
-// NewReaderStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewReaderStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...ReaderStubOption,
-) *ReaderStub {
-	return NewReaderStub(tb, append([]ReaderStubOption{
-		ReaderStubWithClock(clk),
-		ReaderStubWithLatency(d),
-	}, opts...)...)
-}
-
 // ResetCalls clears the recorded calls, the counters of the faults and the
 // expected counts. It keeps the functions, the fixed results and the faults.
 func (s *ReaderStub) ResetCalls() {
@@ -1490,20 +1396,6 @@ func NewSubscriptionStub(tb assert.TB, opts ...SubscriptionStubOption) *Subscrip
 	}
 	s.group.Bind(tb)
 	return s
-}
-
-// NewSubscriptionStubDelayed returns a double whose methods sleep d on clk
-// before they return. It applies opts after the clock and the latency.
-func NewSubscriptionStubDelayed(
-	tb assert.TB,
-	d time.Duration,
-	clk assert.Clock,
-	opts ...SubscriptionStubOption,
-) *SubscriptionStub {
-	return NewSubscriptionStub(tb, append([]SubscriptionStubOption{
-		SubscriptionStubWithClock(clk),
-		SubscriptionStubWithLatency(d),
-	}, opts...)...)
 }
 
 // ResetCalls clears the recorded calls, the counters of the faults and the

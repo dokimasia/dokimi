@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"go.dokimi.dev/eidos/lang/naming"
+	"go.dokimi.dev/eidos/plugin/shape"
 	"go.dokimi.dev/eidos/sdk/directive"
 	"go.dokimi.dev/eidos/sdk/emit"
 	"go.dokimi.dev/eidos/sdk/node"
@@ -77,10 +78,13 @@ type Pool struct {
 // the arguments of the list, and nil for a callable without one. An action of
 // a callable with a builder draws no input, and its calls have no keys.
 // Receiver is the type of the handle whose method a step of a transaction
-// calls, and nil for a step that calls the subject.
+// calls, and nil for a step that calls the subject. Produced is the key that a
+// call of a callable with the mixin creates returns to the pool of its type,
+// and nil for a callable without one.
 type Step struct {
 	Builder  *Builder
 	Receiver *emit.TypeRef
+	Produced *Produced
 	Name     string
 	Call     string
 	Field    string
@@ -116,6 +120,18 @@ type PoolField struct {
 	Name  string
 	Pool  string
 	Label string
+}
+
+// Produced is the key that a call of a callable with the mixin creates
+// returns, which the world adds to the pool Pool once the call returns without
+// an error. The key is the first value of the call, as a value of the type
+// Type, or the field Field of that value. Pointer reports a first value that is
+// a pointer, which the world skips where it is nil.
+type Produced struct {
+	Type    *emit.TypeRef
+	Pool    string
+	Field   string
+	Pointer bool
 }
 
 // StepKey is one key of a call: the argument at the position Arg, or its field
@@ -178,7 +194,9 @@ func sequenced(c *derive.Check) bool {
 // partners of each in the order of its claim, so each run writes the keys in
 // one order. [Sequences.used] drops the parts that no derived check calls.
 // The action of a transaction joins the actions where a check of the
-// derivation has the scope of a transaction.
+// derivation has the scope of a transaction. Once every pool exists, each
+// step of a callable with the mixin creates gives its key to the pool of the
+// type of the key.
 func (k *caller) sequencesOf(s *Suite) *Sequences {
 	q := &Sequences{
 		Actions:   k.e.JoinName(actionsWord, s.Declaration),
@@ -197,21 +215,53 @@ func (k *caller) sequencesOf(s *Suite) *Sequences {
 			q.Txn = k.txnOf(s, q, c.Transaction)
 		}
 	}
+	for i := range s.Facts {
+		q.Steps[i].Produced = k.producedOf(&s.Facts[i], q)
+	}
 	return q
 }
 
+// producedOf returns the key that a call of the callable of f produces, where
+// the callable has the mixin creates: its first value, or the field of that
+// value that the param key of the mixin names. It returns nil for a callable
+// without the mixin or without a value, and for a key of a type that no pool
+// of q has, because no call of a case takes such a key.
+func (k *caller) producedOf(f *derive.Facts, q *Sequences) *Produced {
+	if !mixed(k.m, &f.ID, shape.Creates) || len(f.Results) == 0 {
+		return nil
+	}
+	ref := k.resultRef(f, 0)
+	p := &Produced{Type: k.typeOf(ref), Pointer: ref.Form == symbol.FormOptional}
+	key := p.Type
+	if field, named := f.Class.Params[string(shape.Creates)][shape.CreatesKey].(symbol.Identity); named {
+		p.Field, key = field.Name, k.fieldRef(ref, field.Name)
+	}
+	pool := q.poolOf(key)
+	if pool == nil {
+		return nil
+	}
+	p.Pool = pool.Name
+	return p
+}
+
 // used returns q with the parts that the derived checks call: nil where no
-// derived check runs generated sequences, and without the reference where no
-// check applies an operation by its name.
+// derived check runs generated sequences or a world, without the actions
+// where no check runs generated sequences, and without the reference where no
+// check applies an operation by its name. A world calls the steps of its
+// operations, and applies the operations of its history to the reference.
 func (q *Sequences) used(derived []Derived) *Sequences {
-	sequences, reference := false, false
+	sequences, world, reference := false, false, false
 	for i := range derived {
 		d := &derived[i]
-		sequences = sequences || d.Sequence
-		reference = reference || slices.ContainsFunc(d.Args, func(a Arg) bool { return a.Ref == q.Reference })
+		sequences, world = sequences || d.Sequence, world || d.World
+		reference = reference || d.World ||
+			slices.ContainsFunc(d.Args, func(a Arg) bool { return a.Ref == q.Reference })
+	}
+	if !sequences && !world {
+		return nil
 	}
 	if !sequences {
-		return nil
+		q.Actions = ""
 	}
 	if !reference {
 		q.Reference = ""
@@ -314,14 +364,21 @@ func keyNames(f *derive.Facts) []string {
 // pool returns the pool of the keys of the type t, which it adds to q where q
 // has none.
 func (q *Sequences) pool(t *emit.TypeRef) *Pool {
-	for i := range q.Pools {
-		if q.Pools[i].Type.Spelling == t.Spelling {
-			return &q.Pools[i]
-		}
+	if p := q.poolOf(t); p != nil {
+		return p
 	}
 	name := keysWord + naming.Pascal(t.Spelling)
 	q.Pools = append(q.Pools, Pool{Type: t, Name: name, Label: keysWord + "." + naming.Kebab(t.Spelling)})
 	return &q.Pools[len(q.Pools)-1]
+}
+
+// poolOf returns the pool of the keys of the type t, and nil where q has none.
+func (q *Sequences) poolOf(t *emit.TypeRef) *Pool {
+	at := slices.IndexFunc(q.Pools, func(p Pool) bool { return p.Type.Spelling == t.Spelling })
+	if at < 0 {
+		return nil
+	}
+	return &q.Pools[at]
 }
 
 // poolFields gives the write of pair the keys of the pools that its read takes

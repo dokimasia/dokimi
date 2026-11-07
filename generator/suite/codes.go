@@ -203,3 +203,16 @@ var BadBuilder = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Meaning: "the builder of the mixin sample of a callable takes another parameter than the subject, or does not " +
 		"return one value of the type of each input of the callable",
 })
+
+// BadFalsify reports a declaration whose function of the param falsify of the
+// directive suite the test of its suite cannot call. The test calls the
+// function without arguments and passes its one result, a list, to
+// conform.Falsify and conform.FalsifyAllocs. So the function takes no
+// parameter and returns one list, and the package of the test can call it.
+// The finding is an Error at the declaration, and suite records the suite of
+// the declaration without its test.
+var BadFalsify = diag.MustRegister(CodePrefix, diag.CodeSpec{
+	Number: 17,
+	Meaning: "the function of the param falsify of the directive suite is not a function of the options of an " +
+		"application",
+})

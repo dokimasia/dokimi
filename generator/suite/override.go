@@ -183,10 +183,12 @@ func (r root) to(ref *node.TypeRef, hop string) root {
 // records the enumerations, the structs with a starting value, the generated
 // functions and implementations, the variants of the interfaces with an
 // unexported method, the streams, the readers of drawn bytes, the constants
-// and the sinks. It records whether the roots take a value of the dynamic
-// type and an error, and the implementations of the interfaces that the
-// calls and the generators take. It reports [Ungenerated] for each type
-// without a generator, once, at the first path that the walk meets.
+// and the sinks. It records the starting value of a type once, also where the
+// roots spell the type through a transparent alias. It records whether the
+// roots take a value of the dynamic type and an error, and the
+// implementations of the interfaces that the calls and the generators take.
+// It reports [Ungenerated] for each type without a generator, once, at the
+// first path that the walk meets.
 //
 // The walk enters the elements and the type arguments of each type that the
 // shape reader reads, the exported fields and the embedded types of a struct
@@ -194,7 +196,7 @@ func (r root) to(ref *node.TypeRef, hop string) root {
 // implementations of the variants of an interface and the results of each
 // generated function.
 func (k *caller) overrides(s *Suite) {
-	w := walk{k: k, met: map[string]bool{}, names: map[string]bool{}}
+	w := walk{k: k, met: map[string]bool{}, names: map[string]bool{}, started: map[string]bool{}}
 	for i := 0; i < len(k.roots); i++ {
 		w.visit(k.roots[i])
 	}
@@ -205,12 +207,16 @@ func (k *caller) overrides(s *Suite) {
 
 // walk is a walk of the types of the roots of the calls of a suite. met
 // contains the key of each type that the walk visited, and names the names
-// of the generators of the starting values. The other fields are the
-// overrides that the walk records, as [Suite] states them.
+// of the generators of the starting values. started contains the key of each
+// type whose starting value the walk recorded, with each transparent alias
+// replaced by its target, because an alias and its target are one type. The
+// other fields are the overrides that the walk records, as [Suite] states
+// them.
 type walk struct {
 	k         *caller
 	met       map[string]bool
 	names     map[string]bool
+	started   map[string]bool
 	enums     []Enumeration
 	starts    []Start
 	generated []Generated
@@ -285,7 +291,10 @@ func (w *walk) enter(r root, src source) {
 		enum, _ := decl.(*node.Enum)
 		w.enums = append(w.enums, Enumeration{Members: k.membersOf(enum, ref)})
 	case sourceStart:
-		w.starts = append(w.starts, k.starting(ref, w.names))
+		if key := k.typeKey(k.aliased(ref)); !w.started[key] {
+			w.started[key] = true
+			w.starts = append(w.starts, k.starting(ref, w.names))
+		}
 	default:
 		// The shape reader reads the type, and the walk enters its parts.
 	}
@@ -515,21 +524,24 @@ func (k *caller) resultsOf(ref *node.TypeRef) []*node.TypeRef {
 // from its zero value, because code outside its package builds no other value
 // without a constructor. A struct of the standard library and a generic
 // struct at the type arguments of ref start so too, and so does a struct that
-// ref refers to through an alias or a defined type. Such a struct with a
-// readable field takes the shape of the property engine alone, and so does a
-// struct that the file of the suite cannot import. taken contains the names
+// ref refers to through a defined type. Such a struct with a readable field
+// takes the shape of the property engine alone, and so does a struct that the
+// file of the suite cannot import. A transparent alias is the type of its
+// target, so a ref that refers to st through transparent aliases alone takes
+// the sources of st, and not the sample of an alias. taken contains the names
 // of the generators of the suite, and startOf adds the name that it takes.
 func (k *caller) startOf(st *node.Struct, ref *node.TypeRef, taken map[string]bool) (Start, bool) {
 	if !k.importable(ref) {
 		return Start{}, false
 	}
 	s := Start{Type: rules.EmitRef(ref)}
-	if len(st.TypeParams) > 0 || ref.Target != st.ID {
+	target := k.aliased(ref)
+	if len(st.TypeParams) > 0 || target.Target != st.ID {
 		if !k.unreadable(st) {
 			return Start{}, false
 		}
 		s.Value = emit.Composite(rules.EmitRef(ref))
-	} else if sample, _ := k.b.View().Authored(k.b.Source(), st.ID, ref); sample.OK() && k.referable(&sample.Value) {
+	} else if sample, _ := k.b.View().Authored(k.b.Source(), st.ID, target); sample.OK() && k.referable(&sample.Value) {
 		s.Value = sample.Value
 	} else if seed, built := k.seedOf(st); built {
 		s.Seed = &emit.TypeRef{Spelling: seed, Target: st.ID, Emitted: true}

@@ -41,7 +41,7 @@ func TestGolang(t *testing.T) {
 			loosePackage, nestedPackage, wrapPackage, toolPackage, deepPackage, kindsPackage, durablePackage,
 			taggedPackage, locksPackage, familiesPackage, faultsPackage, drawnPackage, classifiedPackage, scopedPackage,
 			scopedTestPackage, sequencedPackage, vaultPackage, refusedPackage, bufferedPackage, sealedPackage,
-			isolatedPackage)
+			isolatedPackage, leaderPackage, leaderKitPackage)
 		_, res := phases(t, f, p)
 		golden.MatchTree(t, "golang", gentest.Rendered(t, f, res, p, gobackend.New()), golden.ShouldUpdate())
 	})

@@ -1387,6 +1387,12 @@ func TestStdSuiteBudgets(t *testing.T) {
 		conform.Ceilings(kinds.StdChecks.Hold.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(kinds.StdChecks.Pair.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(kinds.StdChecks.Meet.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(kinds.StdChecks.Index.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(kinds.StdChecks.Count.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(kinds.StdChecks.Point.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(kinds.StdChecks.Wrap.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(kinds.StdChecks.Scan.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(kinds.StdChecks.Lines.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.ExcuseSuite[kinds.Std](
 			"the planted defect of a ceiling returns the zero results of each call",
 		),
@@ -1549,6 +1555,84 @@ func FuzzStdSuiteMeet(f *testing.F) {
 	)
 }
 
+// FuzzStdSuiteIndex registers the fuzz target of Std.Index on stdIdle,
+// with every check of the suite excused.
+func FuzzStdSuiteIndex(f *testing.F) {
+	kinds.FuzzStdSuite(
+		f,
+		kinds.StdChecks.Index.Callable,
+		stdIdle,
+		conform.ExcuseSuite[kinds.Std](
+			"the planted defect of a ceiling returns the zero results of each call",
+		),
+	)
+}
+
+// FuzzStdSuiteCount registers the fuzz target of Std.Count on stdIdle,
+// with every check of the suite excused.
+func FuzzStdSuiteCount(f *testing.F) {
+	kinds.FuzzStdSuite(
+		f,
+		kinds.StdChecks.Count.Callable,
+		stdIdle,
+		conform.ExcuseSuite[kinds.Std](
+			"the planted defect of a ceiling returns the zero results of each call",
+		),
+	)
+}
+
+// FuzzStdSuitePoint registers the fuzz target of Std.Point on stdIdle,
+// with every check of the suite excused.
+func FuzzStdSuitePoint(f *testing.F) {
+	kinds.FuzzStdSuite(
+		f,
+		kinds.StdChecks.Point.Callable,
+		stdIdle,
+		conform.ExcuseSuite[kinds.Std](
+			"the planted defect of a ceiling returns the zero results of each call",
+		),
+	)
+}
+
+// FuzzStdSuiteWrap registers the fuzz target of Std.Wrap on stdIdle, with
+// every check of the suite excused.
+func FuzzStdSuiteWrap(f *testing.F) {
+	kinds.FuzzStdSuite(
+		f,
+		kinds.StdChecks.Wrap.Callable,
+		stdIdle,
+		conform.ExcuseSuite[kinds.Std](
+			"the planted defect of a ceiling returns the zero results of each call",
+		),
+	)
+}
+
+// FuzzStdSuiteScan registers the fuzz target of Std.Scan on stdIdle, with
+// every check of the suite excused.
+func FuzzStdSuiteScan(f *testing.F) {
+	kinds.FuzzStdSuite(
+		f,
+		kinds.StdChecks.Scan.Callable,
+		stdIdle,
+		conform.ExcuseSuite[kinds.Std](
+			"the planted defect of a ceiling returns the zero results of each call",
+		),
+	)
+}
+
+// FuzzStdSuiteLines registers the fuzz target of Std.Lines on stdIdle,
+// with every check of the suite excused.
+func FuzzStdSuiteLines(f *testing.F) {
+	kinds.FuzzStdSuite(
+		f,
+		kinds.StdChecks.Lines.Callable,
+		stdIdle,
+		conform.ExcuseSuite[kinds.Std](
+			"the planted defect of a ceiling returns the zero results of each call",
+		),
+	)
+}
+
 // BenchmarkStdSuite measures each callable of the suite of Std on stdIdle.
 func BenchmarkStdSuite(b *testing.B) {
 	b.Run("Copy", func(b *testing.B) {
@@ -1586,5 +1670,23 @@ func BenchmarkStdSuite(b *testing.B) {
 	})
 	b.Run("Meet", func(b *testing.B) {
 		kinds.BenchStdSuite(b, kinds.StdChecks.Meet.Callable, stdIdle)
+	})
+	b.Run("Index", func(b *testing.B) {
+		kinds.BenchStdSuite(b, kinds.StdChecks.Index.Callable, stdIdle)
+	})
+	b.Run("Count", func(b *testing.B) {
+		kinds.BenchStdSuite(b, kinds.StdChecks.Count.Callable, stdIdle)
+	})
+	b.Run("Point", func(b *testing.B) {
+		kinds.BenchStdSuite(b, kinds.StdChecks.Point.Callable, stdIdle)
+	})
+	b.Run("Wrap", func(b *testing.B) {
+		kinds.BenchStdSuite(b, kinds.StdChecks.Wrap.Callable, stdIdle)
+	})
+	b.Run("Scan", func(b *testing.B) {
+		kinds.BenchStdSuite(b, kinds.StdChecks.Scan.Callable, stdIdle)
+	})
+	b.Run("Lines", func(b *testing.B) {
+		kinds.BenchStdSuite(b, kinds.StdChecks.Lines.Callable, stdIdle)
 	})
 }

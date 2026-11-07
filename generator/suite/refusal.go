@@ -133,7 +133,7 @@ func (k *caller) unknownRefusals(s *Suite) bool {
 				continue
 			}
 			k.m.Errorf(UnknownRefusal, "%s refuses the claim %s, which the derivation does not license for %s, so "+
-				"%s has no suite%s", identityIn(s.Declaration, s.Func == nil, f.Callable, ""), claim, f.Callable,
+				"%s has no suite%s", identityIn(s.Declaration, s.Func == nil, f.Callable), claim, f.Callable,
 				s.Declaration, claimsOf(f.Callable, &s.Derivation))
 			known = false
 		}

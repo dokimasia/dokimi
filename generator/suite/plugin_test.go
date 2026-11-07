@@ -147,6 +147,7 @@ func TestSuite(t *testing.T) {
 			expect.True(t, got.Data.Excused,
 				"the test excuses the checks of the suite where it applies a check of its own")
 			expect.Empty(t, got.Data.Excusals, "the test of a suite has no excusal of a subject")
+			expect.Nil(t, got.Data.Options, "a suite without the param falsify passes no options to its falsification")
 			assert.NotNil(t, got.Decl, "the record of the test is a struct")
 			store := f.Find(t, symbol.KindInterface, "", "Store").Identity()
 			emitted := func(name string) emit.TypeRef { return emit.TypeRef{Spelling: name, Target: store, Emitted: true} }
@@ -678,6 +679,50 @@ func TestSuite(t *testing.T) {
 					},
 				},
 				{
+					name:    "declares the world, the operations and the doors of a suite of a world without sequences",
+					givePkg: vaultPackage, give: "Ledger",
+					wantDecl: []string{
+						"LedgerRecord",
+						"LedgerLookup",
+						"LedgerRecordCalls",
+						"LedgerLookupCalls",
+						"LedgerOver",
+						"LedgerOverEmbedded",
+						"NewLedgerOver",
+						"LedgerReference",
+						"LedgerRecordCall",
+						"LedgerLookupCall",
+						"LedgerWorld",
+						"LedgerOperations",
+						"LedgerRecordPanics",
+						"LedgerRecordPanicsDefect",
+						"LedgerRecordAcknowledgesBeforeSync",
+						"LedgerRecordAcknowledgesBeforeSyncOpen",
+						"LedgerRecordTrustsAPartialRecord",
+						"LedgerRecordTrustsAPartialRecordOpen",
+						"LedgerRecordTrustsAPartialRecordDefect",
+						"LedgerRecordHidesAFullMedium",
+						"LedgerRecordHidesAFullMediumOpen",
+						"LedgerBlocksAfterRecovery",
+						"LedgerBlocksAfterRecoveryHost",
+						"LedgerBlocksAfterRecoveryDefect",
+						"LedgerLookupPanics",
+						"LedgerLookupPanicsDefect",
+						"LedgerLookupValueBesideAFalseFlag",
+						"LedgerLookupValueBesideAFalseFlagDefect",
+						"LedgerSuite",
+						"RunLedgerSuite",
+						"RunLedgerSuiteFromHandle",
+						"FuzzLedgerSuite",
+						"RunLedgerBudgets",
+						"BenchLedgerSuite",
+						"LedgerHandle",
+						"LedgerCheck",
+						"LedgerOption",
+						"LedgerSubjects",
+					},
+				},
+				{
 					name: "declares no planted defect of an interface without callables", givePkg: pathsPackage,
 					give: "Idle",
 					wantDecl: []string{
@@ -977,6 +1022,74 @@ func TestSuite(t *testing.T) {
 				expect.Equal(t, factory.Target.Package, kittestPackage,
 					"the record refers to the factory of the external test package of the kit")
 			})
+
+		t.Run("records the function of the param falsify from the external test package of the kit of a suite",
+			func(t *testing.T) {
+				t.Parallel()
+
+				p := suite.New()
+				f := fixture(t, goTree, p, leaderPackage, leaderKitPackage)
+				got, found := recorded(t, f, p).tests["TestPrimarySuite"]
+				assert.True(t, found, "suite records the test of the suite of Primary")
+				expect.Equal(t, got.Data.Options, ref(t, f, "falsifyOptions"),
+					"the test of the suite refers to the function of the options of its falsification")
+			})
+
+		{
+			tests := []struct {
+				name    string
+				give    string
+				wantMsg string
+			}{
+				{
+					name: "reports BadFalsify at a suite whose function of the param falsify takes a parameter",
+					give: "Tuned",
+					wantMsg: "the function Tune of the param falsify takes 1 parameter, so Tuned has no test of its " +
+						"suite",
+				},
+				{
+					name: "reports BadFalsify at a suite whose function of the param falsify returns two results",
+					give: "Split",
+					wantMsg: "the function SplitOptions of the param falsify returns 2 results, so Split has no test " +
+						"of its suite",
+				},
+				{
+					name: "reports BadFalsify at a suite whose function of the param falsify returns no list",
+					give: "Lone",
+					wantMsg: "the function LoneOption of the param falsify returns the type any, and the options of " +
+						"an application are a list, so Lone has no test of its suite",
+				},
+				{
+					name: "reports BadFalsify at a suite with an unexported function of the param falsify",
+					give: "Closed",
+					wantMsg: "the test of the suite of Closed in the package example.com/shop/bad_test cannot call " +
+						"the function closedOptions of the param falsify, so Closed has no test of its suite: golang: " +
+						"closedOptions is not exported from example.com/shop/bad, and the code is in " +
+						"example.com/shop/bad_test",
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+
+					p := suite.New()
+					f := fixture(t, goTree, p, storePackage, badPackage)
+					_, res := phases(t, f, p)
+					at := f.Find(t, symbol.KindInterface, "", tt.give)
+					got := gentest.Finding(t, res, at)
+					expect.Equal(t, got.Code, suite.BadFalsify, "the finding has the code of the param falsify")
+					expect.Equal(t, got.Msg, tt.wantMsg, "the message contains the declaration and the reason")
+					suites := gentest.Records(t, res, suiteTemplate, "",
+						func(s suite.Suite) string { return s.Declaration })
+					_, suited := suites[tt.give]
+					expect.True(t, suited, "suite records the suite of the declaration")
+					falsified := gentest.Records(t, res, conformTemplate, suite.TestTag,
+						func(c suite.Conformance) string { return c.Test })
+					_, tested := falsified["Test"+tt.give+"Suite"]
+					expect.False(t, tested, "suite records no test of the suite")
+				})
+			}
+		}
 
 		t.Run("records the suite of a struct beside a declaration of its file that it reports", func(t *testing.T) {
 			t.Parallel()

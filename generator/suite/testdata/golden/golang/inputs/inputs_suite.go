@@ -1471,3 +1471,198 @@ func (*pipelineLabelPanicsDefect) Label(p0 Tag, p1 Code, p2 Level, p3 Text, p4 B
 func pipelineLabelPanics(h *PipelineHandle) Pipeline {
 	return &pipelineLabelPanicsDefect{pipelineOverEmbedded: h.Fresh()}
 }
+
+// The suite refers to the compatibility witness of its runtime.
+var _ = conform.CompatV1
+
+// The names that a test of Stamper writes.
+type (
+	StamperHandle = conform.Handle[Stamper]
+	StamperCheck  = conform.Check[Stamper]
+	StamperOption = conform.Option[Stamper]
+)
+
+// StamperChecks contains the name of each callable of Stamper, with the
+// identities of its checks.
+var StamperChecks = struct {
+	Mark  stamperMark
+	Press stamperPress
+}{
+	Mark:  stamperMark{"Stamper.Mark"},
+	Press: stamperPress{"Stamper.Press"},
+}
+
+// stamperMark is the name of Stamper.Mark, with the identities of its
+// checks.
+type stamperMark struct {
+	conform.Callable[Stamper]
+}
+
+// stamperPress is the name of Stamper.Press, with the identities of its
+// checks.
+type stamperPress struct {
+	conform.Callable[Stamper]
+}
+
+// StamperSuite returns the checks of Stamper, and the calls and the
+// budgets of its callables.
+func StamperSuite() conform.Suite[Stamper] {
+	return conform.Suite[Stamper]{
+		Declaration: "Stamper",
+		Package:     "example.com/shop/inputs",
+		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
+		Unclaimed: []conform.Unclaimed{
+			{
+				Classification: "shape:mutator",
+				Callable:       "Stamper.Mark",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Stamper.Press",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+		},
+		Calls: []conform.Call[Stamper]{
+			{
+				Calls:    stamperMarkCalls,
+				Over:     newStamperOver,
+				Callable: StamperChecks.Mark.Callable,
+			},
+			{
+				Calls:    stamperPressCalls,
+				Over:     newStamperOver,
+				Callable: StamperChecks.Press.Callable,
+			},
+		},
+		Using: []prop.Option{
+			prop.Using(stamperSealValues),
+			prop.Using(stamperSealValues0),
+		},
+	}
+}
+
+// RunStamperSuite applies the checks of Stamper, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunStamperSuite[T Stamper](t *testing.T, newSubject func() T, opts ...StamperOption) {
+	t.Helper()
+	RunStamperSuiteFromHandle(t, func(*StamperHandle) T { return newSubject() }, opts...)
+}
+
+// RunStamperSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunStamperSuiteFromHandle[T Stamper](
+	t *testing.T,
+	newSubject func(h *StamperHandle) T,
+	opts ...StamperOption,
+) {
+	t.Helper()
+	conform.Run(t, StamperSuite(), stamperSubjects(newSubject), opts...)
+}
+
+// FuzzStamperSuite registers on f the fuzz target of the property checks
+// of callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzStamperSuite[T Stamper](
+	f *testing.F,
+	callable conform.Callable[Stamper],
+	newSubject func(h *StamperHandle) T,
+	opts ...StamperOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, StamperSuite(), callable, stamperSubjects(newSubject), opts...)
+}
+
+// RunStamperBudgets applies the allocation ceilings of Stamper and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
+func RunStamperBudgets[T Stamper](
+	t *testing.T,
+	newSubject func(h *StamperHandle) T,
+	opts ...StamperOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, StamperSuite(), stamperSubjects(newSubject), opts...)
+}
+
+// BenchStamperSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchStamperSuite[T Stamper](
+	b conform.B,
+	callable conform.Callable[Stamper],
+	newSubject func(h *StamperHandle) T,
+	opts ...StamperOption,
+) {
+	b.Helper()
+	conform.Bench(b, StamperSuite(), callable, stamperSubjects(newSubject), opts...)
+}
+
+// stamperSubjects returns the factory of the subjects of Stamper that
+// calls newSubject with the handle of each check.
+func stamperSubjects[T Stamper](
+	newSubject func(h *StamperHandle) T,
+) func(h *StamperHandle) Stamper {
+	return func(h *StamperHandle) Stamper { return newSubject(h) }
+}
+
+// stamperMarkCalls generates the calls of Stamper.Mark with the inputs
+// that each case draws.
+var stamperMarkCalls = prop.Composite(func(c *prop.Case) func(context.Context, Stamper) error {
+	stamp := c.Draw(prop.Of[Stamp](), "stamp")
+	return func(_ context.Context, subject Stamper) error {
+		subject.Mark(stamp)
+		return nil
+	}
+})
+
+// stamperPressCalls generates the calls of Stamper.Press with the inputs
+// that each case draws.
+var stamperPressCalls = prop.Composite(func(c *prop.Case) func(context.Context, Stamper) error {
+	wax := c.Draw(prop.Of[Wax](), "wax")
+	return func(_ context.Context, subject Stamper) error {
+		subject.Press(wax)
+		return nil
+	}
+})
+
+// stamperSealValues generates the starting value of Stamp, which has no
+// field to change.
+var stamperSealValues = prop.Composite(func(*prop.Case) Stamp {
+	return NewSeal()
+})
+
+// stamperSealValues0 generates the starting value of Wax, which has no
+// field to change.
+var stamperSealValues0 = prop.Composite(func(*prop.Case) Wax {
+	return Wax{}
+})
+
+// stamperOverEmbedded is Stamper under the name of the field that
+// stamperOver embeds.
+type stamperOverEmbedded = Stamper
+
+// stamperOver is a subject of Stamper whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type stamperOver struct {
+	stamperOverEmbedded
+	spend func()
+}
+
+// Mark calls spend and returns its zero results.
+func (o stamperOver) Mark(Stamp) {
+	o.spend()
+}
+
+// Press calls spend and returns its zero results.
+func (o stamperOver) Press(Wax) {
+	o.spend()
+}
+
+// newStamperOver returns the planted defect of a ceiling of Stamper, whose
+// callables call spend.
+func newStamperOver(_ *StamperHandle, spend func()) Stamper {
+	return stamperOver{spend: spend}
+}

@@ -417,6 +417,35 @@ type Clash struct {
 	Name string `json:"Circle"`
 }
 
+// Echoes has two fields of one JSON name, as the values of a map.
+type Echoes struct {
+	A int `json:"y"`
+	B int `json:"y"`
+}
+
+// Keyed has two fields of one JSON name, as the keys of a map.
+type Keyed struct {
+	A int `json:"k"`
+	B int `json:"k"`
+}
+
+// Pointed has two fields of one JSON name, as the target of a pointer.
+type Pointed struct {
+	A int `json:"p"`
+	B int `json:"p"`
+}
+
+// Inlined has two fields of one JSON name, as a field of an inline struct.
+type Inlined struct {
+	A int `json:"i"`
+	B int `json:"i"`
+}
+
+// Reader is a reader of the shop with the name of the reader of bufio.
+type Reader struct {
+	Line string
+}
+
 // Holder has a field of each type that the property engine does not read,
 // and two inline structs that it reads.
 type Holder struct {
@@ -429,6 +458,8 @@ type Holder struct {
 	Builder strings.Builder
 	Named   interface{ Name() string }
 	Private struct{ n int }
+	Hidden  struct{ c Circle }
+	Dotted  struct{ dot }
 	Point   struct{ X, Y int }
 	Inside  struct{ Circle }
 }
@@ -461,4 +492,16 @@ type Std interface {
 	Pair(t []Twins)
 	// Meet meets the clash.
 	Meet(c Clash)
+	// Index indexes the echoes by name.
+	Index(m map[string]Echoes)
+	// Count counts the keys of m.
+	Count(m map[Keyed]int)
+	// Point reads the targets of p.
+	Point(p []*Pointed)
+	// Wrap reads the inline struct w.
+	Wrap(w struct{ In Inlined })
+	// Scan scans the lines of r.
+	Scan(r *Reader)
+	// Lines reads the lines of s.
+	Lines(s *bufio.Scanner)
 }

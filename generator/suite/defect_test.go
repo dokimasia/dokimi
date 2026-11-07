@@ -465,5 +465,42 @@ func TestDefect(t *testing.T) {
 			)
 			expect.True(t, d.Delegates, "the defect calls Get of the subject")
 		})
+
+		t.Run("blocks each callable from the second incarnation of its host through the door Host", func(t *testing.T) {
+			t.Parallel()
+
+			d := defectNamed(t, &vault, "VaultBlocksAfterRecovery")
+			expect.Equal(t, []any{d.Type, d.Door, d.Hosted, d.Medium, d.Keeps}, []any{
+				"VaultBlocksAfterRecoveryDefect", "VaultBlocksAfterRecoveryHost", true, "", false,
+			}, "the door Host opens the defect over the environment of each incarnation")
+			assert.Length(t, d.Overrides, 2, "the defect overrides Put and Get")
+			for _, o := range d.Overrides {
+				expect.Equal(t, []any{o.Body, o.Delegates, o.Context, o.Keeps},
+					[]any{"park-after-recovery", true, "p0", false},
+					"the override of "+o.Method.Name+" blocks until the context of its call ends")
+			}
+		})
+
+		t.Run("blocks a callable without a context until the lifetime of its incarnation ends", func(t *testing.T) {
+			t.Parallel()
+
+			ledger := generate(t, goTree, vaultPackage).suites["Ledger"]
+			d := defectNamed(t, &ledger, "LedgerBlocksAfterRecovery")
+			expect.False(t, d.Keeps, "the defect keeps no handle")
+			for _, o := range d.Overrides {
+				expect.Equal(t, o.Context, "", "the override of "+o.Method.Name+" has no context of its call")
+			}
+		})
+
+		t.Run("opens the defect of an amnesiac recovery through the opener Amnesiac of the package probe",
+			func(t *testing.T) {
+				t.Parallel()
+
+				registry := generate(t, goTree, vaultPackage).suites["Registry"]
+				d := defectNamed(t, &registry, "RegistryAmnesiacRecovery")
+				expect.Equal(t, []any{d.Type, d.Door, d.Hosted, d.Medium, d.Opener}, []any{
+					"", "RegistryAmnesiacRecoveryHost", true, "", "Amnesiac",
+				}, "the door Host opens each incarnation through probe.Amnesiac")
+			})
 	})
 }

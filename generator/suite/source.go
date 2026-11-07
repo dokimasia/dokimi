@@ -366,6 +366,7 @@ func (k *caller) sealed(it *node.Interface) bool {
 	set, _ := k.b.MembersOf(it)
 	return slices.ContainsFunc(set.Members, func(m rules.Member) bool {
 		method, isMethod := m.Symbol.(*node.Method)
+		//dokimi:mutate-skip lcr-right: each member of the member set of a Go interface is a method, so the check of the kind of the member keeps no member out
 		return isMethod && method.Visibility != symbol.VisibilityPublic
 	})
 }

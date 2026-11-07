@@ -128,6 +128,35 @@ func TestDerived(t *testing.T) {
 			expect.Equal(t, write.Results, []suite.Expr{{Name: "err"}}, "the write returns the error of Append")
 		})
 
+		t.Run("passes the world of the declaration to the probe of a world", func(t *testing.T) {
+			t.Parallel()
+
+			r := vaults["Registry"]
+			d := derivedNamed(t, &r, "Value", "linearizable-under-faults")
+			assert.NotNil(t, r.World, "the suite of Registry has a world")
+			expect.Equal(t, []any{d.Whole, d.World, d.Cased, d.Sequence}, []any{
+				"Registry/linearizable-under-faults", true, true, false,
+			}, "the check of the declaration runs its world in a case of a property check")
+			assert.Length(t, d.Args, 1, "the probe takes the world alone")
+			expect.Equal(t, d.Args[0].Ref, r.World.Name, "the argument is the world of Registry")
+			expect.Equal(
+				t,
+				[]string{d.Defect, d.Door},
+				[]string{"RegistryAmnesiacRecovery", "RegistryAmnesiacRecoveryHost"},
+				"the check passes the door Host of its planted defect",
+			)
+		})
+
+		t.Run("binds the recovery of a world on the first callable of the declaration", func(t *testing.T) {
+			t.Parallel()
+
+			l := vaults["Ledger"]
+			d := derivedNamed(t, &l, "Record", "completes-after-recovery")
+			expect.Equal(t, []any{d.Whole, d.World, d.Defect}, []any{
+				"Ledger/completes-after-recovery", true, "LedgerBlocksAfterRecovery",
+			}, "the check of the declaration plants the defect that blocks after a restart")
+		})
+
 		t.Run("reads a key without a value as an error through a read with a presence flag", func(t *testing.T) {
 			t.Parallel()
 

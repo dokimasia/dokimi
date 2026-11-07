@@ -142,11 +142,15 @@ var _ = {{$conform}}.CompatV1
 				},
 {{- end}}
 				Defect: {{suiteCamel .Defect}},
-{{- with .Door}}
-				Doors:  {{$conform}}.Doors[{{$s}}]{Open: {{suiteCamel .}}},
+{{- if .Door}}
+				Doors:  {{$conform}}.Doors[{{$s}}]{ {{- if .World}}Host{{else}}Open{{end}}: {{suiteCamel .Door}}},
 {{- end}}
 {{- if .Bubble}}
 				Around: {{import "testing/synctest"}}.Test,
+{{- end}}
+{{- if .World}}
+				Around:  {{$conform}}.Bubble,
+				Options: {{$probe}}.WorldOptions[{{$s}}],
 {{- end}}
 			},
 {{- end}}
@@ -184,7 +188,7 @@ var _ = {{$conform}}.CompatV1
 {{- range .}}
 			{
 				Claim:    {{$spec}}.{{suitePascal (print .Claim)}},
-				Callable: {{printf "%q" (suiteIdentity $c.Declaration (not $c.Func) .Callable "")}},
+				Callable: {{printf "%q" (suiteIdentity $c.Declaration (not $c.Func) .Callable)}},
 				Gate:     {{$spec}}.{{suitePascal (print .Gate)}},
 				Why:      {{printf "%q" .Why}},
 				Remedy:   {{printf "%q" .Remedy}},
@@ -197,7 +201,7 @@ var _ = {{$conform}}.CompatV1
 {{- range .}}
 			{
 				Classification: {{printf "%q" .Classification}},
-				Callable:       {{printf "%q" (suiteIdentity $c.Declaration (not $c.Func) .Callable "")}},
+				Callable:       {{printf "%q" (suiteIdentity $c.Declaration (not $c.Func) .Callable)}},
 				Stance:         {{$spec}}.{{suitePascal (print .Stance)}},
 				Note:           {{printf "%q" .Note}},
 			},
@@ -533,6 +537,7 @@ var _ = {{$conform}}.CompatV1
 {{- template "suite.defect" (suiteDefect . (suiteCamel $n.Embedded) $handle $s)}}
 {{- end}}
 {{- with $c.Sequences}}{{template "suite.sequences" (suiteSequences . $s $c.Declaration)}}{{end}}
+{{- with $c.World}}{{template "suite.world" (suiteWorld . $c.Sequences $s $c.Declaration)}}{{end}}
 {{- end}}
 {{- end}}
 
@@ -545,6 +550,7 @@ arguments of a list, and the function of its reference.
 {{- $q := .Sequences}}{{$s := .Subject}}
 {{- $prop := import "go.dokimi.dev/assert/prop"}}{{$conform := import "go.dokimi.dev/conform"}}
 {{- $context := import "context"}}
+{{- if $q.Actions}}
 
 {{docs (wrapdocs (printf `%s returns the actions of the generated sequences of %s over the subject that subject returns. The actions of a case take their keys from the pools that it draws.` (suiteCamel $q.Actions) .Declaration))}}
 {{- ""}}func {{suiteCamel $q.Actions}}(c *{{$prop}}.Case, subject func() {{$s}}) []{{import "go.dokimi.dev/assert/stateful"}}.Action[struct{}] {
@@ -591,6 +597,7 @@ arguments of a list, and the function of its reference.
 {{- with $q.Txn}}{{template "suite.txn" .}}{{end}}
 	}
 }
+{{- end}}
 {{- range $q.Steps}}{{template "suite.step" (suiteStep . $s $q.Normalize)}}{{end}}
 {{- with $q.Txn}}{{range .Steps}}{{template "suite.step" (suiteStep . $s $q.Normalize)}}{{end}}{{end}}
 {{- with $q.Reference}}
@@ -610,6 +617,89 @@ arguments of a list, and the function of its reference.
 	}
 }
 {{- end}}
+{{- end}}
+
+{{- /*
+suite.world writes the world of the subject of a declaration: its variable,
+and the function of its operations over the pools of the keys of a case.
+Each operation is an action of the generated sequences, and calls its
+callable through the function of its step. The operation of a callable with
+the mixin creates adds the key of each call that returns without an error to
+the pool of its type.
+*/}}
+{{- define "suite.world"}}
+{{- $w := .World}}{{$q := .Sequences}}{{$s := .Subject}}
+{{- $prop := import "go.dokimi.dev/assert/prop"}}{{$conform := import "go.dokimi.dev/conform"}}
+{{- $probe := import "go.dokimi.dev/conform/probe"}}{{$context := import "context"}}
+
+{{docs (wrapdocs (printf `%s is the world of the subject of %s, which the checks of its world probes run.` (suiteCamel $w.Name) .Declaration))}}
+{{- ""}}var {{suiteCamel $w.Name}} = {{$probe}}.World[{{$s}}]{
+	Operations: {{suiteCamel $w.Operations}},
+	Reference:  {{suiteCamel $q.Reference}},
+{{- with $w.Corrupt}}
+	Corrupt:    {{template "suite.expr" .}},
+{{- end}}
+{{- with $w.Clients}}
+	Clients:    {{.}},
+{{- end}}
+}
+
+{{docs (wrapdocs (printf `%s returns the operations of the world of %s in the case c, over the pools of the keys that c chooses.` (suiteCamel $w.Operations) .Declaration))}}
+{{- ""}}func {{suiteCamel $w.Operations}}(c *{{$prop}}.Case) []{{$probe}}.Operation[{{$s}}] {
+{{- range $q.Pools}}
+	{{.Name}} := {{$probe}}.NewPool(c, {{$prop}}.List({{$prop}}.Of[{{spell .Type}}](), {{$prop}}.Unique(), {{$prop}}.MinSize(1), {{$prop}}.MaxSize(3)), {{printf "%q" .Label}})
+{{- end}}
+	return []{{$probe}}.Operation[{{$s}}]{
+{{- range $q.Steps}}{{if .Action}}
+		{
+			Name: {{printf "%q" .Name}},
+			Input: func(c *{{$prop}}.Case) any {
+{{- if not .Builder}}{{range .Params}}{{if ge .Arg 0}}
+{{- if .Pool}}
+				{{.Name}} := {{.Pool}}.Pick(c, {{printf "%q" .Label}})
+{{- else if .Sample}}
+				{{.Name}} := {{if .Variadic}}[]{{spell .Type}}{ {{- value .Sample -}} }{{else}}{{value .Sample}}{{end}}
+{{- else if or .Funcs .Input}}{{template "suite.generated.param" .Param}}
+{{- else}}
+				{{.Name}} := c.Draw({{if or .Variadic .Receive}}{{$prop}}.List({{$prop}}.Of[{{spell .Type}}]()){{else}}{{$prop}}.Of[{{spell .Type}}](){{end}}, {{printf "%q" .Label}})
+{{- end}}
+{{- $p := .}}{{range .Fields}}
+				{{$p.Name}}.{{.Name}} = {{.Pool}}.Pick(c, {{printf "%q" .Label}})
+{{- end}}
+{{- end}}{{end}}{{end}}
+				return []any{ {{- if not .Builder}}{{$first := true}}{{range .Params}}{{if ge .Arg 0}}{{if not $first}}, {{end}}{{$first = false}}{{if .Address}}&{{end}}{{.Name}}{{end}}{{end}}{{end -}} }
+			},
+			Args: func(input any) []any {
+				args, _ := input.([]any)
+				return args
+			},
+			Keys: func(input any) []any {
+{{- if .Keys}}
+				args, _ := input.([]any)
+{{- range $i, $k := .Keys}}{{if .Field}}
+				key{{$i}}, _ := args[{{.Arg}}].({{spell .Type}})
+{{- end}}{{end}}
+				return []any{ {{- range $i, $k := .Keys}}{{if $i}}, {{end}}{{if .Field}}key{{$i}}.{{.Field}}{{else}}args[{{.Arg}}]{{end}}{{end -}} }
+{{- else}}
+				return nil
+{{- end}}
+			},
+			Call: func(ctx {{$context}}.Context, s {{$s}}, input any) ({{$conform}}.Output, error) {
+				args, _ := input.([]any)
+				values, err := {{suiteCamel .Call}}(ctx, s, args)
+				return {{$conform}}.OutputOf(err, values...), err
+			},
+{{- with .Produced}}
+			Produced: func(out {{$conform}}.Output) {
+				if v, ok := out.Values[0].({{spell .Type}}); ok{{if .Pointer}} && v != nil{{end}} {
+					{{.Pool}}.Add(v{{with .Field}}.{{.}}{{end}})
+				}
+			},
+{{- end}}
+		},
+{{- end}}{{end}}
+	}
+}
 {{- end}}
 
 {{- /*
@@ -812,10 +902,17 @@ of a function suite that wraps the fresh function.
 {{- define "suite.defect"}}
 {{- $d := .Defect}}
 {{- $new := suiteCamel $d.Name}}
-{{- if $d.Medium}}
+{{- if $d.Opener}}
+{{- template "suite.defect.unhosted" .}}
+
+{{docs (wrapdocs (printf `%s opens the planted defect of %s. The function probe.%s opens the defect over the environment env of an incarnation.` (suiteCamel $d.Door) $d.Doc $d.Opener))}}
+{{- ""}}func {{suiteCamel $d.Door}}(h *{{.Handle}}, env *{{import "go.dokimi.dev/host"}}.Env) {{.Subject}} {
+	return {{import "go.dokimi.dev/conform/probe"}}.{{$d.Opener}}(h, env)
+}
+{{- else if $d.Medium}}
 {{- template "suite.defect.opened" .}}
 
-{{docs (wrapdocs (printf `%s opens a subject of the application over the medium m that probe.%s wraps, as the planted defect of %s.` (suiteCamel $d.Door) $d.Medium $d.Doc))}}
+{{docs (wrapdocs (printf `%s opens the planted defect of %s. The application opens the subject over the medium m that probe.%s wraps.` (suiteCamel $d.Door) $d.Doc $d.Medium))}}
 {{- ""}}func {{suiteCamel $d.Door}}(h *{{.Handle}}, m {{import "go.dokimi.dev/medium"}}.FS) {{.Subject}} {
 	return h.FreshOpen({{import "go.dokimi.dev/conform/probe"}}.{{$d.Medium}}(m))
 }
@@ -840,7 +937,7 @@ of a function suite that wraps the fresh function.
 {{- if or (eq $d.Body "keep-first") (eq $d.Body "first-after")}}
 	first *{{spell (index $d.Method.Returns.Items 0).Type}}
 {{- end}}
-{{- if or (and $d.Overrides (not $d.Txn)) (eq $d.Body "check-then-grant")}}
+{{- if or (and $d.Overrides (not $d.Txn) (ne $d.Body "park-after-recovery")) (eq $d.Body "check-then-grant")}}
 	marked {{import "sync/atomic"}}.Int32
 {{- end}}
 {{- if eq $d.Body "shared-result"}}
@@ -848,6 +945,9 @@ of a function suite that wraps the fresh function.
 {{- end}}
 {{- if eq $d.Body "zero-first"}}
 	wrote bool
+{{- end}}
+{{- if eq $d.Body "park-after-recovery"}}
+	lifetime {{import "context"}}.Context
 {{- end}}
 {{- if $d.Txn}}
 	mu {{import "sync"}}.Mutex
@@ -901,10 +1001,21 @@ of a function suite that wraps the fresh function.
 {{- end}}
 {{- end}}
 
-{{- if $d.Door}}
+{{- if $d.Hosted}}
+{{- template "suite.defect.unhosted" .}}
+
+{{docs (wrapdocs (printf `%s opens the planted defect of %s. The defect wraps the subject that the application opens over the environment env of an incarnation. From the second incarnation of the host of env on, each callable of the defect blocks until its context ends.` (suiteCamel $d.Door) $d.Doc))}}
+{{- ""}}func {{suiteCamel $d.Door}}(h *{{.Handle}}, env *{{import "go.dokimi.dev/host"}}.Env) {{.Subject}} {
+	d := &{{$type}}{ {{- .Embedded}}: h.FreshHost(env)}
+	if env.Incarnation() > 1 {
+		d.lifetime = env.Lifetime()
+	}
+	return d
+}
+{{- else if $d.Door}}
 {{- template "suite.defect.opened" .}}
 
-{{docs (wrapdocs (printf `%s opens the planted defect of %s over a subject that the application opens over the medium m.` (suiteCamel $d.Door) $d.Doc))}}
+{{docs (wrapdocs (printf `%s opens the planted defect of %s. The defect wraps a subject that the application opens over the medium m.` (suiteCamel $d.Door) $d.Doc))}}
 {{- ""}}func {{suiteCamel $d.Door}}(h *{{.Handle}}, m {{import "go.dokimi.dev/medium"}}.FS) {{.Subject}} {
 	return &{{$type}}{ {{- .Embedded}}: h.FreshOpen(m)}
 }
@@ -954,9 +1065,22 @@ memory.
 */}}
 {{- define "suite.defect.opened"}}
 
-{{docs (wrapdocs (printf `%s returns the planted defect of %s over a new medium in memory.` (suiteCamel .Defect.Name) .Defect.Doc))}}
+{{docs (wrapdocs (printf `%s returns the planted defect of %s. The door of its check opens the defect over a new medium in memory.` (suiteCamel .Defect.Name) .Defect.Doc))}}
 {{- ""}}func {{suiteCamel .Defect.Name}}(h *{{.Handle}}) {{.Subject}} {
 	return h.Open({{import "go.dokimi.dev/medium"}}.NewMemory())
+}
+{{- end}}
+
+{{- /*
+suite.defect.unhosted writes the function of a planted defect of a claim of a
+world, which returns the subject of the application outside a world. The door
+Host of its check opens the defect in a world.
+*/}}
+{{- define "suite.defect.unhosted"}}
+
+{{docs (wrapdocs (printf `%s returns the subject of the application in place of the planted defect of %s. The door Host of its check opens the defect in a world.` (suiteCamel .Defect.Name) .Defect.Doc))}}
+{{- ""}}func {{suiteCamel .Defect.Name}}(h *{{.Handle}}) {{.Subject}} {
+	return h.Fresh()
 }
 {{- end}}
 
@@ -1415,6 +1539,13 @@ builds a fresh subject of the handle for each call.
 	{{$r.Name}}, _ = kept[{{$i}}].({{spell (index $d.Method.Returns.Items $i).Type}})
 {{- end}}
 	return
+{{- else if eq $d.Body "park-after-recovery"}}
+	if {{.State}}lifetime != nil {
+{{- $err := ""}}{{range $d.Results}}{{if eq .Role "error"}}{{$err = .Name}}{{end}}{{end}}
+		{{if $err}}{{$err}} = {{else}}_ = {{end}}{{import "go.dokimi.dev/host"}}.Park({{or $d.Context (printf "%slifetime" .State)}})
+		return
+	}
+	{{if $d.Results}}return {{end}}{{$call}}
 {{- else if eq $d.Body "marked-sample"}}
 	if {{.State}}marked.Load() > 0 {
 {{- template "suite.defect.samples" $d}}

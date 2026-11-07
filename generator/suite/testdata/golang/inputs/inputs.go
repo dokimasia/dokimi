@@ -89,6 +89,29 @@ type Level int
 // Text is a transparent alias of a string.
 type Text = string
 
+// Seal is the seal of an item, with an authored sample. The package does not
+// export its one field.
+//
+//dokimi:sample value=NewSeal()
+type Seal struct {
+	id int
+}
+
+// NewSeal returns the seal of a new item.
+func NewSeal() Seal { return Seal{id: 1} }
+
+// Stamp is a transparent alias of Seal, with an authored sample of its own.
+//
+//dokimi:sample value=NewStamp()
+type Stamp = Seal
+
+// NewStamp returns the stamp of a new item.
+func NewStamp() Stamp { return Seal{id: 2} }
+
+// Wax is a defined type over Seal. It is a type of its own, without the
+// sample of Seal.
+type Wax Seal
+
 // Bag is a list of values of one type.
 type Bag[T any] []T
 
@@ -155,4 +178,14 @@ type Pipeline interface {
 	Subscribe(feeds ...Feed)
 	// Label labels the items.
 	Label(tag Tag, code Code, level Level, text Text, bag Bag[int])
+}
+
+// Stamper stamps the items of a pipeline.
+//
+//dokimi:suite
+type Stamper interface {
+	// Mark marks the items with the stamp.
+	Mark(stamp Stamp)
+	// Press presses the wax onto the items.
+	Press(wax Wax)
 }

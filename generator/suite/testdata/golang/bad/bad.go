@@ -1,4 +1,4 @@
-// Package bad holds subjects that the generator reports.
+// Package bad contains the subjects and the suites that the generator reports.
 package bad
 
 import "example.com/shop/store"
@@ -126,3 +126,48 @@ func NewSecret() *Secret { return &Secret{} }
 
 // secretOptions returns no option.
 func secretOptions() []any { return nil }
+
+// Tuned is a suite whose function of the param falsify takes a parameter.
+//
+//dokimi:suite falsify=Tune
+type Tuned interface {
+	// Len returns the number of items.
+	Len() int
+}
+
+// Tune returns the options of the level.
+func Tune(level int) []any { return []any{level} }
+
+// Split is a suite whose function of the param falsify returns two results.
+//
+//dokimi:suite falsify=SplitOptions
+type Split interface {
+	// Len returns the number of items.
+	Len() int
+}
+
+// SplitOptions returns the options and an error.
+func SplitOptions() ([]any, error) { return nil, nil }
+
+// Lone is a suite whose function of the param falsify returns one option.
+//
+//dokimi:suite falsify=LoneOption
+type Lone interface {
+	// Len returns the number of items.
+	Len() int
+}
+
+// LoneOption returns one option.
+func LoneOption() any { return nil }
+
+// Closed is a suite whose function of the param falsify its package does not
+// export, so the external test package cannot call it.
+//
+//dokimi:suite falsify=closedOptions
+type Closed interface {
+	// Len returns the number of items.
+	Len() int
+}
+
+// closedOptions returns no option.
+func closedOptions() []any { return nil }

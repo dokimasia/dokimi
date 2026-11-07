@@ -71,6 +71,14 @@ import (
 // such as Unsynced, and empty for a defect that changes a callable. Sentinel
 // is the declared error that a body of the form ignores-checksum swallows.
 //
+// Hosted reports the defect of a claim of a world, whose Door is the door
+// Host. The world of its check opens each incarnation of the subject through
+// the door, which opens the subject of the application through
+// Handle.FreshHost. The defect changes the subject from the second
+// incarnation of its host on, and is the subject of the application outside a
+// world. Opener is the function of the package probe that opens such a
+// defect, such as Amnesiac, and empty for a defect that changes its callables.
+//
 // Txn is what an override of a planted defect of transactions writes, and nil
 // for any other override. Wrapper is the type that wraps the handle of a
 // transaction whose methods write, read, commit and roll back, with the
@@ -95,6 +103,7 @@ type Defect struct {
 	Stream    string
 	Door      string
 	Medium    string
+	Opener    string
 	Args      []string
 	Results   []Outcome
 	Elems     []*emit.TypeRef
@@ -106,6 +115,7 @@ type Defect struct {
 	Counts    bool
 	Keeps     bool
 	Guards    bool
+	Hosted    bool
 }
 
 // Outcome is one result of the callable of a planted defect: its name, its
@@ -180,6 +190,7 @@ const (
 	bodyZeroFirst      = "zero-first"
 	bodyZeroOnSentinel = "zero-on-sentinel"
 	bodyZeroBeside     = "zero-beside-error"
+	bodyPark           = "park-after-recovery"
 )
 
 // media are the functions of the package probe that wrap the medium of each
@@ -189,11 +200,18 @@ var media = map[spec.DefectFormID]string{
 	spec.HidesAFullMedium:       "Unfilled",
 }
 
-// The word that the name of the door of a planted defect adds to the name of
-// its function, and the param of the mixin durable that refers to the error of
-// a corrupted record.
+// openers are the functions of the package probe that open the defect of each
+// defect form of a world that changes the disk of an incarnation.
+var openers = map[spec.DefectFormID]string{
+	spec.AmnesiacRecovery: "Amnesiac",
+}
+
+// The words that the name of the door Open and of the door Host of a planted
+// defect add to the name of its function, and the param of the mixin durable
+// that refers to the error of a corrupted record.
 const (
 	openWord     = "Open"
+	hostWord     = "Host"
 	corruptParam = "corrupt"
 )
 
@@ -307,6 +325,7 @@ var bodies = map[spec.DefectFormID]string{
 	spec.TrustsAPartialRecord:          bodyZeroFirst,
 	spec.IgnoresChecksum:               bodyZeroOnSentinel,
 	spec.DropsTheField:                 bodyZeroBeside,
+	spec.BlocksAfterRecovery:           bodyPark,
 }
 
 // partnerOf returns the pair of the partner name of the check c: the partner
@@ -329,7 +348,7 @@ var (
 		bodySampleSuccess, bodyUncancelled, bodyVersionZero, bodyDrainTwice, bodyReorder, bodyReverse, bodySlow,
 		bodyFirstPage, bodyLiveHandle, bodyZeroBefore, bodySwallow, bodyFailAfter, bodySampleAfter, bodyOpenOnFailure,
 		bodyZeroSecond, bodyKeepFirst, bodyDropLast, bodyLeak, bodyCopy, bodySharedResult, bodyCheckThenGrant,
-		bodyZeroFirst, bodyZeroOnSentinel, bodyZeroBeside,
+		bodyZeroFirst, bodyZeroOnSentinel, bodyZeroBeside, bodyPark,
 	}, afterBodies)
 	counting = slices.Concat([]string{
 		bodyPanicLater, bodyFailLater, bodyZeroLater, bodyDrift, bodyDescend, bodyVersionDescend, bodyReorder, bodyLeak,
@@ -368,7 +387,7 @@ func (k *caller) defect(s *Suite, c *derive.Check, b *binder) (*Defect, bool) {
 	}
 	racy := form.ID == spec.RacyReadWrite
 	words := []string{s.Declaration}
-	if f.Declaration != "" && !racy && c.Transaction == nil {
+	if f.Declaration != "" && !slices.Contains(wholeForms, form.ID) && c.Transaction == nil {
 		words = append(words, f.Callable)
 	}
 	name := k.e.JoinName(naming.Pascal(string(form.ID)), strings.Join(words, ""))
@@ -377,8 +396,11 @@ func (k *caller) defect(s *Suite, c *derive.Check, b *binder) (*Defect, bool) {
 			return d, true
 		}
 	}
-	d := &Defect{Name: name, Doc: c.Clause, Body: bodies[form.ID], Medium: media[form.ID]}
-	if slices.ContainsFunc(probes[c.Claim.Probe], func(sl slot) bool { return sl.form == formDurable }) {
+	d := &Defect{Name: name, Doc: c.Clause, Body: bodies[form.ID], Medium: media[form.ID], Opener: openers[form.ID]}
+	switch slots := probes[c.Claim.Probe]; {
+	case slices.ContainsFunc(slots, func(sl slot) bool { return sl.form == formWorld }):
+		d.Door, d.Hosted = k.e.JoinName(hostWord, name), true
+	case slices.ContainsFunc(slots, func(sl slot) bool { return sl.form == formDurable }):
 		d.Door = k.e.JoinName(openWord, name)
 	}
 	switch {
@@ -431,7 +453,7 @@ func (k *caller) defect(s *Suite, c *derive.Check, b *binder) (*Defect, bool) {
 	if d.Body == bodyOpenOnFailure {
 		d.Acquire = nameOf(b.param(openParam))
 	}
-	if f.Declaration != "" && d.Medium == "" {
+	if f.Declaration != "" && d.Medium == "" && d.Opener == "" {
 		d.Type = k.e.JoinName(defectWord, name)
 	}
 	d.Version = nameOf(b.param(stampParam))
@@ -447,6 +469,9 @@ func (k *caller) defect(s *Suite, c *derive.Check, b *binder) (*Defect, bool) {
 	}
 	if racy {
 		d.Keeps, d.Overrides = true, k.racy(s)
+	}
+	if form.ID == spec.BlocksAfterRecovery {
+		d.Overrides = k.parked(s)
 	}
 	if c.Transaction != nil {
 		k.txnDefect(s, d, form.ID, c.Transaction)
@@ -485,6 +510,30 @@ func (k *caller) racy(s *Suite) []*Defect {
 	}
 	return out
 }
+
+// parked returns the overrides of the planted defect blocks-after-recovery of
+// the callables of s. Each override calls the subject as it is in the first
+// incarnation of its host. From the second incarnation on, it blocks until
+// its context ends: the context of the call, or the lifetime of the
+// incarnation for a callable without one.
+func (k *caller) parked(s *Suite) []*Defect {
+	out := make([]*Defect, 0, len(s.Facts))
+	for i := range s.Facts {
+		f := &s.Facts[i]
+		o := &Defect{Body: bodyPark, Delegates: true}
+		o.Method, o.Args = k.signatureOf(f)
+		o.Results = k.outcomesOf(f)
+		guard(o, f)
+		out = append(out, o)
+	}
+	return out
+}
+
+// wholeForms are the defect forms whose planted defect changes the whole
+// declaration, so the name of the defect names the declaration alone. Such a
+// defect overrides every callable of its declaration, or opens each
+// incarnation of the subject after a restart over an empty disk.
+var wholeForms = []spec.DefectFormID{spec.RacyReadWrite, spec.BlocksAfterRecovery, spec.AmnesiacRecovery}
 
 // nextParam is the param of the contract cursor that names the method that
 // drains the cursor.

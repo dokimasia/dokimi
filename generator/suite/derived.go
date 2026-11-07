@@ -58,9 +58,15 @@ import (
 // the case runs. The template writes it as a property check that passes the
 // case to its probe.
 //
-// Door is the name of the function that opens the planted defect over a
-// medium, which the check passes as the door Open of its defect, and empty
-// for a defect without one.
+// Door is the name of the function that opens the planted defect, and empty
+// for a defect without one. A check of a world probe passes it as the door
+// Host of its defect, which opens the defect over the environment of an
+// incarnation. Any other check passes it as the door Open, which opens the
+// defect over a medium.
+//
+// World reports a check of a world probe, whose one input is the world of the
+// declaration. The template writes it with the environment conform.Bubble and
+// with the options that probe.WorldOptions returns for its property run.
 type Derived struct {
 	Field       string
 	Type        string
@@ -83,6 +89,7 @@ type Derived struct {
 	Generated   bool
 	Sequence    bool
 	Cased       bool
+	World       bool
 }
 
 // Arg is one argument of a probe: a closure that calls the subject, an
@@ -380,6 +387,8 @@ const (
 	// param of another input names in the request of the call to its first
 	// sample, so the field of the request is not its zero value.
 	formFielded
+	// formWorld is the world of the subject of the declaration.
+	formWorld
 )
 
 // concurrentClients is the number of the clients of a concurrent section
@@ -438,6 +447,7 @@ var (
 	observe  = slot{name: inObserve, form: formCall}
 	attempts = slot{name: inAttempts, form: formInt}
 	clients  = slot{name: "clients", form: formClients}
+	world    = slot{name: "world", form: formWorld}
 )
 
 // probes contains the inputs of each probe that a suite calls, in the order
@@ -573,6 +583,8 @@ var probes = map[spec.ProbeID][]slot{
 	spec.WholeAtEveryCrashPoint:       {durable},
 	spec.ReportsEachFlippedBit:        {durable, {name: "corrupt", form: formValue}},
 	spec.RefusesOnAFullMedium:         {durable},
+	spec.FaultyWorldHistory:           {world},
+	spec.WorldRecovery:                {world},
 	spec.ConcurrentReadsAgree:         {actions, readOp, {name: "again", of: inRead, form: formApply}, clients},
 	spec.SharesOneComputation:         {{name: inCall, form: formComputing}, clients},
 	spec.ExclusiveUnderConcurrency:    {act, sentinel, clients},
@@ -717,8 +729,9 @@ func (k *caller) derived(s *Suite) {
 			Field: callable.Field, Type: callable.Type, Method: method, Base: base[c.Identity], Segment: segment,
 			Statement: c.Statement, Claim: goName(c.Claim.ID), Probe: goName(c.Claim.Probe), Shallow: c.Shallow,
 			Bubble: slices.Contains(bubbled, c.Claim.Probe), Generated: c.Generated,
-			Cased: slices.Contains(cased, c.Claim.Probe),
+			World: slices.Contains(worldProbes, c.Claim.Probe),
 		}
+		d.Cased = d.World || slices.Contains(cased, c.Claim.Probe)
 		for _, m := range c.Machineries() {
 			d.Machineries = append(d.Machineries, goName(m))
 		}
@@ -743,11 +756,11 @@ func (k *caller) derived(s *Suite) {
 		if c.Generated {
 			d.Draws = used(d.Args)
 		}
-		if sequenced(c) {
+		if sequenced(c) && !d.World {
 			d.Sequence, d.TypeArgs = true, b.typeArgs()
-			if c.Claim.Scope == scopeDeclaration {
-				d.Whole = c.Identity
-			}
+		}
+		if c.Claim.Scope == scopeDeclaration {
+			d.Whole = c.Identity
 		}
 		switch {
 		case c.Claim.Probe == spec.MergesCommute && !k.replicable(s, c.Facts):
@@ -1003,6 +1016,8 @@ func (b *binder) arg(sl *slot) Arg {
 	case formDurable:
 		_, pair := b.facts(sl.name)
 		return Arg{Durable: b.k.durableOf(b.drawn, pair)}
+	case formWorld:
+		return Arg{Ref: b.s.World.Name}
 	case formTotal:
 		// Only a number has a scalar class.
 		if f, _ := b.facts(sl.name); len(f.Results) == 0 || f.Results[0].Shape.Class == 0 {

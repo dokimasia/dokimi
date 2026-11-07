@@ -69,6 +69,8 @@ const (
 	bufferedPackage    = "example.com/shop/buffered"
 	isolatedPackage    = "example.com/shop/isolated"
 	sealedPackage      = "example.com/shop/sealed"
+	leaderPackage      = "example.com/shop/leader"
+	leaderKitPackage   = "example.com/shop/leader/leadertest_test"
 	suiteTemplate      = "suite.tmpl"
 	conformTemplate    = "conform.test.tmpl"
 )

@@ -48,8 +48,10 @@ func (k *caller) derivation(s *Suite, syms []symbol.Symbol) bool {
 		return false
 	}
 	s.Sequences = k.sequencesOf(s)
+	s.World = k.worldOf(s)
 	k.derived(s)
 	s.Sequences = s.Sequences.used(s.Derived)
+	s.World = usedWorld(s.World, s.Derived)
 	return true
 }
 

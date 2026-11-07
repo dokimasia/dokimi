@@ -158,7 +158,7 @@ func (k *caller) builders(s *Suite) bool {
 		}
 		found, _ := k.m.Reader().Lookup(b.Func.Target)
 		view, _ := k.b.CallableOf(found)
-		callable := identityIn(s.Declaration, s.Func == nil, f.Callable, "")
+		callable := identityIn(s.Declaration, s.Func == nil, f.Callable)
 		at := k.positionOf(&f.ID)
 		params := make([]*node.TypeRef, 0, len(view.Params))
 		for _, p := range view.Params {

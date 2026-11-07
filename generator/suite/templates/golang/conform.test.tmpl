@@ -146,7 +146,7 @@
 
 	t.Run("{{suitePascal $suite.Type.Spelling}}", func(t *{{$testing}}.T) {
 		t.Parallel()
-		{{$conform}}.Falsify(t, {{spell $suite.Type}}())
+		{{$conform}}.Falsify(t, {{spell $suite.Type}}(){{with $c.Options}}, {{spell .}}()...{{end}})
 	})
 {{- if $c.Function}}
 
@@ -239,7 +239,7 @@
 {{docs (wrapdocs (printf `%s falsifies the allocation ceilings and the checks that count allocations of the suite of %s.` $allocs $c.Declaration))}}
 {{- ""}}func {{$allocs}}(t *{{$testing}}.T) {
 	t.Run("{{suitePascal $suite.Type.Spelling}}", func(t *{{$testing}}.T) {
-		{{$conform}}.FalsifyAllocs(t, {{spell $suite.Type}}())
+		{{$conform}}.FalsifyAllocs(t, {{spell $suite.Type}}(){{with $c.Options}}, {{spell .}}()...{{end}})
 	})
 }
 {{- end}}

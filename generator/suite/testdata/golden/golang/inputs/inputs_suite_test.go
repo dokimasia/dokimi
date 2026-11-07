@@ -383,3 +383,124 @@ func BenchmarkPipelineSuite(b *testing.B) {
 		inputs.BenchPipelineSuite(b, inputs.PipelineChecks.Label.Callable, pipelineIdle)
 	})
 }
+
+// stamperSubjectEmbedded is inputs.Stamper under the name of the field
+// that stamperSubject embeds.
+type stamperSubjectEmbedded = inputs.Stamper
+
+// stamperSubject is a value of Stamper that only TestStamperSuite builds.
+type stamperSubject struct{ stamperSubjectEmbedded }
+
+// TestStamperSuite checks the suite of Stamper and the two forms of its
+// application.
+func TestStamperSuite(t *testing.T) {
+	t.Parallel()
+
+	t.Run("StamperSuite", func(t *testing.T) {
+		t.Parallel()
+		conform.Falsify(t, inputs.StamperSuite())
+	})
+
+	t.Run("RunStamperSuite", func(t *testing.T) {
+		t.Parallel()
+		var built *stamperSubject
+		inputs.RunStamperSuite(
+			t,
+			func() *stamperSubject {
+				built = &stamperSubject{}
+				return built
+			},
+			conform.With(inputs.StamperCheck{
+				ID:        "Stamper/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *inputs.StamperHandle) {
+					got := h.Subject()
+					assert.Equal(h, got, inputs.Stamper(built), h.Statement(), assert.ByIdentity())
+				},
+				Defect: func(*inputs.StamperHandle) inputs.Stamper { return &stamperSubject{} },
+			}),
+		)
+	})
+
+	t.Run("RunStamperSuiteFromHandle", func(t *testing.T) {
+		t.Parallel()
+		var built *stamperSubject
+		inputs.RunStamperSuiteFromHandle(
+			t,
+			func(*inputs.StamperHandle) *stamperSubject {
+				built = &stamperSubject{}
+				return built
+			},
+			conform.With(inputs.StamperCheck{
+				ID:        "Stamper/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *inputs.StamperHandle) {
+					got := h.Subject()
+					assert.Equal(h, got, inputs.Stamper(built), h.Statement(), assert.ByIdentity())
+				},
+				Defect: func(*inputs.StamperHandle) inputs.Stamper { return &stamperSubject{} },
+			}),
+		)
+	})
+}
+
+// stamperSuite is the suite of Stamper that the tests of the planted
+// defect of a ceiling apply.
+var stamperSuite = inputs.StamperSuite()
+
+// stamperIdle returns the planted defect of a ceiling of Stamper with a
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
+func stamperIdle(h *inputs.StamperHandle) inputs.Stamper {
+	return stamperSuite.Calls[0].Over(h, func() {})
+}
+
+// TestStamperSuiteBudgets applies the allocation ceilings of the suite of
+// Stamper to stamperIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
+func TestStamperSuiteBudgets(t *testing.T) {
+	inputs.RunStamperBudgets(
+		t,
+		stamperIdle,
+		conform.Ceilings(
+			inputs.StamperChecks.Mark.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			inputs.StamperChecks.Press.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+	)
+}
+
+// FuzzStamperSuiteMark registers the fuzz target of Stamper.Mark on
+// stamperIdle, with every check of the suite excused.
+func FuzzStamperSuiteMark(f *testing.F) {
+	inputs.FuzzStamperSuite(
+		f,
+		inputs.StamperChecks.Mark.Callable,
+		stamperIdle,
+	)
+}
+
+// FuzzStamperSuitePress registers the fuzz target of Stamper.Press on
+// stamperIdle, with every check of the suite excused.
+func FuzzStamperSuitePress(f *testing.F) {
+	inputs.FuzzStamperSuite(
+		f,
+		inputs.StamperChecks.Press.Callable,
+		stamperIdle,
+	)
+}
+
+// BenchmarkStamperSuite measures each callable of the suite of Stamper on
+// stamperIdle.
+func BenchmarkStamperSuite(b *testing.B) {
+	b.Run("Mark", func(b *testing.B) {
+		inputs.BenchStamperSuite(b, inputs.StamperChecks.Mark.Callable, stamperIdle)
+	})
+	b.Run("Press", func(b *testing.B) {
+		inputs.BenchStamperSuite(b, inputs.StamperChecks.Press.Callable, stamperIdle)
+	})
+}

@@ -4,6 +4,7 @@
 package suite_test
 
 import (
+	"slices"
 	"testing"
 
 	"go.dokimi.dev/assert"
@@ -169,6 +170,41 @@ func TestOverride(t *testing.T) {
 				{name: "PipelineCodeValues", spelling: "Code", value: "call DefaultCode", label: "code", whole: true},
 			}, "the value of a builder, the declared defaults and the authored sample each start a type")
 		})
+
+		spellings := []struct {
+			name          string
+			giveSpellings []string
+			want          []start
+		}{
+			{
+				name:          "starts a struct once from its sample where a transparent alias spells the struct",
+				giveSpellings: []string{"Seal", "Stamp"},
+				want: []start{
+					{name: "StamperSealValues", spelling: "Stamp", value: "call NewSeal", label: "seal"},
+				},
+			},
+			{
+				name:          "starts a defined type over a struct from its zero value",
+				giveSpellings: []string{"Wax"},
+				want: []start{
+					{name: "StamperSealValues0", spelling: "Wax", value: "composite", label: "seal"},
+				},
+			},
+		}
+		for _, tt := range spellings {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				got := generate(t, goTree, inputsPackage).suites["Stamper"]
+				spelled := []start{}
+				for _, s := range startsOf(got.Starts) {
+					if slices.Contains(tt.giveSpellings, s.spelling) {
+						spelled = append(spelled, s)
+					}
+				}
+				expect.Equal(t, spelled, tt.want, "Stamp is the type Seal, and Wax is a type of its own")
+			})
+		}
 
 		t.Run("records no starting value of a struct without one", func(t *testing.T) {
 			t.Parallel()
@@ -424,7 +460,8 @@ func TestOverride(t *testing.T) {
 				{"io.Reader", "reader", ""},
 				{"io.ReadCloser", "read-closer", ""},
 				{"*bufio.Reader", "reader", "NewReader"},
-			}, "an interface of io takes the bytes, and a buffered reader reads them")
+			}, "an interface of io takes the bytes, a buffered reader reads them, and a pointer to a scanner of bufio "+
+				"or to the Reader of the shop takes the shape reader")
 		})
 
 		t.Run("records the value of each type that takes one fixed value", func(t *testing.T) {
@@ -478,7 +515,12 @@ func TestOverride(t *testing.T) {
 				{name: "StdBoxValues", spelling: "Box[int]", value: "composite", label: "box"},
 				{name: "StdBuilderValues", spelling: "strings.Builder", value: "composite", label: "builder"},
 				{name: "StdStructValues", spelling: "struct{ n int }", value: "composite", label: "struct"},
-			}, "a struct of the standard library, a generic struct and an inline struct start from their zero value")
+				{name: "StdStructValues0", spelling: "struct{ c Circle }", value: "composite", label: "struct"},
+				{name: "StdDotValues", spelling: "dot", value: "composite", label: "dot"},
+				{name: "StdStructValues1", spelling: "struct{ dot }", value: "composite", label: "struct"},
+				{name: "StdScannerValues", spelling: "bufio.Scanner", value: "composite", label: "scanner"},
+			}, "a struct of the standard library, a generic struct, an unexported struct and each inline struct "+
+				"without a readable field start from their zero value")
 		})
 
 		t.Run("records a stream of a channel in a field of a struct of the standard library", func(t *testing.T) {
@@ -522,6 +564,18 @@ func TestOverride(t *testing.T) {
 					"Std.Meet takes Clash in its parameter c. The fields Name and Circle of Clash are both named " +
 						"\"Circle\". Each run of Std.Meet fails before its first case until the test process registers a " +
 						"generator of Clash",
+					"Std.Index takes Echoes in a value of map[string]Echoes in its parameter m. The fields A and B of " +
+						"Echoes are both named \"y\". Each run of Std.Index fails before its first case until the test " +
+						"process registers a generator of Echoes",
+					"Std.Count takes Keyed in a key of map[Keyed]int in its parameter m. The fields A and B of Keyed " +
+						"are both named \"k\". Each run of Std.Count fails before its first case until the test process " +
+						"registers a generator of Keyed",
+					"Std.Point takes Pointed in the target of *Pointed in an element of []*Pointed in its parameter p. " +
+						"The fields A and B of Pointed are both named \"p\". Each run of Std.Point fails before its first " +
+						"case until the test process registers a generator of Pointed",
+					"Std.Wrap takes Inlined in a field of struct{ In Inlined } in its parameter w. The fields A and B " +
+						"of Inlined are both named \"i\". Each run of Std.Wrap fails before its first case until the test " +
+						"process registers a generator of Inlined",
 				},
 			},
 			{

@@ -33,11 +33,12 @@ var golangTemplates embed.FS
 // defectHelper and bodyHelper return the views of a planted defect that its
 // templates read, joinHelper joins words with commas, namesHelper joins the
 // names of the results of a planted defect, and identityHelper writes the
-// identity of a check of a suite. lockHelper returns the lines of the lock of
+// identity of a callable of a suite. lockHelper returns the lines of the lock of
 // a plan, sequencesHelper the view of the generated sequences of a
-// declaration, durableHelper the view of the calls of a durable probe,
-// stepHelper the view of the step of a callable, and txnCallHelper the view
-// of one call of a transaction.
+// declaration, worldHelper the view of the world of its subject,
+// durableHelper the view of the calls of a durable probe, stepHelper the view
+// of the step of a callable, and txnCallHelper the view of one call of a
+// transaction.
 const (
 	pascalHelper    = "suitePascal"
 	camelHelper     = "suiteCamel"
@@ -50,6 +51,7 @@ const (
 	identityHelper  = "suiteIdentity"
 	lockHelper      = "suiteLock"
 	sequencesHelper = "suiteSequences"
+	worldHelper     = "suiteWorld"
 	durableHelper   = "suiteDurable"
 	stepHelper      = "suiteStep"
 	txnCallHelper   = "suiteTxnCall"
@@ -82,20 +84,32 @@ func viewOfSequences(q *Sequences, subject, declaration string) sequencesView {
 	return sequencesView{Sequences: q, Subject: subject, Declaration: declaration}
 }
 
-// identityIn returns the identity of the check segment of the callable of the
-// declaration named declaration, such as Store.Get/smoke, and the name of the
-// callable alone for an empty segment. methods reports a declaration with
-// methods. The callable of a function is the function, so its identity has no
-// declaration, such as Slug/smoke.
-func identityIn(declaration string, methods bool, callable, segment string) string {
-	name := declaration
+// worldView is the world of the subject of a declaration with the generated
+// sequences whose steps are its operations, and with the names of the suite
+// that its template writes: the subject type and the name of the
+// declaration.
+type worldView struct {
+	World       *World
+	Sequences   *Sequences
+	Subject     string
+	Declaration string
+}
+
+// viewOfWorld returns the view of the world w over the parts q of the
+// generated sequences.
+func viewOfWorld(w *World, q *Sequences, subject, declaration string) worldView {
+	return worldView{World: w, Sequences: q, Subject: subject, Declaration: declaration}
+}
+
+// identityIn returns the identity of the callable of the declaration named
+// declaration, such as Store.Get. methods reports a declaration with methods.
+// The callable of a function is the function, so its identity is the name of
+// the function, such as Slug.
+func identityIn(declaration string, methods bool, callable string) string {
 	if methods {
-		name += "." + callable
+		return declaration + "." + callable
 	}
-	if segment == "" {
-		return name
-	}
-	return name + "/" + segment
+	return declaration
 }
 
 // defectView is a planted defect with the names of the suite that its
@@ -216,8 +230,8 @@ func (golangPart) Options() []sdk.TargetOption {
 			pascalHelper: naming.Pascal, camelHelper: naming.Camel, ceilingsHelper: Budget.segments,
 			durationHelper: golangDuration, defectHelper: viewOfDefect, bodyHelper: viewOfBody, joinHelper: joined,
 			namesHelper: namesOfOutcomes, identityHelper: identityIn, lockHelper: lockLines,
-			sequencesHelper: viewOfSequences, durableHelper: viewOfDurable, stepHelper: viewOfStep,
-			txnCallHelper: viewOfTxnCall,
+			sequencesHelper: viewOfSequences, worldHelper: viewOfWorld, durableHelper: viewOfDurable,
+			stepHelper: viewOfStep, txnCallHelper: viewOfTxnCall,
 		}),
 	}
 }

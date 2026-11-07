@@ -12,6 +12,7 @@ import (
 	"go.dokimi.dev/eidos/lang/naming"
 	"go.dokimi.dev/eidos/plugin/shape"
 	"go.dokimi.dev/eidos/sdk"
+	"go.dokimi.dev/eidos/sdk/diag"
 	"go.dokimi.dev/eidos/sdk/directive"
 	"go.dokimi.dev/eidos/sdk/emit"
 	"go.dokimi.dev/eidos/sdk/meta"
@@ -36,7 +37,9 @@ const Version = "0.1.0"
 // param MachineriesParam lists the machineries that the consumer supplies to
 // the checks of the suite, such as faults, and its param NormalizeParam names
 // the function that maps the values of each call of a generated sequence to
-// the values that its history records.
+// the values that its history records. Its param FalsifyParam contains the
+// name of the function that returns the options of the falsification of the
+// suite.
 // SubjectDirective marks a struct of a consumer as a subject of the suite of a
 // declaration. Its positional param DeclarationParam contains the name of the
 // declaration, and its param NewParam contains the name of the factory of the
@@ -63,6 +66,7 @@ const (
 	ExcuseDirective  directive.Name     = "excuse"
 	MachineriesParam directive.ParamKey = "machineries"
 	NormalizeParam   directive.ParamKey = "normalize"
+	FalsifyParam     directive.ParamKey = "falsify"
 	DeclarationParam directive.ParamKey = "declaration"
 	NewParam         directive.ParamKey = "new"
 	CasesParam       directive.ParamKey = "cases"
@@ -274,7 +278,9 @@ const (
 // edges. Derived are the derived checks in the order of the derivation, and
 // Defects their planted defects, one for each break of a callable. Sequences
 // are the parts of the generated sequences that the derived checks call, and
-// nil for a suite without a derived check of generated sequences. Package is
+// nil for a suite without a derived check of generated sequences. World is the
+// world of the subject that the derived checks of the world probes run, and
+// nil for a suite without such a check. Package is
 // the import path of the package of the declaration, and Version the version
 // of the plugin, which the suite record names as the version of its
 // generator.
@@ -283,6 +289,7 @@ type Suite struct {
 	Methods     *emit.Interface
 	Func        *emit.Method
 	Sequences   *Sequences
+	World       *World
 	Declaration string
 	Package     string
 	Version     string
@@ -454,8 +461,10 @@ type Door struct {
 // suite, which the test of the suite compares with the names of the
 // callables, and empty for the test of a subject. Options refers to the
 // function of the param options of the subject, whose list each test of the
-// subject passes after the options of its directives. It is nil for a subject
-// without the param and for the test of a suite. Isolate reports that the
+// subject passes after the options of its directives. In the test of a suite,
+// Options refers to the function of the param falsify of the directive suite,
+// whose list the test passes to conform.Falsify and conform.FalsifyAllocs. It
+// is nil for a test whose directive has no such param. Isolate reports that the
 // test of the subject passes conform.Isolate, as the option isolate of the
 // generator states.
 //
@@ -579,6 +588,12 @@ var suiteSchema = directive.Schema{
 			Key: NormalizeParam, Type: directive.TypeReference, Resolution: directive.ResolveCallableInScope,
 			Doc: "the function of the type func(string, []any) []any that maps the name of a callable and the " +
 				"values of its call in a generated sequence to the values that the history of the sequence records",
+		},
+		{
+			Key: FalsifyParam, Type: directive.TypeReference, Resolution: directive.ResolveCallableInScope,
+			Doc: "the function without parameters that returns the list of the options of the falsification, which " +
+				"the test of the suite passes to conform.Falsify and conform.FalsifyAllocs: a function of the package " +
+				"of the declaration, or of the external test package of the directory of the test",
 		},
 	},
 	Doc: "generates the suite of the declaration: the names of its callables, the identities and the checks of " +
@@ -758,7 +773,8 @@ type Options struct {
 // of its suite cannot spell, [NoSuite] at a subject whose declaration has no
 // directive suite, [BadFactory] at a subject whose factory an application
 // cannot call, and [BadOptions] at a subject whose function of the options a
-// test cannot call.
+// test cannot call. It reports [BadFalsify] at a declaration whose function of
+// the param falsify the test of its suite cannot call.
 // It reports [UnknownCallable] and [BadCheck] at the directive of a check that
 // it cannot bind, [UnknownExcusal] at an excusal of a check that the suite
 // does not have, and [UnknownMachinery] at a value of the param machineries
@@ -1480,7 +1496,7 @@ func (g *generator) suiteOfInterface(m *sdk.InterfaceMatch, _ part, e *sdk.Emitt
 	}
 	s := Suite{Subject: subject, Declaration: i.Name, Names: NamesOf(e, i.Name)}
 	if g.callsOf(&k, &s, methods) {
-		write(e, &i.ID, &s)
+		write(&k, &s)
 	}
 	return nil
 }
@@ -1507,8 +1523,9 @@ func (g *generator) suiteOfStruct(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 	for _, method := range callables {
 		methods.Methods.Append(sdk.Mirror(names.Methods, method))
 	}
-	if g.callsOf(&caller{m: m, g: g, e: e, b: b, origin: st.ID, decl: st.Name}, &s, callables) {
-		write(e, &st.ID, &s)
+	k := caller{m: m, g: g, e: e, b: b, origin: st.ID, decl: st.Name}
+	if g.callsOf(&k, &s, callables) {
+		write(&k, &s)
 	}
 	return nil
 }
@@ -1565,12 +1582,12 @@ func (g *generator) suiteOfFunction(m *sdk.FunctionMatch, _ part, e *sdk.Emitter
 	}
 	k.overrides(&s)
 	if k.derivation(&s, []symbol.Symbol{f}) {
-		write(e, &f.ID, &s)
+		write(&k, &s)
 	}
 	return nil
 }
 
-// write records the suite s of the declaration origin into the family of the
+// write records the suite s of the declaration of k into the family of the
 // suites. The record declares each name that the template writes: the variable
 // of the names of the callables first, then the interface of the methods or the
 // function type, the type of each callable, the variable of each call and of
@@ -1581,8 +1598,10 @@ func (g *generator) suiteOfFunction(m *sdk.FunctionMatch, _ part, e *sdk.Emitter
 // their own name. A suite without a call that admits concurrent
 // calls has no parallel benchmark, so its name of the benchmark is empty. write
 // also records the falsification test of the suite into the family of the
-// tests.
-func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
+// tests, with the function of the param falsify of the directive suite. It
+// records no test where it reports [BadFalsify] at the declaration.
+func write(k *caller, s *Suite) {
+	e, origin := k.e, &k.origin
 	public := func(name string) symbol.Symbol {
 		return &emit.Function{Origin: *origin, Name: name, Visibility: symbol.VisibilityPublic}
 	}
@@ -1627,7 +1646,12 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 		decls = append(decls, &emit.Function{Origin: *origin, Name: n.NewOver, Visibility: symbol.VisibilityPackage})
 	}
 	if q := s.Sequences; q != nil {
-		decls = append(decls, &emit.Function{Origin: *origin, Name: q.Actions, Visibility: symbol.VisibilityPackage})
+		if q.Actions != "" {
+			decls = append(
+				decls,
+				&emit.Function{Origin: *origin, Name: q.Actions, Visibility: symbol.VisibilityPackage},
+			)
+		}
 		if q.Reference != "" {
 			decls = append(decls,
 				&emit.Function{Origin: *origin, Name: q.Reference, Visibility: symbol.VisibilityPackage})
@@ -1643,8 +1667,16 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 			}
 		}
 	}
+	if w := s.World; w != nil {
+		decls = append(decls,
+			&emit.Variable{Origin: *origin, Name: w.Name, Visibility: symbol.VisibilityPackage},
+			&emit.Function{Origin: *origin, Name: w.Operations, Visibility: symbol.VisibilityPackage})
+	}
 	for _, d := range s.Defects {
 		decls = append(decls, &emit.Function{Origin: *origin, Name: d.Name, Visibility: symbol.VisibilityPackage})
+		if d.Door != "" {
+			decls = append(decls, &emit.Function{Origin: *origin, Name: d.Door, Visibility: symbol.VisibilityPackage})
+		}
 		if d.Type != "" {
 			decls = append(decls, &emit.Struct{Origin: *origin, Name: d.Type, Visibility: symbol.VisibilityPackage})
 		}
@@ -1669,6 +1701,10 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 	e.File().Record(*s, decls...)
 	e.PlanFile(LockTag).Record(lockOf(s),
 		&emit.Struct{Name: e.JoinName(lockWord, s.Declaration), Visibility: symbol.VisibilityPackage})
+	falsify, called := suiteOptions.of(k.m, e, &k.b, k.m.Directive(), s.Declaration)
+	if !called {
+		return
+	}
 	record := &emit.Struct{
 		Origin: *origin, Name: e.JoinName(proofsWord, s.Declaration), Visibility: symbol.VisibilityPackage,
 	}
@@ -1688,7 +1724,7 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 	)
 	test := Conformance{
 		Test: e.JoinName(n.Suite, testWord), Declaration: s.Declaration, Builds: buildsSegment,
-		Receives: receivesSegment, Excused: s.HasChecks(), Function: s.Func != nil,
+		Receives: receivesSegment, Excused: s.HasChecks(), Function: s.Func != nil, Options: falsify,
 	}
 	allocated := slices.ContainsFunc(s.Calls, func(c Call) bool { return c.Budget.Allocs != nil }) ||
 		slices.ContainsFunc(s.Checks, func(c Check) bool { return c.Counted })
@@ -1850,7 +1886,7 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 			return nil
 		}
 	}
-	options, called := optionsOf(m, e, &b, d)
+	options, called := subjectOptions.of(m, e, &b, d, st.Name)
 	if !called {
 		return nil
 	}
@@ -1914,39 +1950,65 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 	return nil
 }
 
-// optionsOf returns the reference to the function of the param options of the
-// directive subject d, and nil for a directive without the param. The
-// function takes no parameter and returns one list, and the test of the
-// subject can call it. Otherwise optionsOf reports [BadOptions] at the subject
-// and returns false.
-func optionsOf(m *sdk.StructMatch, e *sdk.Emitter, b *rules.Bound, d *directive.Directive) (*emit.TypeRef, bool) {
-	param, stated := d.Param(OptionsParam)
+// optionsParam is a param whose function returns the list of the options that
+// a generated test passes to an application. code is the code of its findings,
+// test the test that calls the function, and void what a declaration with a
+// finding lacks.
+type optionsParam struct {
+	key  directive.ParamKey
+	test string
+	void string
+	code diag.Code
+}
+
+// subjectOptions is the param options of the directive subject, whose function
+// each test of the subject calls. suiteOptions is the param falsify of the
+// directive suite, whose function the test of the suite calls.
+var (
+	subjectOptions = optionsParam{
+		key: OptionsParam, code: BadOptions, test: "the conformance test of", void: "conformance test",
+	}
+	suiteOptions = optionsParam{
+		key: FalsifyParam, code: BadFalsify, test: "the test of the suite of", void: "test of its suite",
+	}
+)
+
+// of returns the reference to the function of the param p of the directive d
+// on the declaration named name, and nil for a directive without the param.
+// The test calls the function without arguments from the package of its
+// routed file, and passes its list to an application. So the function takes
+// no parameter and returns one list, and that package can call it. Otherwise
+// of reports the code of p at the subject of m and returns false.
+func (p optionsParam) of(
+	m sdk.SubjectMatch, e *sdk.Emitter, b *rules.Bound, d *directive.Directive, name string,
+) (*emit.TypeRef, bool) {
+	param, stated := d.Param(p.key)
 	if !stated {
 		return nil, true
 	}
-	fn, subject := param.Target, m.Struct.Name
+	fn := param.Target
 	found, _ := m.Reader().Lookup(fn)
 	view, _ := b.CallableOf(found)
 	switch {
 	case len(view.Params) > 0:
-		m.Errorf(BadOptions, "the function %s of the param options takes %s, so %s has no conformance test",
-			fn.Name, parameters(len(view.Params)), subject)
+		m.Errorf(p.code, "the function %s of the param %s takes %s, so %s has no %s",
+			fn.Name, p.key, parameters(len(view.Params)), name, p.void)
 		return nil, false
 	case len(view.Returns) != 1:
-		m.Errorf(BadOptions, "the function %s of the param options returns %d results, so %s has no conformance "+
-			"test", fn.Name, len(view.Returns), subject)
+		m.Errorf(p.code, "the function %s of the param %s returns %d results, so %s has no %s",
+			fn.Name, p.key, len(view.Returns), name, p.void)
 		return nil, false
 	case view.Returns[0].Ref.Form != symbol.FormList:
-		m.Errorf(BadOptions, "the function %s of the param options returns the type %s, and the options of an "+
-			"application are a list, so %s has no conformance test", fn.Name, view.Returns[0].Ref.Spelling, subject)
+		m.Errorf(p.code, "the function %s of the param %s returns the type %s, and the options of an application "+
+			"are a list, so %s has no %s", fn.Name, p.key, view.Returns[0].Ref.Spelling, name, p.void)
 		return nil, false
 	}
 	// The test calls the function from the package of its routed file, as it
 	// calls the factory.
 	if pkg, placed := e.File(TestTag).Package(); placed == nil {
 		if err := b.Importable(pkg, &node.TypeRef{Spelling: fn.Name, Target: fn}); err != nil {
-			m.Errorf(BadOptions, "the conformance test of %s in the package %s cannot call the function %s of the "+
-				"param options, so %s has no conformance test: %v", subject, pkg.Package, fn.Name, subject, err)
+			m.Errorf(p.code, "%s %s in the package %s cannot call the function %s of the param %s, so %s has no "+
+				"%s: %v", p.test, name, pkg.Package, fn.Name, p.key, name, p.void, err)
 			return nil, false
 		}
 	}

@@ -262,6 +262,15 @@ func BenchmarkJournalSuite(b *testing.B) {
 	})
 }
 
+// BenchmarkJournalSuiteParallel measures each callable of the suite of
+// Journal that admits concurrent calls on journalIdle, on GOMAXPROCS
+// goroutines at once.
+func BenchmarkJournalSuiteParallel(b *testing.B) {
+	b.Run("Append", func(b *testing.B) {
+		vault.BenchJournalSuiteParallel(b, vault.JournalChecks.Append.Callable, journalIdle)
+	})
+}
+
 // ledgerSubjectEmbedded is vault.Ledger under the name of the field that
 // ledgerSubject embeds.
 type ledgerSubjectEmbedded = vault.Ledger
@@ -391,5 +400,249 @@ func BenchmarkLedgerSuite(b *testing.B) {
 	})
 	b.Run("Lookup", func(b *testing.B) {
 		vault.BenchLedgerSuite(b, vault.LedgerChecks.Lookup.Callable, ledgerIdle)
+	})
+}
+
+// registrySubjectEmbedded is vault.Registry under the name of the field
+// that registrySubject embeds.
+type registrySubjectEmbedded = vault.Registry
+
+// registrySubject is a value of Registry that only TestRegistrySuite
+// builds.
+type registrySubject struct{ registrySubjectEmbedded }
+
+// TestRegistrySuite checks the suite of Registry and the two forms of its
+// application.
+func TestRegistrySuite(t *testing.T) {
+	t.Parallel()
+
+	t.Run("RegistrySuite", func(t *testing.T) {
+		t.Parallel()
+		conform.Falsify(t, vault.RegistrySuite())
+	})
+
+	t.Run("RunRegistrySuite", func(t *testing.T) {
+		t.Parallel()
+		var built *registrySubject
+		vault.RunRegistrySuite(
+			t,
+			func() *registrySubject {
+				built = &registrySubject{}
+				return built
+			},
+			conform.With(vault.RegistryCheck{
+				ID:        "Registry/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *vault.RegistryHandle) {
+					got := h.Subject()
+					assert.Equal(h, got, vault.Registry(built), h.Statement(), assert.ByIdentity())
+				},
+				Defect: func(*vault.RegistryHandle) vault.Registry { return &registrySubject{} },
+			}),
+			conform.ExcuseSuite[vault.Registry]("the test applies the check of its option alone"),
+		)
+	})
+
+	t.Run("RunRegistrySuiteFromHandle", func(t *testing.T) {
+		t.Parallel()
+		var built *registrySubject
+		vault.RunRegistrySuiteFromHandle(
+			t,
+			func(*vault.RegistryHandle) *registrySubject {
+				built = &registrySubject{}
+				return built
+			},
+			conform.With(vault.RegistryCheck{
+				ID:        "Registry/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *vault.RegistryHandle) {
+					got := h.Subject()
+					assert.Equal(h, got, vault.Registry(built), h.Statement(), assert.ByIdentity())
+				},
+				Defect: func(*vault.RegistryHandle) vault.Registry { return &registrySubject{} },
+			}),
+			conform.ExcuseSuite[vault.Registry]("the test applies the check of its option alone"),
+		)
+	})
+}
+
+// registrySuite is the suite of Registry that the tests of the planted
+// defect of a ceiling apply.
+var registrySuite = vault.RegistrySuite()
+
+// registryIdle returns the planted defect of a ceiling of Registry with a
+// spend of nothing. Each call of the defect returns its zero results at
+// once.
+func registryIdle(h *vault.RegistryHandle) vault.Registry {
+	return registrySuite.Calls[0].Over(h, func() {})
+}
+
+// TestRegistrySuiteBudgets applies the allocation ceilings of the suite of
+// Registry to registryIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
+func TestRegistrySuiteBudgets(t *testing.T) {
+	vault.RunRegistryBudgets(
+		t,
+		registryIdle,
+		conform.Ceilings(vault.RegistryChecks.Set.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			vault.RegistryChecks.Value.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(vault.RegistryChecks.Add.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			vault.RegistryChecks.Insert.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			vault.RegistryChecks.Stamp.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			vault.RegistryChecks.Touch.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.ExcuseSuite[vault.Registry](
+			"the planted defect of a ceiling returns the zero results of each call",
+		),
+	)
+}
+
+// FuzzRegistrySuiteSet registers the fuzz target of Registry.Set on
+// registryIdle, with every check of the suite excused.
+func FuzzRegistrySuiteSet(f *testing.F) {
+	vault.FuzzRegistrySuite(
+		f,
+		vault.RegistryChecks.Set.Callable,
+		registryIdle,
+		conform.ExcuseSuite[vault.Registry](
+			"the planted defect of a ceiling returns the zero results of each call",
+		),
+	)
+}
+
+// FuzzRegistrySuiteValue registers the fuzz target of Registry.Value on
+// registryIdle, with every check of the suite excused.
+func FuzzRegistrySuiteValue(f *testing.F) {
+	vault.FuzzRegistrySuite(
+		f,
+		vault.RegistryChecks.Value.Callable,
+		registryIdle,
+		conform.ExcuseSuite[vault.Registry](
+			"the planted defect of a ceiling returns the zero results of each call",
+		),
+	)
+}
+
+// FuzzRegistrySuiteAwait registers the fuzz target of Registry.Await on
+// registryIdle, with every check of the suite excused.
+func FuzzRegistrySuiteAwait(f *testing.F) {
+	vault.FuzzRegistrySuite(
+		f,
+		vault.RegistryChecks.Await.Callable,
+		registryIdle,
+		conform.ExcuseSuite[vault.Registry](
+			"the planted defect of a ceiling returns the zero results of each call",
+		),
+	)
+}
+
+// FuzzRegistrySuiteAdd registers the fuzz target of Registry.Add on
+// registryIdle, with every check of the suite excused.
+func FuzzRegistrySuiteAdd(f *testing.F) {
+	vault.FuzzRegistrySuite(
+		f,
+		vault.RegistryChecks.Add.Callable,
+		registryIdle,
+		conform.ExcuseSuite[vault.Registry](
+			"the planted defect of a ceiling returns the zero results of each call",
+		),
+	)
+}
+
+// FuzzRegistrySuiteInsert registers the fuzz target of Registry.Insert on
+// registryIdle, with every check of the suite excused.
+func FuzzRegistrySuiteInsert(f *testing.F) {
+	vault.FuzzRegistrySuite(
+		f,
+		vault.RegistryChecks.Insert.Callable,
+		registryIdle,
+		conform.ExcuseSuite[vault.Registry](
+			"the planted defect of a ceiling returns the zero results of each call",
+		),
+	)
+}
+
+// FuzzRegistrySuiteStamp registers the fuzz target of Registry.Stamp on
+// registryIdle, with every check of the suite excused.
+func FuzzRegistrySuiteStamp(f *testing.F) {
+	vault.FuzzRegistrySuite(
+		f,
+		vault.RegistryChecks.Stamp.Callable,
+		registryIdle,
+		conform.ExcuseSuite[vault.Registry](
+			"the planted defect of a ceiling returns the zero results of each call",
+		),
+	)
+}
+
+// FuzzRegistrySuiteTouch registers the fuzz target of Registry.Touch on
+// registryIdle, with every check of the suite excused.
+func FuzzRegistrySuiteTouch(f *testing.F) {
+	vault.FuzzRegistrySuite(
+		f,
+		vault.RegistryChecks.Touch.Callable,
+		registryIdle,
+		conform.ExcuseSuite[vault.Registry](
+			"the planted defect of a ceiling returns the zero results of each call",
+		),
+	)
+}
+
+// BenchmarkRegistrySuite measures each callable of the suite of Registry
+// on registryIdle.
+func BenchmarkRegistrySuite(b *testing.B) {
+	b.Run("Set", func(b *testing.B) {
+		vault.BenchRegistrySuite(b, vault.RegistryChecks.Set.Callable, registryIdle)
+	})
+	b.Run("Value", func(b *testing.B) {
+		vault.BenchRegistrySuite(b, vault.RegistryChecks.Value.Callable, registryIdle)
+	})
+	b.Run("Add", func(b *testing.B) {
+		vault.BenchRegistrySuite(b, vault.RegistryChecks.Add.Callable, registryIdle)
+	})
+	b.Run("Insert", func(b *testing.B) {
+		vault.BenchRegistrySuite(b, vault.RegistryChecks.Insert.Callable, registryIdle)
+	})
+	b.Run("Stamp", func(b *testing.B) {
+		vault.BenchRegistrySuite(b, vault.RegistryChecks.Stamp.Callable, registryIdle)
+	})
+	b.Run("Touch", func(b *testing.B) {
+		vault.BenchRegistrySuite(b, vault.RegistryChecks.Touch.Callable, registryIdle)
+	})
+}
+
+// BenchmarkRegistrySuiteParallel measures each callable of the suite of
+// Registry that admits concurrent calls on registryIdle, on GOMAXPROCS
+// goroutines at once.
+func BenchmarkRegistrySuiteParallel(b *testing.B) {
+	b.Run("Set", func(b *testing.B) {
+		vault.BenchRegistrySuiteParallel(b, vault.RegistryChecks.Set.Callable, registryIdle)
+	})
+	b.Run("Value", func(b *testing.B) {
+		vault.BenchRegistrySuiteParallel(b, vault.RegistryChecks.Value.Callable, registryIdle)
+	})
+	b.Run("Add", func(b *testing.B) {
+		vault.BenchRegistrySuiteParallel(b, vault.RegistryChecks.Add.Callable, registryIdle)
+	})
+	b.Run("Insert", func(b *testing.B) {
+		vault.BenchRegistrySuiteParallel(b, vault.RegistryChecks.Insert.Callable, registryIdle)
+	})
+	b.Run("Stamp", func(b *testing.B) {
+		vault.BenchRegistrySuiteParallel(b, vault.RegistryChecks.Stamp.Callable, registryIdle)
+	})
+	b.Run("Touch", func(b *testing.B) {
+		vault.BenchRegistrySuiteParallel(b, vault.RegistryChecks.Touch.Callable, registryIdle)
 	})
 }

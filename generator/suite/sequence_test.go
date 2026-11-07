@@ -224,6 +224,65 @@ func TestSequence(t *testing.T) {
 			expect.Equal(t, counter.Sequences.Reference, "", "no check of Counter applies an operation by its name")
 		})
 
+		vaults := generate(t, goTree, vaultPackage).suites
+
+		t.Run("keeps the steps and the reference of a world without the actions of sequences", func(t *testing.T) {
+			t.Parallel()
+
+			v := vaults["Vault"]
+			assert.NotNil(t, v.Sequences, "the world of Vault calls the steps of its sequences")
+			expect.Equal(t, []string{v.Sequences.Actions, v.Sequences.Reference}, []string{"", "VaultReference"},
+				"no check of Vault runs the actions, and the world applies its history to the reference")
+			expect.Length(t, v.Sequences.Steps, 2, "the world calls Put and Get")
+		})
+
+		t.Run("keeps the actions of a world beside a check of generated sequences", func(t *testing.T) {
+			t.Parallel()
+
+			r := vaults["Registry"]
+			assert.NotNil(t, r.Sequences, "the suite of Registry has generated sequences")
+			expect.Equal(t, r.Sequences.Actions, "RegistryActions", "agrees-with-the-reference runs the actions")
+		})
+
+		t.Run("adds the first value of a call of the mixin creates to the pool of its type", func(t *testing.T) {
+			t.Parallel()
+
+			r := vaults["Registry"]
+			p := stepOf(t, &r, "Add").Produced
+			assert.NotNil(t, p, "a call of Add produces a key")
+			expect.Equal(t, []any{p.Pool, p.Type.Spelling, p.Field, p.Pointer},
+				[]any{"keysString", "string", "", false},
+				"the pool of the strings takes the key that Add returns")
+		})
+
+		t.Run("adds the field of the first value that the param key of the mixin creates names", func(t *testing.T) {
+			t.Parallel()
+
+			r := vaults["Registry"]
+			p := stepOf(t, &r, "Insert").Produced
+			assert.NotNil(t, p, "a call of Insert produces a key")
+			expect.Equal(t, []any{p.Pool, p.Type.Spelling, p.Field, p.Pointer},
+				[]any{"keysString", "*Entry", "Key", true},
+				"the pool of the strings takes the field Key of the entry that Insert returns")
+		})
+
+		produced := []struct {
+			name string
+			give string
+		}{
+			{name: "produces no key for a callable without the mixin creates", give: "Set"},
+			{name: "produces no key of a type that no pool has", give: "Stamp"},
+			{name: "produces no key for a callable of the mixin creates without a result", give: "Touch"},
+		}
+		for _, tt := range produced {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				r := vaults["Registry"]
+				expect.Nil(t, stepOf(t, &r, tt.give).Produced, "the world adds no key of "+tt.give+" to a pool")
+			})
+		}
+
 		t.Run("applies the read with the own sample of its function input", func(t *testing.T) {
 			t.Parallel()
 

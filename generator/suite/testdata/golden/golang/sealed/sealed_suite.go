@@ -9,6 +9,7 @@ import (
 	"go.dokimi.dev/assert/stateful"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
+	"go.dokimi.dev/host"
 	"go.dokimi.dev/medium"
 	"go.dokimi.dev/spec"
 )
@@ -1006,6 +1007,13 @@ func (c lockerPut) FullMediumIsReported() conform.ID[Locker] {
 	return c.Check("full-medium-is-reported")
 }
 
+// CompletesAfterRecovery returns the identity of the check that each call
+// of Locker completes within the bound of the world once every fault ends
+// and the subject opens again.
+func (c lockerPut) CompletesAfterRecovery() conform.ID[Locker] {
+	return "Locker/completes-after-recovery"
+}
+
 // lockerGet is the name of Locker.Get, with the identities of its checks.
 type lockerGet struct {
 	conform.Callable[Locker]
@@ -1219,6 +1227,23 @@ func LockerSuite() conform.Suite[Locker] {
 				},
 				Defect: lockerPutHidesAFullMedium,
 				Doors:  conform.Doors[Locker]{Open: lockerPutHidesAFullMediumOpen},
+			},
+			{
+				ID:        LockerChecks.Put.CompletesAfterRecovery(),
+				Statement: "each call of Locker completes within the bound of the world once every fault ends and the subject opens again",
+				Claim:     spec.CompletesAfterRecovery,
+				Machineries: []spec.MachineryID{
+					spec.Quiescence,
+					spec.GeneratedSequences,
+					spec.KillableProcessOrBreakableMedium,
+				},
+				Property: func(h *LockerHandle, c *prop.Case) {
+					probe.WorldRecovery(h, c, lockerWorld)
+				},
+				Defect:  lockerBlocksAfterRecovery,
+				Doors:   conform.Doors[Locker]{Host: lockerBlocksAfterRecoveryHost},
+				Around:  conform.Bubble,
+				Options: probe.WorldOptions[Locker],
 			},
 			{
 				ID:          LockerChecks.Get.Smoke(),
@@ -1478,14 +1503,15 @@ func lockerPutIgnoresCancel(h *LockerHandle) Locker {
 }
 
 // lockerPutAcknowledgesBeforeSync returns the planted defect of a Locker
-// over a medium whose syncs persist nothing over a new medium in memory.
+// over a medium whose syncs persist nothing. The door of its check opens
+// the defect over a new medium in memory.
 func lockerPutAcknowledgesBeforeSync(h *LockerHandle) Locker {
 	return h.Open(medium.NewMemory())
 }
 
-// lockerPutAcknowledgesBeforeSyncOpen opens a subject of the application
-// over the medium m that probe.Unsynced wraps, as the planted defect of a
-// Locker over a medium whose syncs persist nothing.
+// lockerPutAcknowledgesBeforeSyncOpen opens the planted defect of a Locker
+// over a medium whose syncs persist nothing. The application opens the
+// subject over the medium m that probe.Unsynced wraps.
 func lockerPutAcknowledgesBeforeSyncOpen(h *LockerHandle, m medium.FS) Locker {
 	return h.FreshOpen(probe.Unsynced(m))
 }
@@ -1514,30 +1540,85 @@ func (d *lockerPutTrustsAPartialRecordDefect) Put(p0 context.Context, p1, p2 str
 }
 
 // lockerPutTrustsAPartialRecord returns the planted defect of a Locker
-// whose Put writes the zero value under the key before its first value
-// over a new medium in memory.
+// whose Put writes the zero value under the key before its first value.
+// The door of its check opens the defect over a new medium in memory.
 func lockerPutTrustsAPartialRecord(h *LockerHandle) Locker {
 	return h.Open(medium.NewMemory())
 }
 
 // lockerPutTrustsAPartialRecordOpen opens the planted defect of a Locker
-// whose Put writes the zero value under the key before its first value
-// over a subject that the application opens over the medium m.
+// whose Put writes the zero value under the key before its first value.
+// The defect wraps a subject that the application opens over the medium m.
 func lockerPutTrustsAPartialRecordOpen(h *LockerHandle, m medium.FS) Locker {
 	return &lockerPutTrustsAPartialRecordDefect{lockerOverEmbedded: h.FreshOpen(m)}
 }
 
 // lockerPutHidesAFullMedium returns the planted defect of a Locker over a
-// medium that reports a full write as written over a new medium in memory.
+// medium that reports a full write as written. The door of its check opens
+// the defect over a new medium in memory.
 func lockerPutHidesAFullMedium(h *LockerHandle) Locker {
 	return h.Open(medium.NewMemory())
 }
 
-// lockerPutHidesAFullMediumOpen opens a subject of the application over
-// the medium m that probe.Unfilled wraps, as the planted defect of a
-// Locker over a medium that reports a full write as written.
+// lockerPutHidesAFullMediumOpen opens the planted defect of a Locker over
+// a medium that reports a full write as written. The application opens the
+// subject over the medium m that probe.Unfilled wraps.
 func lockerPutHidesAFullMediumOpen(h *LockerHandle, m medium.FS) Locker {
 	return h.FreshOpen(probe.Unfilled(m))
+}
+
+// lockerBlocksAfterRecoveryDefect is the planted defect of a Locker whose
+// each call after the first restart blocks until its case ends.
+type lockerBlocksAfterRecoveryDefect struct {
+	lockerOverEmbedded
+	lifetime context.Context
+}
+
+// Put is the override of the planted defect.
+func (d *lockerBlocksAfterRecoveryDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	if d.lifetime != nil {
+		r0 = host.Park(p0)
+		return r0
+	}
+	return d.lockerOverEmbedded.Put(p0, p1, p2)
+}
+
+// Get is the override of the planted defect.
+func (d *lockerBlocksAfterRecoveryDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	if d.lifetime != nil {
+		r1 = host.Park(p0)
+		return r0, r1
+	}
+	return d.lockerOverEmbedded.Get(p0, p1)
+}
+
+// lockerBlocksAfterRecovery returns the subject of the application in
+// place of the planted defect of a Locker whose each call after the first
+// restart blocks until its case ends. The door Host of its check opens the
+// defect in a world.
+func lockerBlocksAfterRecovery(h *LockerHandle) Locker {
+	return h.Fresh()
+}
+
+// lockerBlocksAfterRecoveryHost opens the planted defect of a Locker whose
+// each call after the first restart blocks until its case ends. The defect
+// wraps the subject that the application opens over the environment env of
+// an incarnation. From the second incarnation of the host of env on, each
+// callable of the defect blocks until its context ends.
+func lockerBlocksAfterRecoveryHost(h *LockerHandle, env *host.Env) Locker {
+	d := &lockerBlocksAfterRecoveryDefect{lockerOverEmbedded: h.FreshHost(env)}
+	if env.Incarnation() > 1 {
+		d.lifetime = env.Lifetime()
+	}
+	return d
 }
 
 // lockerGetPanicsDefect is the planted defect of a Locker whose Get
@@ -1596,6 +1677,94 @@ func (d *lockerGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 stri
 // returns a value beside an error over a fresh subject.
 func lockerGetValueBeside(h *LockerHandle) Locker {
 	return &lockerGetValueBesideDefect{lockerOverEmbedded: h.Fresh()}
+}
+
+// lockerPutCall calls Put on subject with the arguments args, and returns
+// the values of the call beside its error.
+func lockerPutCall(ctx context.Context, subject Locker, args []any) ([]any, error) {
+	a0, a1 := Entry()
+	return nil, subject.Put(ctx, a0, a1)
+}
+
+// lockerGetCall calls Get on subject with the arguments args, and returns
+// the values of the call beside its error.
+func lockerGetCall(ctx context.Context, subject Locker, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Get(ctx, a0)
+	return []any{r0}, err
+}
+
+// lockerReference returns the function that applies an operation of a
+// history to the reference r by the name of its callable.
+func lockerReference(r Locker) func(context.Context, string, []any) conform.Output {
+	return func(ctx context.Context, operation string, args []any) conform.Output {
+		var values []any
+		var err error
+		switch operation {
+		case "Put":
+			values, err = lockerPutCall(ctx, r, args)
+		case "Get":
+			values, err = lockerGetCall(ctx, r, args)
+		}
+		return conform.OutputOf(err, values...)
+	}
+}
+
+// lockerWorld is the world of the subject of Locker, which the checks of
+// its world probes run.
+var lockerWorld = probe.World[Locker]{
+	Operations: lockerOperations,
+	Reference:  lockerReference,
+}
+
+// lockerOperations returns the operations of the world of Locker in the
+// case c, over the pools of the keys that c chooses.
+func lockerOperations(c *prop.Case) []probe.Operation[Locker] {
+	keysString := probe.NewPool(
+		c,
+		prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)),
+		"keys.string",
+	)
+	return []probe.Operation[Locker]{
+		{
+			Name: "Put",
+			Input: func(c *prop.Case) any {
+				return []any{}
+			},
+			Args: func(input any) []any {
+				args, _ := input.([]any)
+				return args
+			},
+			Keys: func(input any) []any {
+				return nil
+			},
+			Call: func(ctx context.Context, s Locker, input any) (conform.Output, error) {
+				args, _ := input.([]any)
+				values, err := lockerPutCall(ctx, s, args)
+				return conform.OutputOf(err, values...), err
+			},
+		},
+		{
+			Name: "Get",
+			Input: func(c *prop.Case) any {
+				key := keysString.Pick(c, "get.key")
+				return []any{key}
+			},
+			Args: func(input any) []any {
+				args, _ := input.([]any)
+				return args
+			},
+			Keys: func(input any) []any {
+				args, _ := input.([]any)
+				return []any{args[0]}
+			},
+			Call: func(ctx context.Context, s Locker, input any) (conform.Output, error) {
+				args, _ := input.([]any)
+				values, err := lockerGetCall(ctx, s, args)
+				return conform.OutputOf(err, values...), err
+			},
+		},
+	}
 }
 
 // The suite refers to the compatibility witness of its runtime.

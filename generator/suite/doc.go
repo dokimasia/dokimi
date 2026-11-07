@@ -163,6 +163,19 @@
 //	//dokimi:check Store.Get defect=servesAnotherItem values=[backendOf]
 //	func ServesTheItem(h *StoreHandle) { … }
 //
+// The param falsify of the directive suite contains the name of a function
+// without parameters that returns the options of the falsification, such as a
+// reference that only a package above the kit can build. The spec of the suite
+// passes them to conform.Falsify and conform.FalsifyAllocs, and a handle on a
+// planted defect takes each door that the check of the defect lacks from them.
+// eidos resolves the name in the package of the declaration, and then in the
+// external test packages of its directory and of the directory of its
+// directive out, where the spec of the suite is:
+//
+//	//dokimi:suite falsify=falsifyOptions
+//	//dokimi:out path=storetest/
+//	type Store interface { … }
+//
 // # Subjects
 //
 // A consumer applies the suite to a subject, and adds checks of its own:
@@ -306,7 +319,9 @@
 // directive suite, [BadFactory] at a subject whose factory the conformance
 // test cannot call, [BadOptions] at a subject whose function of the options
 // the conformance test cannot call, and [RepeatedSubject] at a second
-// directive subject of one declaration. It reports [UnknownCallable] at the
+// directive subject of one declaration. It reports [BadFalsify] at a
+// declaration whose function of the param falsify the spec of its suite
+// cannot call. It reports [UnknownCallable] at the
 // directive of a check whose callable it cannot find. It reports [BadCheck] at
 // the directive of a check without a statement or with the wrong signature, of
 // a check whose defect, door, options or environment has the wrong signature,

@@ -92,6 +92,11 @@ func TestCodes(t *testing.T) {
 			WantMeaning: "the builder of the mixin sample of a callable takes another parameter than the subject, " +
 				"or does not return one value of the type of each input of the callable",
 		},
+		{
+			Name: "BadFalsify", Give: suite.BadFalsify, WantCode: "DOKIMISUITE-0017",
+			WantMeaning: "the function of the param falsify of the directive suite is not a function of the options " +
+				"of an application",
+		},
 	}
 	for _, c := range codes {
 		t.Run(c.Name, func(t *testing.T) {

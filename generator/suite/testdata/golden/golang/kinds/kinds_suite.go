@@ -4268,6 +4268,12 @@ var StdChecks = struct {
 	Hold   stdHold
 	Pair   stdPair
 	Meet   stdMeet
+	Index  stdIndex
+	Count  stdCount
+	Point  stdPoint
+	Wrap   stdWrap
+	Scan   stdScan
+	Lines  stdLines
 }{
 	Copy:   stdCopy{"Std.Copy"},
 	Close:  stdClose{"Std.Close"},
@@ -4281,6 +4287,12 @@ var StdChecks = struct {
 	Hold:   stdHold{"Std.Hold"},
 	Pair:   stdPair{"Std.Pair"},
 	Meet:   stdMeet{"Std.Meet"},
+	Index:  stdIndex{"Std.Index"},
+	Count:  stdCount{"Std.Count"},
+	Point:  stdPoint{"Std.Point"},
+	Wrap:   stdWrap{"Std.Wrap"},
+	Scan:   stdScan{"Std.Scan"},
+	Lines:  stdLines{"Std.Lines"},
 }
 
 // stdCopy is the name of Std.Copy, with the identities of its checks.
@@ -4365,6 +4377,60 @@ type stdMeet struct {
 // panic for derived inputs.
 func (c stdMeet) Smoke() conform.ID[Std] {
 	return c.Check("smoke")
+}
+
+// stdIndex is the name of Std.Index, with the identities of its checks.
+type stdIndex struct {
+	conform.Callable[Std]
+}
+
+// Smoke returns the identity of the check that Index returns without a
+// panic for derived inputs.
+func (c stdIndex) Smoke() conform.ID[Std] {
+	return c.Check("smoke")
+}
+
+// stdCount is the name of Std.Count, with the identities of its checks.
+type stdCount struct {
+	conform.Callable[Std]
+}
+
+// Smoke returns the identity of the check that Count returns without a
+// panic for derived inputs.
+func (c stdCount) Smoke() conform.ID[Std] {
+	return c.Check("smoke")
+}
+
+// stdPoint is the name of Std.Point, with the identities of its checks.
+type stdPoint struct {
+	conform.Callable[Std]
+}
+
+// Smoke returns the identity of the check that Point returns without a
+// panic for derived inputs.
+func (c stdPoint) Smoke() conform.ID[Std] {
+	return c.Check("smoke")
+}
+
+// stdWrap is the name of Std.Wrap, with the identities of its checks.
+type stdWrap struct {
+	conform.Callable[Std]
+}
+
+// stdScan is the name of Std.Scan, with the identities of its checks.
+type stdScan struct {
+	conform.Callable[Std]
+}
+
+// Smoke returns the identity of the check that Scan returns without a
+// panic for derived inputs.
+func (c stdScan) Smoke() conform.ID[Std] {
+	return c.Check("smoke")
+}
+
+// stdLines is the name of Std.Lines, with the identities of its checks.
+type stdLines struct {
+	conform.Callable[Std]
 }
 
 // StdSuite returns the checks of Std, and the calls and the budgets of its
@@ -4456,6 +4522,118 @@ func StdSuite() conform.Suite[Std] {
 				},
 				Defect: stdMeetPanics,
 			},
+			{
+				ID:          StdChecks.Index.Smoke(),
+				Statement:   "Index returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StdHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Index(map[string]Echoes{"m-a": {A: 42}})
+						return nil
+					})
+				},
+				Defect: stdIndexPanics,
+			},
+			{
+				ID:          StdChecks.Index.Smoke().Generated(),
+				Statement:   "Index returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StdHandle, c *prop.Case) {
+					drawnM := c.Draw(prop.Of[map[string]Echoes](), "m")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Index(drawnM)
+						return nil
+					})
+				},
+				Defect: stdIndexPanics,
+			},
+			{
+				ID:          StdChecks.Count.Smoke(),
+				Statement:   "Count returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StdHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Count(map[Keyed]int{{A: 42}: 42})
+						return nil
+					})
+				},
+				Defect: stdCountPanics,
+			},
+			{
+				ID:          StdChecks.Count.Smoke().Generated(),
+				Statement:   "Count returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StdHandle, c *prop.Case) {
+					drawnM := c.Draw(prop.Of[map[Keyed]int](), "m")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Count(drawnM)
+						return nil
+					})
+				},
+				Defect: stdCountPanics,
+			},
+			{
+				ID:          StdChecks.Point.Smoke(),
+				Statement:   "Point returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StdHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Point([]*Pointed{{A: 42}})
+						return nil
+					})
+				},
+				Defect: stdPointPanics,
+			},
+			{
+				ID:          StdChecks.Point.Smoke().Generated(),
+				Statement:   "Point returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StdHandle, c *prop.Case) {
+					drawnP := c.Draw(prop.Of[[]*Pointed](), "p")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Point(drawnP)
+						return nil
+					})
+				},
+				Defect: stdPointPanics,
+			},
+			{
+				ID:          StdChecks.Scan.Smoke(),
+				Statement:   "Scan returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StdHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Scan(&Reader{Line: "Line-a"})
+						return nil
+					})
+				},
+				Defect: stdScanPanics,
+			},
+			{
+				ID:          StdChecks.Scan.Smoke().Generated(),
+				Statement:   "Scan returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
+				Property: func(h *StdHandle, c *prop.Case) {
+					drawnR := c.Draw(prop.Of[Reader](), "r")
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Scan(&drawnR)
+						return nil
+					})
+				},
+				Defect: stdScanPanics,
+			},
 		},
 		Unclaimed: []conform.Unclaimed{
 			{
@@ -4524,6 +4702,42 @@ func StdSuite() conform.Suite[Std] {
 				Stance:         spec.Silent,
 				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
 			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Std.Index",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Std.Count",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Std.Point",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Std.Wrap",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Std.Scan",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
+			{
+				Classification: "shape:mutator",
+				Callable:       "Std.Lines",
+				Stance:         spec.Silent,
+				Note:           "A mutation is an input of the other checks, and its result is an error alone.",
+			},
 		},
 		Calls: []conform.Call[Std]{
 			{
@@ -4586,12 +4800,46 @@ func StdSuite() conform.Suite[Std] {
 				Over:     newStdOver,
 				Callable: StdChecks.Meet.Callable,
 			},
+			{
+				Calls:    stdIndexCalls,
+				Over:     newStdOver,
+				Callable: StdChecks.Index.Callable,
+			},
+			{
+				Calls:    stdCountCalls,
+				Over:     newStdOver,
+				Callable: StdChecks.Count.Callable,
+			},
+			{
+				Calls:    stdPointCalls,
+				Over:     newStdOver,
+				Callable: StdChecks.Point.Callable,
+			},
+			{
+				Calls:    stdWrapCalls,
+				Over:     newStdOver,
+				Callable: StdChecks.Wrap.Callable,
+			},
+			{
+				Calls:    stdScanCalls,
+				Over:     newStdOver,
+				Callable: StdChecks.Scan.Callable,
+			},
+			{
+				Calls:    stdLinesCalls,
+				Over:     newStdOver,
+				Callable: StdChecks.Lines.Callable,
+			},
 		},
 		Using: []prop.Option{
 			prop.Using(stdMutexValues),
 			prop.Using(stdBoxValues),
 			prop.Using(stdBuilderValues),
 			prop.Using(stdStructValues),
+			prop.Using(stdStructValues0),
+			prop.Using(stdDotValues),
+			prop.Using(stdStructValues1),
+			prop.Using(stdScannerValues),
 			prop.Using(prop.Composite(func(c *prop.Case) interface{ Name() string } {
 				interfaceNameResults := c.Draw(prop.List(prop.Of[string]()), "interface-name")
 				var interfaceNameAt atomic.Int64
@@ -4852,6 +5100,66 @@ var stdMeetCalls = prop.Composite(func(c *prop.Case) func(context.Context, Std) 
 	}
 })
 
+// stdIndexCalls generates the calls of Std.Index with the inputs that each
+// case draws.
+var stdIndexCalls = prop.Composite(func(c *prop.Case) func(context.Context, Std) error {
+	m := c.Draw(prop.Of[map[string]Echoes](), "m")
+	return func(_ context.Context, subject Std) error {
+		subject.Index(m)
+		return nil
+	}
+})
+
+// stdCountCalls generates the calls of Std.Count with the inputs that each
+// case draws.
+var stdCountCalls = prop.Composite(func(c *prop.Case) func(context.Context, Std) error {
+	m := c.Draw(prop.Of[map[Keyed]int](), "m")
+	return func(_ context.Context, subject Std) error {
+		subject.Count(m)
+		return nil
+	}
+})
+
+// stdPointCalls generates the calls of Std.Point with the inputs that each
+// case draws.
+var stdPointCalls = prop.Composite(func(c *prop.Case) func(context.Context, Std) error {
+	p := c.Draw(prop.Of[[]*Pointed](), "p")
+	return func(_ context.Context, subject Std) error {
+		subject.Point(p)
+		return nil
+	}
+})
+
+// stdWrapCalls generates the calls of Std.Wrap with the inputs that each
+// case draws.
+var stdWrapCalls = prop.Composite(func(c *prop.Case) func(context.Context, Std) error {
+	w := c.Draw(prop.Of[struct{ In Inlined }](), "w")
+	return func(_ context.Context, subject Std) error {
+		subject.Wrap(w)
+		return nil
+	}
+})
+
+// stdScanCalls generates the calls of Std.Scan with the inputs that each
+// case draws.
+var stdScanCalls = prop.Composite(func(c *prop.Case) func(context.Context, Std) error {
+	r := c.Draw(prop.Of[Reader](), "r")
+	return func(_ context.Context, subject Std) error {
+		subject.Scan(&r)
+		return nil
+	}
+})
+
+// stdLinesCalls generates the calls of Std.Lines with the inputs that each
+// case draws.
+var stdLinesCalls = prop.Composite(func(c *prop.Case) func(context.Context, Std) error {
+	s := c.Draw(prop.Of[bufio.Scanner](), "s")
+	return func(_ context.Context, subject Std) error {
+		subject.Lines(&s)
+		return nil
+	}
+})
+
 // stdMutexValues generates the starting value of sync.Mutex, which has no
 // field to change.
 var stdMutexValues = prop.Composite(func(*prop.Case) sync.Mutex {
@@ -4874,6 +5182,30 @@ var stdBuilderValues = prop.Composite(func(*prop.Case) strings.Builder {
 // has no field to change.
 var stdStructValues = prop.Composite(func(*prop.Case) struct{ n int } {
 	return struct{ n int }{}
+})
+
+// stdStructValues0 generates the starting value of struct{ c Circle },
+// which has no field to change.
+var stdStructValues0 = prop.Composite(func(*prop.Case) struct{ c Circle } {
+	return struct{ c Circle }{}
+})
+
+// stdDotValues generates the starting value of dot, which has no field to
+// change.
+var stdDotValues = prop.Composite(func(*prop.Case) dot {
+	return dot{}
+})
+
+// stdStructValues1 generates the starting value of struct{ dot }, which
+// has no field to change.
+var stdStructValues1 = prop.Composite(func(*prop.Case) struct{ dot } {
+	return struct{ dot }{}
+})
+
+// stdScannerValues generates the starting value of bufio.Scanner, which
+// has no field to change.
+var stdScannerValues = prop.Composite(func(*prop.Case) bufio.Scanner {
+	return bufio.Scanner{}
 })
 
 // stdReaderFromInputEmbedded is io.ReaderFrom under the name of the field
@@ -5003,6 +5335,36 @@ func (o stdOver) Meet(Clash) {
 	o.spend()
 }
 
+// Index calls spend and returns its zero results.
+func (o stdOver) Index(map[string]Echoes) {
+	o.spend()
+}
+
+// Count calls spend and returns its zero results.
+func (o stdOver) Count(map[Keyed]int) {
+	o.spend()
+}
+
+// Point calls spend and returns its zero results.
+func (o stdOver) Point([]*Pointed) {
+	o.spend()
+}
+
+// Wrap calls spend and returns its zero results.
+func (o stdOver) Wrap(struct{ In Inlined }) {
+	o.spend()
+}
+
+// Scan calls spend and returns its zero results.
+func (o stdOver) Scan(*Reader) {
+	o.spend()
+}
+
+// Lines calls spend and returns its zero results.
+func (o stdOver) Lines(*bufio.Scanner) {
+	o.spend()
+}
+
 // newStdOver returns the planted defect of a ceiling of Std, whose
 // callables call spend.
 func newStdOver(_ *StdHandle, spend func()) Std {
@@ -5076,4 +5438,68 @@ func (*stdMeetPanicsDefect) Meet(p0 Clash) {
 // a fresh subject.
 func stdMeetPanics(h *StdHandle) Std {
 	return &stdMeetPanicsDefect{stdOverEmbedded: h.Fresh()}
+}
+
+// stdIndexPanicsDefect is the planted defect of a Std whose Index panics.
+type stdIndexPanicsDefect struct {
+	stdOverEmbedded
+}
+
+// Index is the override of the planted defect.
+func (*stdIndexPanicsDefect) Index(p0 map[string]Echoes) {
+	panic("the planted defect of a Std whose Index panics")
+}
+
+// stdIndexPanics returns the planted defect of a Std whose Index panics
+// over a fresh subject.
+func stdIndexPanics(h *StdHandle) Std {
+	return &stdIndexPanicsDefect{stdOverEmbedded: h.Fresh()}
+}
+
+// stdCountPanicsDefect is the planted defect of a Std whose Count panics.
+type stdCountPanicsDefect struct {
+	stdOverEmbedded
+}
+
+// Count is the override of the planted defect.
+func (*stdCountPanicsDefect) Count(p0 map[Keyed]int) {
+	panic("the planted defect of a Std whose Count panics")
+}
+
+// stdCountPanics returns the planted defect of a Std whose Count panics
+// over a fresh subject.
+func stdCountPanics(h *StdHandle) Std {
+	return &stdCountPanicsDefect{stdOverEmbedded: h.Fresh()}
+}
+
+// stdPointPanicsDefect is the planted defect of a Std whose Point panics.
+type stdPointPanicsDefect struct {
+	stdOverEmbedded
+}
+
+// Point is the override of the planted defect.
+func (*stdPointPanicsDefect) Point(p0 []*Pointed) {
+	panic("the planted defect of a Std whose Point panics")
+}
+
+// stdPointPanics returns the planted defect of a Std whose Point panics
+// over a fresh subject.
+func stdPointPanics(h *StdHandle) Std {
+	return &stdPointPanicsDefect{stdOverEmbedded: h.Fresh()}
+}
+
+// stdScanPanicsDefect is the planted defect of a Std whose Scan panics.
+type stdScanPanicsDefect struct {
+	stdOverEmbedded
+}
+
+// Scan is the override of the planted defect.
+func (*stdScanPanicsDefect) Scan(p0 *Reader) {
+	panic("the planted defect of a Std whose Scan panics")
+}
+
+// stdScanPanics returns the planted defect of a Std whose Scan panics over
+// a fresh subject.
+func stdScanPanics(h *StdHandle) Std {
+	return &stdScanPanicsDefect{stdOverEmbedded: h.Fresh()}
 }

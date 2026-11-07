@@ -2931,7 +2931,7 @@ func RegistrySuite() conform.Suite[Registry] {
 					spec.ClockTheRunAdvances,
 				},
 				Property: func(h *RegistryHandle, c *prop.Case) {
-					probe.FaultyWorldHistory(h, c, registryWorld)
+					probe.FaultyWorldHistory(h, c, registryWorld, history.Budget(200000))
 				},
 				Defect:  registryAmnesiacRecovery,
 				Doors:   conform.Doors[Registry]{Host: registryAmnesiacRecoveryHost},

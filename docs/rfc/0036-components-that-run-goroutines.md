@@ -4,7 +4,7 @@ title: A simulation of components that run goroutines
 author: Roy Klopper <roy.klopper@stealthscale.io>
 status: Accepted
 created: 2026-11-05
-updated: 2026-11-05
+updated: 2026-11-07
 discussion: https://github.com/dokimasia/dokimi/issues/58
 supersedes: RFC-0025 in part
 superseded-by: ADR-0023 in part
@@ -53,7 +53,7 @@ For the mixin `durable`, the crash-point probe runs sequences of one to three wr
 
 ### The history is checked once per case
 
-The run of a simulation is a machine of `stateful` with the state `struct{}` (`sim/run.go:151` of dokimi-go). It checks the history for linearizability once, after the final phase, partition by key (`run.go:540`). So a violation shows only at the end of its case, and each candidate of the shrinker runs every step of the case, also the steps after the violation. `history.Linearizable` of assert-go continues the search of each partition of a growing history through `Resume`, so a check after every step costs the steps since the check before it.
+The run of a simulation is a machine of `stateful` with the state `struct{}` (`sim/run.go:151` of dokimi-go). It checks the history for linearizability once, after the final phase, partition by key (`run.go:540`). So a violation shows only at the end of its case, and each candidate of the shrinker runs every step of the case, also the steps after the violation. `history.Linearizable` of assert-go continues the search of each partition of a growing history through `Resume`, so a check after every step costs the steps since the check before it. A partition in which a call that the check before it read as pending has completed searches again from its first call.
 
 ### What Go lets a harness control
 
@@ -649,12 +649,14 @@ func storeOperations(c *prop.Case) []probe.Operation[store.Store] {
 	Around:      conform.Bubble,
 	Options:     probe.WorldOptions[store.Store],
 	Property: func(h *StoreHandle, c *prop.Case) {
-		probe.FaultyWorldHistory(h, c, storeWorld)
+		probe.FaultyWorldHistory(h, c, storeWorld, history.Budget(200000))
 	},
 },
 ```
 
 The generator writes the functions of each operation from the derived binding of its callable, and the pools from the types of its key inputs, as the actions of `LinearizableHistory` take their keys. A check of a world binds on the first callable of the declaration that passes its gates, as the check of `agrees-with-the-reference` binds. The check of `linearizable-under-faults` binds on the first callable that returns a value, such as `Get`. A check of a world is excused, refused and proven as every derived check is.
+
+The check of `linearizable-under-faults` passes the budget of the history checks of the suite, 200,000 steps, as the check of `linearizable` does. A search of a partition ends undecided once it has spent its budget, and the default budget of `history.Linearizable` is 10,000,000 steps.
 
 ### The faults of a medium
 
@@ -809,7 +811,7 @@ A system of components alone is a `World[None, None]`. The sim generator writes 
 
 ### The history after every step
 
-The world of a subject and the run of a system both check each partition of the history after every step through `history.Resume`, which continues the search of each partition of the check before it. So a violation ends its case at the step where it occurs, and the check after the final phase covers the calls of that phase.
+The world of a subject and the run of a system both check each partition of the history after every step through `history.Resume`, which continues the search of each partition of the check before it. So a violation ends its case at the step where it occurs, and the check after the final phase covers the calls of that phase. A partition in which a pending call has completed since the check before it searches again from its first call.
 
 ### Migration
 
@@ -921,7 +923,7 @@ The world checks the whole history once, after its last step, as the run of a sy
 - **Two clocks for the subject.** A subject reads timestamps from `Wall` and durations from `Monotonic`. A subject that measures a timeout with two reads of `Wall` sees the faults of the wall clock in that timeout, as it would on a machine whose clock steps.
 - **Flaky runs in native mode.** A race inside a subject ends a run as flaky when no replay reproduces it, and a person reads such a run. The shrinker of such a case can stop at a larger case.
 - **A restart in one process.** A crash fences the disk, the dependencies, the network and the lifetime of an incarnation. Its package variables and its `sync.Once` values remain for the next incarnation, which a restart of a real process does not keep. gochecknoglobals finds such variables in the package of a subject.
-- **The cost of a check.** A world check runs up to 100 steps per case. Each step ends with a wait for quiescence and an incremental check of the history, and a failing case in native mode costs ten replays. This cost is not measured.
+- **The cost of a check.** A world check runs up to 100 steps per case. Each step ends with a wait for quiescence and an incremental check of the history, and a failing case in native mode costs ten replays. On 4 cores, the two world checks of the corpus fixture `iface/door/hosted` take 0.7 s and 0.9 s, and 6.5 s and 10.5 s under the race detector.
 
 ## Open questions
 

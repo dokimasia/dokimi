@@ -64,9 +64,11 @@ import (
 // incarnation. Any other check passes it as the door Open, which opens the
 // defect over a medium.
 //
-// World reports a check of a world probe, whose one input is the world of the
-// declaration. The template writes it with the environment conform.Bubble and
-// with the options that probe.WorldOptions returns for its property run.
+// World reports a check of a world probe, whose first input is the world of
+// the declaration. The probe of the history of a world also takes the budget of
+// its checker. The template writes the check with the environment
+// conform.Bubble and with the options that probe.WorldOptions returns for its
+// property run.
 type Derived struct {
 	Field       string
 	Type        string
@@ -435,19 +437,20 @@ const (
 
 // The inputs that many probes share.
 var (
-	durable  = slot{name: "durable", form: formDurable}
-	act      = slot{name: inCall, form: formAct}
-	call     = slot{name: inCall, form: formCall}
-	zero     = slot{name: inZero, of: inCall, form: formZero}
-	sentinel = slot{name: inSentinel, form: formValue}
-	read     = slot{name: inRead, form: formCall}
-	drain    = slot{name: inDrain, form: formCall}
-	writes   = slot{name: inWrite, form: formActs}
-	put      = slot{name: inPut, form: formAct}
-	observe  = slot{name: inObserve, form: formCall}
-	attempts = slot{name: inAttempts, form: formInt}
-	clients  = slot{name: "clients", form: formClients}
-	world    = slot{name: "world", form: formWorld}
+	durable    = slot{name: "durable", form: formDurable}
+	act        = slot{name: inCall, form: formAct}
+	call       = slot{name: inCall, form: formCall}
+	zero       = slot{name: inZero, of: inCall, form: formZero}
+	sentinel   = slot{name: inSentinel, form: formValue}
+	read       = slot{name: inRead, form: formCall}
+	drain      = slot{name: inDrain, form: formCall}
+	writes     = slot{name: inWrite, form: formActs}
+	put        = slot{name: inPut, form: formAct}
+	observe    = slot{name: inObserve, form: formCall}
+	attempts   = slot{name: inAttempts, form: formInt}
+	clients    = slot{name: "clients", form: formClients}
+	stepBudget = slot{name: "budget", form: formBudget}
+	world      = slot{name: "world", form: formWorld}
 )
 
 // probes contains the inputs of each probe that a suite calls, in the order
@@ -575,7 +578,7 @@ var probes = map[spec.ProbeID][]slot{
 		actions,
 		{name: "reference", form: formReference},
 		clients,
-		{name: "budget", form: formBudget},
+		stepBudget,
 	},
 	spec.SerializableHistory:          {actions, clients},
 	spec.SnapshotHistory:              {actions, clients},
@@ -583,7 +586,7 @@ var probes = map[spec.ProbeID][]slot{
 	spec.WholeAtEveryCrashPoint:       {durable},
 	spec.ReportsEachFlippedBit:        {durable, {name: "corrupt", form: formValue}},
 	spec.RefusesOnAFullMedium:         {durable},
-	spec.FaultyWorldHistory:           {world},
+	spec.FaultyWorldHistory:           {world, stepBudget},
 	spec.WorldRecovery:                {world},
 	spec.ConcurrentReadsAgree:         {actions, readOp, {name: "again", of: inRead, form: formApply}, clients},
 	spec.SharesOneComputation:         {{name: inCall, form: formComputing}, clients},

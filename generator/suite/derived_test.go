@@ -128,7 +128,7 @@ func TestDerived(t *testing.T) {
 			expect.Equal(t, write.Results, []suite.Expr{{Name: "err"}}, "the write returns the error of Append")
 		})
 
-		t.Run("passes the world of the declaration to the probe of a world", func(t *testing.T) {
+		t.Run("passes the world and the budget to the probe of a world", func(t *testing.T) {
 			t.Parallel()
 
 			r := vaults["Registry"]
@@ -137,8 +137,8 @@ func TestDerived(t *testing.T) {
 			expect.Equal(t, []any{d.Whole, d.World, d.Cased, d.Sequence}, []any{
 				"Registry/linearizable-under-faults", true, true, false,
 			}, "the check of the declaration runs its world in a case of a property check")
-			assert.Length(t, d.Args, 1, "the probe takes the world alone")
-			expect.Equal(t, d.Args[0].Ref, r.World.Name, "the argument is the world of Registry")
+			expect.Equal(t, d.Args, []suite.Arg{{Ref: r.World.Name}, {Budget: 200_000}},
+				"the probe takes the world of Registry, and the checker takes at most 200,000 steps")
 			expect.Equal(
 				t,
 				[]string{d.Defect, d.Door},

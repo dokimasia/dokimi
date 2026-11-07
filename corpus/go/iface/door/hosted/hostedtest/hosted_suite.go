@@ -503,7 +503,7 @@ func StoreSuite() conform.Suite[hosted.Store] {
 					spec.ClockTheRunAdvances,
 				},
 				Property: func(h *StoreHandle, c *prop.Case) {
-					probe.FaultyWorldHistory(h, c, storeWorld)
+					probe.FaultyWorldHistory(h, c, storeWorld, history.Budget(200000))
 				},
 				Defect:  storeAmnesiacRecovery,
 				Doors:   conform.Doors[hosted.Store]{Host: storeAmnesiacRecoveryHost},
@@ -1131,4 +1131,4 @@ func storeOperations(c *prop.Case) []probe.Operation[hosted.Store] {
 	}
 }
 
-// dokimi:provenance sha256:017d4c7df7ce0fa4c04205be8532e66ba4a116223cd14c50252e13272d29aeb4
+// dokimi:provenance sha256:0893625a6cf45df7a2812c6dbefb0dcab201e5437cf90e7658cd67b3110f9446

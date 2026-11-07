@@ -116,6 +116,30 @@ func TestReport(t *testing.T) {
 			}, "the failures are the failed subtest and each package that failed without a test")
 		})
 
+		t.Run("returns the output of each test that did not end with a package that failed without a failed test",
+			func(t *testing.T) {
+				t.Parallel()
+
+				got, err := report.Failed(strings.NewReader(strings.Join([]string{
+					`{"Action":"output","Package":"p","Test":"TestA","Output":"=== RUN   TestA\n"}`,
+					`{"Action":"output","Package":"p","Test":"TestB","Output":"=== RUN   TestB\n"}`,
+					`{"Action":"pass","Package":"p","Test":"TestB"}`,
+					`{"Action":"output","Package":"q","Test":"TestC","Output":"    c_test.go:3: broken\n"}`,
+					`{"Action":"fail","Package":"q","Test":"TestC"}`,
+					`{"Action":"output","Package":"q","Test":"TestD","Output":"=== RUN   TestD\n"}`,
+					`{"Action":"output","Package":"p","Test":"TestA","Output":"conform: the bubble stalled.\n"}`,
+					`{"Action":"output","Package":"p","Output":"FAIL\tp\t103.930s\n"}`,
+					`{"Action":"fail","Package":"p"}`,
+					`{"Action":"fail","Package":"q"}`,
+				}, "\n")))
+
+				assert.NoError(t, err, "the events read")
+				assert.Equal(t, got, []report.Failure{
+					{Package: "q", Test: "TestC", Output: "    c_test.go:3: broken\n"},
+					{Package: "p", Output: "=== RUN   TestA\nconform: the bubble stalled.\nFAIL\tp\t103.930s\n"},
+				}, "the failure of the package p has the output of the test of p that ran when its binary ended")
+			})
+
 		t.Run("returns an error that names the line of an event that does not decode", func(t *testing.T) {
 			t.Parallel()
 

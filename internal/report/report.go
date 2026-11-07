@@ -50,6 +50,8 @@ type event struct {
 const (
 	actionOutput = "output"
 	actionFail   = "fail"
+	actionPass   = "pass"
+	actionSkip   = "skip"
 )
 
 // scan calls visit with each event of go test -json that r contains, in
@@ -132,24 +134,29 @@ type Failure struct {
 // Failed reads the events of go test -json from r, and returns each test
 // that failed without a subtest that failed, in the order of the failures,
 // with its output. It returns each package that failed without a test that
-// failed as well. It returns an error that names the line of an event that
-// does not decode.
+// failed as well. The output of such a package also has the output of each of
+// its tests that neither passed nor skipped, in the order of the events,
+// because go test gives the last words of a test binary that ends in the
+// middle of a test to that test. It returns an error that names the line of
+// an event that does not decode.
 func Failed(r io.Reader) ([]Failure, error) {
 	type test struct{ pkg, name string }
-	outputs := map[test]*strings.Builder{}
+	type output struct {
+		of   test
+		text string
+	}
+	var outputs []output
+	ended := map[test]bool{}
 	var failed []test
 	err := scan(r, func(e *event) {
 		t := test{e.Package, e.Test}
 		switch e.Action {
 		case actionOutput:
-			b, seen := outputs[t]
-			if !seen {
-				b = &strings.Builder{}
-				outputs[t] = b
-			}
-			b.WriteString(e.Output)
+			outputs = append(outputs, output{of: t, text: e.Output})
 		case actionFail:
 			failed = append(failed, t)
+		case actionPass, actionSkip:
+			ended[t] = true
 		default:
 		}
 	})
@@ -164,11 +171,13 @@ func Failed(r io.Reader) ([]Failure, error) {
 
 			continue
 		}
-		f := Failure{Package: t.pkg, Test: t.name}
-		if b := outputs[t]; b != nil {
-			f.Output = b.String()
+		var b strings.Builder
+		for _, o := range outputs {
+			if o.of == t || t.name == "" && o.of.pkg == t.pkg && !ended[o.of] {
+				b.WriteString(o.text)
+			}
 		}
-		out = append(out, f)
+		out = append(out, Failure{Package: t.pkg, Test: t.name, Output: b.String()})
 	}
 	return out, nil
 }

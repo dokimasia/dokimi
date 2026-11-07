@@ -1,0 +1,27 @@
+{
+  "store": 1,
+  "definition": "16.0.0",
+  "property": "the simulation finds no failure",
+  "identity": {
+    "file": "component.go",
+    "line": 110
+  },
+  "choices": "prop1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAA",
+  "counterexample": [
+    {
+      "label": "drift.primary",
+      "value": {
+        "type": "int",
+        "value": 0
+      }
+    },
+    {
+      "label": "drift.backup",
+      "value": {
+        "type": "int",
+        "value": 0
+      }
+    }
+  ],
+  "found": "2026-11-06"
+}

@@ -1,0 +1,109 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/door/hosted
+level: 4
+subjects:
+  - type: iface/door/hosted/hostedtest.Flushed
+  - type: iface/door/hosted/hostedtest.Scheduled
+controls: []
+declarations:
+  store:
+    checks:
+      store.get/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.get/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.get/failure-is-reported:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      store.get/failure-is-reported#generated:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      store.get/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.get/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.get/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      store.get/zero-on-error#generated:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      store.put/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.put/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      store.put/failure-is-reported:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      store.put/failure-is-reported#generated:
+        claim: failure-is-reported
+        law: failed-dependency-is-reported
+        reason: swallowed-failure
+      store.put/full-medium-is-reported:
+        claim: full-medium-is-reported
+        partners:
+          read: store.get
+        law: refused-write-leaves-the-state
+        reason: half-written-on-full
+      store.put/no-torn-record:
+        claim: no-torn-record
+        partners:
+          read: store.get
+        law: recovery-returns-whole-records
+        reason: torn-record
+      store.put/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.put/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      store.put/synced-writes-survive:
+        claim: synced-writes-survive
+        partners:
+          read: store.get
+        law: acknowledged-write-survives-a-crash
+        reason: lost-acknowledged-write
+      store/agrees-with-the-reference:
+        claim: agrees-with-the-reference
+        law: every-sequence-agrees-with-the-reference
+        reason: diverges-from-the-reference
+      store/completes-after-recovery:
+        claim: completes-after-recovery
+        law: call-completes-after-recovery
+        reason: call-open-after-recovery
+      store/linearizable:
+        claim: linearizable
+        law: concurrent-history-is-linearizable
+        reason: not-linearizable
+      store/linearizable-under-faults:
+        claim: linearizable-under-faults
+        law: history-under-faults-is-linearizable
+        reason: not-linearizable-under-faults
+    authored: []
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:composite-writer
+        callable: store.put
+        stance: silent

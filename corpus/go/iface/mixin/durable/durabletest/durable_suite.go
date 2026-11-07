@@ -13,6 +13,7 @@ import (
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/durable"
+	"go.dokimi.dev/host"
 	"go.dokimi.dev/medium"
 	"go.dokimi.dev/spec"
 )
@@ -78,6 +79,13 @@ func (c vaultPut) CorruptionIsReported() conform.ID[durable.Vault] {
 // a full medium, and Get returns each value as before the write.
 func (c vaultPut) FullMediumIsReported() conform.ID[durable.Vault] {
 	return c.Check("full-medium-is-reported")
+}
+
+// CompletesAfterRecovery returns the identity of the check that each call
+// of Vault completes within the bound of the world once every fault ends
+// and the subject opens again.
+func (c vaultPut) CompletesAfterRecovery() conform.ID[durable.Vault] {
+	return "Vault/completes-after-recovery"
 }
 
 // vaultGet is the name of Vault.Get, with the identities of its checks.
@@ -307,6 +315,23 @@ func VaultSuite() conform.Suite[durable.Vault] {
 				},
 				Defect: vaultPutHidesAFullMedium,
 				Doors:  conform.Doors[durable.Vault]{Open: vaultPutHidesAFullMediumOpen},
+			},
+			{
+				ID:        VaultChecks.Put.CompletesAfterRecovery(),
+				Statement: "each call of Vault completes within the bound of the world once every fault ends and the subject opens again",
+				Claim:     spec.CompletesAfterRecovery,
+				Machineries: []spec.MachineryID{
+					spec.Quiescence,
+					spec.GeneratedSequences,
+					spec.KillableProcessOrBreakableMedium,
+				},
+				Property: func(h *VaultHandle, c *prop.Case) {
+					probe.WorldRecovery(h, c, vaultWorld)
+				},
+				Defect:  vaultBlocksAfterRecovery,
+				Doors:   conform.Doors[durable.Vault]{Host: vaultBlocksAfterRecoveryHost},
+				Around:  conform.Bubble,
+				Options: probe.WorldOptions[durable.Vault],
 			},
 			{
 				ID:          VaultChecks.Get.Smoke(),
@@ -552,14 +577,15 @@ func vaultPutIgnoresCancel(h *VaultHandle) durable.Vault {
 }
 
 // vaultPutAcknowledgesBeforeSync returns the planted defect of a Vault
-// over a medium whose syncs persist nothing over a new medium in memory.
+// over a medium whose syncs persist nothing. The door of its check opens
+// the defect over a new medium in memory.
 func vaultPutAcknowledgesBeforeSync(h *VaultHandle) durable.Vault {
 	return h.Open(medium.NewMemory())
 }
 
-// vaultPutAcknowledgesBeforeSyncOpen opens a subject of the application
-// over the medium m that probe.Unsynced wraps, as the planted defect of a
-// Vault over a medium whose syncs persist nothing.
+// vaultPutAcknowledgesBeforeSyncOpen opens the planted defect of a Vault
+// over a medium whose syncs persist nothing. The application opens the
+// subject over the medium m that probe.Unsynced wraps.
 func vaultPutAcknowledgesBeforeSyncOpen(h *VaultHandle, m medium.FS) durable.Vault {
 	return h.FreshOpen(probe.Unsynced(m))
 }
@@ -588,15 +614,15 @@ func (d *vaultPutTrustsAPartialRecordDefect) Put(p0 context.Context, p1, p2 stri
 }
 
 // vaultPutTrustsAPartialRecord returns the planted defect of a Vault whose
-// Put writes the zero value under the key before its first value over a
-// new medium in memory.
+// Put writes the zero value under the key before its first value. The door
+// of its check opens the defect over a new medium in memory.
 func vaultPutTrustsAPartialRecord(h *VaultHandle) durable.Vault {
 	return h.Open(medium.NewMemory())
 }
 
 // vaultPutTrustsAPartialRecordOpen opens the planted defect of a Vault
-// whose Put writes the zero value under the key before its first value
-// over a subject that the application opens over the medium m.
+// whose Put writes the zero value under the key before its first value.
+// The defect wraps a subject that the application opens over the medium m.
 func vaultPutTrustsAPartialRecordOpen(h *VaultHandle, m medium.FS) durable.Vault {
 	return &vaultPutTrustsAPartialRecordDefect{vaultOverEmbedded: h.FreshOpen(m)}
 }
@@ -622,30 +648,85 @@ func (d *vaultGetIgnoresChecksumDefect) Get(p0 context.Context, p1 string) (r0 s
 }
 
 // vaultGetIgnoresChecksum returns the planted defect of a Vault whose Get
-// returns the zero value of a corrupted record over a new medium in
-// memory.
+// returns the zero value of a corrupted record. The door of its check
+// opens the defect over a new medium in memory.
 func vaultGetIgnoresChecksum(h *VaultHandle) durable.Vault {
 	return h.Open(medium.NewMemory())
 }
 
 // vaultGetIgnoresChecksumOpen opens the planted defect of a Vault whose
-// Get returns the zero value of a corrupted record over a subject that the
-// application opens over the medium m.
+// Get returns the zero value of a corrupted record. The defect wraps a
+// subject that the application opens over the medium m.
 func vaultGetIgnoresChecksumOpen(h *VaultHandle, m medium.FS) durable.Vault {
 	return &vaultGetIgnoresChecksumDefect{vaultOverEmbedded: h.FreshOpen(m)}
 }
 
 // vaultPutHidesAFullMedium returns the planted defect of a Vault over a
-// medium that reports a full write as written over a new medium in memory.
+// medium that reports a full write as written. The door of its check opens
+// the defect over a new medium in memory.
 func vaultPutHidesAFullMedium(h *VaultHandle) durable.Vault {
 	return h.Open(medium.NewMemory())
 }
 
-// vaultPutHidesAFullMediumOpen opens a subject of the application over the
-// medium m that probe.Unfilled wraps, as the planted defect of a Vault
-// over a medium that reports a full write as written.
+// vaultPutHidesAFullMediumOpen opens the planted defect of a Vault over a
+// medium that reports a full write as written. The application opens the
+// subject over the medium m that probe.Unfilled wraps.
 func vaultPutHidesAFullMediumOpen(h *VaultHandle, m medium.FS) durable.Vault {
 	return h.FreshOpen(probe.Unfilled(m))
+}
+
+// vaultBlocksAfterRecoveryDefect is the planted defect of a Vault whose
+// each call after the first restart blocks until its case ends.
+type vaultBlocksAfterRecoveryDefect struct {
+	vaultOverEmbedded
+	lifetime context.Context
+}
+
+// Put is the override of the planted defect.
+func (d *vaultBlocksAfterRecoveryDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
+	if err := p0.Err(); err != nil {
+		r0 = err
+		return r0
+	}
+	if d.lifetime != nil {
+		r0 = host.Park(p0)
+		return r0
+	}
+	return d.vaultOverEmbedded.Put(p0, p1, p2)
+}
+
+// Get is the override of the planted defect.
+func (d *vaultBlocksAfterRecoveryDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	if err := p0.Err(); err != nil {
+		r1 = err
+		return r0, r1
+	}
+	if d.lifetime != nil {
+		r1 = host.Park(p0)
+		return r0, r1
+	}
+	return d.vaultOverEmbedded.Get(p0, p1)
+}
+
+// vaultBlocksAfterRecovery returns the subject of the application in place
+// of the planted defect of a Vault whose each call after the first restart
+// blocks until its case ends. The door Host of its check opens the defect
+// in a world.
+func vaultBlocksAfterRecovery(h *VaultHandle) durable.Vault {
+	return h.Fresh()
+}
+
+// vaultBlocksAfterRecoveryHost opens the planted defect of a Vault whose
+// each call after the first restart blocks until its case ends. The defect
+// wraps the subject that the application opens over the environment env of
+// an incarnation. From the second incarnation of the host of env on, each
+// callable of the defect blocks until its context ends.
+func vaultBlocksAfterRecoveryHost(h *VaultHandle, env *host.Env) durable.Vault {
+	d := &vaultBlocksAfterRecoveryDefect{vaultOverEmbedded: h.FreshHost(env)}
+	if env.Incarnation() > 1 {
+		d.lifetime = env.Lifetime()
+	}
+	return d
 }
 
 // vaultGetPanicsDefect is the planted defect of a Vault whose Get panics.
@@ -705,4 +786,97 @@ func vaultGetValueBeside(h *VaultHandle) durable.Vault {
 	return &vaultGetValueBesideDefect{vaultOverEmbedded: h.Fresh()}
 }
 
-// dokimi:provenance sha256:77dc525e45ac757cf1fe9f68d1d8a90a073db8b87bd00bd080a8a0dc1a4400a3
+// vaultPutCall calls Put on subject with the arguments args, and returns
+// the values of the call beside its error.
+func vaultPutCall(ctx context.Context, subject durable.Vault, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	a1, _ := args[1].(string)
+	return nil, subject.Put(ctx, a0, a1)
+}
+
+// vaultGetCall calls Get on subject with the arguments args, and returns
+// the values of the call beside its error.
+func vaultGetCall(ctx context.Context, subject durable.Vault, args []any) ([]any, error) {
+	a0, _ := args[0].(string)
+	r0, err := subject.Get(ctx, a0)
+	return []any{r0}, err
+}
+
+// vaultReference returns the function that applies an operation of a
+// history to the reference r by the name of its callable.
+func vaultReference(r durable.Vault) func(context.Context, string, []any) conform.Output {
+	return func(ctx context.Context, operation string, args []any) conform.Output {
+		var values []any
+		var err error
+		switch operation {
+		case "Put":
+			values, err = vaultPutCall(ctx, r, args)
+		case "Get":
+			values, err = vaultGetCall(ctx, r, args)
+		}
+		return conform.OutputOf(err, values...)
+	}
+}
+
+// vaultWorld is the world of the subject of Vault, which the checks of its
+// world probes run.
+var vaultWorld = probe.World[durable.Vault]{
+	Operations: vaultOperations,
+	Reference:  vaultReference,
+	Corrupt:    durable.ErrCorrupt,
+}
+
+// vaultOperations returns the operations of the world of Vault in the case
+// c, over the pools of the keys that c chooses.
+func vaultOperations(c *prop.Case) []probe.Operation[durable.Vault] {
+	keysString := probe.NewPool(
+		c,
+		prop.List(prop.Of[string](), prop.Unique(), prop.MinSize(1), prop.MaxSize(3)),
+		"keys.string",
+	)
+	return []probe.Operation[durable.Vault]{
+		{
+			Name: "Put",
+			Input: func(c *prop.Case) any {
+				key := keysString.Pick(c, "put.key")
+				value := c.Draw(prop.Of[string](), "put.value")
+				return []any{key, value}
+			},
+			Args: func(input any) []any {
+				args, _ := input.([]any)
+				return args
+			},
+			Keys: func(input any) []any {
+				args, _ := input.([]any)
+				return []any{args[0]}
+			},
+			Call: func(ctx context.Context, s durable.Vault, input any) (conform.Output, error) {
+				args, _ := input.([]any)
+				values, err := vaultPutCall(ctx, s, args)
+				return conform.OutputOf(err, values...), err
+			},
+		},
+		{
+			Name: "Get",
+			Input: func(c *prop.Case) any {
+				key := keysString.Pick(c, "get.key")
+				return []any{key}
+			},
+			Args: func(input any) []any {
+				args, _ := input.([]any)
+				return args
+			},
+			Keys: func(input any) []any {
+				args, _ := input.([]any)
+				return []any{args[0]}
+			},
+			Call: func(ctx context.Context, s durable.Vault, input any) (conform.Output, error) {
+				args, _ := input.([]any)
+				values, err := vaultGetCall(ctx, s, args)
+				return conform.OutputOf(err, values...), err
+			},
+		},
+	}
+}
+
+// dokimi:provenance sha256:f6b7393c2264166821b482dca2d4b45c9ca1b7171dcfda3a648b48842d6d51c1

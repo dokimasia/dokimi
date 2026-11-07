@@ -133,6 +133,8 @@ var Families = []Family{
 			"iface/detector/readerwithbool/readerwithbooltest.InMemory",
 			"iface/detector/writer/writertest.InMemory",
 			"iface/door/durable/durabletest.Journal",
+			"iface/door/hosted/hostedtest.Flushed",
+			"iface/door/hosted/hostedtest.Scheduled",
 			"iface/door/reference/referencetest.PairStore",
 			"iface/door/signer/signertest.Memory",
 			"iface/lang/embedded/embeddedtest.InMemory",
@@ -275,6 +277,7 @@ var Families = []Family{
 		Name:           "counters",
 		Representation: "one integer",
 		Subjects: []string{
+			"iface/door/rooted/app.Tally",
 			"iface/lang/crosspackage/crosspackagetest.InMemory",
 			"iface/lang/nested/nestedtest.InMemory",
 			"iface/lang/nocontext/nocontexttest.InMemory",

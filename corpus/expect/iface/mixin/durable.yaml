@@ -73,6 +73,10 @@ declarations:
           read: vault.get
         law: acknowledged-write-survives-a-crash
         reason: lost-acknowledged-write
+      vault/completes-after-recovery:
+        claim: completes-after-recovery
+        law: call-completes-after-recovery
+        reason: call-open-after-recovery
     authored: []
     ceilings: []
     refusals: {}

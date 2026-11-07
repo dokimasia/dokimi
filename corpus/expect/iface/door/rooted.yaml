@@ -1,0 +1,39 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/door/rooted
+level: 4
+subjects:
+  - type: iface/door/rooted/app.Tally
+controls: []
+declarations:
+  tally:
+    checks:
+      tally.count/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      tally.count/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      tally.count/zero-on-error:
+        claim: zero-on-error
+        law: no-value-beside-an-error
+        reason: value-beside-error
+      tally.inc/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      tally.inc/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored:
+      - tally.count/counts-each-inc
+    ceilings: []
+    refusals: {}
+    unclaimed:
+      - classification: shape:lifecycle
+        callable: tally.inc
+        stance: silent

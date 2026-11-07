@@ -868,6 +868,33 @@ func TestDerive(t *testing.T) {
 			assert.Empty(t, got.Refusals, "no callable refuses the claim")
 		})
 
+		t.Run("binds a claim of a declaration with a callable of its classification once, on its first callable "+
+			"that passes the gates", func(t *testing.T) {
+			t.Parallel()
+			c := claimOn("whole", rules.Licence{Mixin: "durable", Declaration: true}, spec.ReturnsAValue)
+			decl := []derive.Facts{withMixins(writer(), "durable"), reader()}
+
+			got, err := derive.Derive(decl, []rules.Claim{c}, nil, runtime, nil)
+
+			assert.NoError(t, err, "the declaration derives")
+			assert.Equal(t, identities(got), []string{"Store/whole"}, "the declaration binds the claim once")
+			assert.Equal(t, got.Checks[0].Facts.Callable, "Read",
+				"the check binds on the first callable that returns a value, which has no mixin")
+			assert.Empty(t, got.Refusals, "the callable with the mixin refuses nothing")
+		})
+
+		t.Run("licenses no claim of a declaration without a callable of the classification of its licence",
+			func(t *testing.T) {
+				t.Parallel()
+				c := claimOn("whole", rules.Licence{Mixin: "durable", Declaration: true}, spec.ReturnsAValue)
+
+				got, err := derive.Derive([]derive.Facts{writer(), reader()}, []rules.Claim{c}, nil, runtime, nil)
+
+				assert.NoError(t, err, "the declaration derives")
+				assert.Empty(t, got.Checks, "no callable has the mixin")
+				assert.Empty(t, got.Refusals, "no callable refuses the claim")
+			})
+
 		t.Run("names the check of the declaration of a function by the function", func(t *testing.T) {
 			t.Parallel()
 			slug := pure()

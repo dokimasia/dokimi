@@ -1429,6 +1429,25 @@ claims:
     inputs:
       durable: {from: partner, partner: read}
     clause: "a {declaration} over a medium that reports a full write as written"
+  linearizable-under-faults:
+    generator: suite
+    scope: declaration
+    licences:
+      - declaration: true
+        mixin: durable
+    gates: [returns-a-value]
+    inputs:
+      world: {from: declaration}
+    clause: "a {declaration} whose each restart opens the subject over a new medium"
+  completes-after-recovery:
+    generator: suite
+    scope: declaration
+    licences:
+      - declaration: true
+        mixin: durable
+    inputs:
+      world: {from: declaration}
+    clause: "a {declaration} whose each call after the first restart blocks until its case ends"
   delivers-each-append:
     generator: suite
     licences:

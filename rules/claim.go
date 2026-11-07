@@ -73,7 +73,8 @@ type Classification struct {
 
 // Licence is one classification that licenses a claim, with its
 // conditions. Exactly one of Callable, Context, Declaration and the
-// classification is set.
+// classification is set. A licence of Declaration may also set a
+// classification.
 type Licence struct {
 	Classification
 
@@ -97,9 +98,10 @@ type Licence struct {
 	Context bool `json:"context,omitempty"`
 
 	// Declaration licenses the claim once on every declaration, for a claim
-	// with the scope declaration. The claim binds on the first callable of the
-	// declaration that passes its gates, or on its first callable where none
-	// does.
+	// with the scope declaration. With a classification, it licenses the
+	// claim once on every declaration with a callable of the classification.
+	// The claim binds on the first callable of the declaration that passes its
+	// gates, or on its first callable where none does.
 	Declaration bool `json:"declaration,omitempty"`
 }
 

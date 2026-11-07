@@ -16,6 +16,10 @@
       "changes": "callable",
       "min-steps": 2
     },
+    "amnesiac-recovery": {
+      "changes": "medium",
+      "min-steps": 2
+    },
     "answers-a-sample": {
       "changes": "callable",
       "min-steps": 1
@@ -23,6 +27,10 @@
     "balances-each-call": {
       "changes": "callable",
       "min-steps": 2
+    },
+    "blocks-after-recovery": {
+      "changes": "declaration",
+      "min-steps": 1
     },
     "breaks-the-mode-after-three": {
       "changes": "callable",

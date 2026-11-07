@@ -531,8 +531,10 @@ func namesOf(f *Facts) map[string]string {
 // A callable with two instances of the contract of a licence has it once for
 // each instance. One callable of the declaration decl has the licence of a
 // claim of the declaration: the first callable that passes the gates of c, or
-// the first callable where none does. For a claim of the scope declaration
-// whose licence is a classification, that callable is among the callables
+// the first callable where none does. A licence of the declaration with a
+// classification licenses the claim only where a callable of decl has the
+// classification. For a claim of the scope declaration whose licence is a
+// classification alone, the callable of the licence is among the callables
 // with the classification. For a claim with the gate transactions, it can
 // also be the begin of a handle with a method of the classification.
 func licensed(c *rules.Claim, f *Facts, decl []Facts) []licensing {
@@ -553,6 +555,10 @@ func licensed(c *rules.Claim, f *Facts, decl []Facts) []licensing {
 				out = append(out, licensing{licence: l})
 			}
 		case l.Declaration:
+			classified := l.Classification != rules.Classification{}
+			if classified && anchorOf(c, decl, func(g *Facts) bool { return holds(l, g) }) == nil {
+				continue
+			}
 			if f == anchorOf(c, decl, func(*Facts) bool { return true }) {
 				out = append(out, licensing{licence: l})
 			}

@@ -564,6 +564,23 @@
         }
       ]
     },
+    "completes-after-recovery": {
+      "generator": "suite",
+      "scope": "declaration",
+      "clause": "a {declaration} whose each call after the first restart blocks until its case ends",
+      "licences": [
+        {
+          "mixin": "durable",
+          "declaration": true
+        }
+      ],
+      "inputs": [
+        {
+          "name": "world",
+          "from": "declaration"
+        }
+      ]
+    },
     "compounds-over-sequences": {
       "generator": "suite",
       "clause": "a {declaration} whose {callable} does nothing from its fourth call on",
@@ -1758,6 +1775,26 @@
         },
         {
           "name": "reference",
+          "from": "declaration"
+        }
+      ]
+    },
+    "linearizable-under-faults": {
+      "generator": "suite",
+      "scope": "declaration",
+      "clause": "a {declaration} whose each restart opens the subject over a new medium",
+      "licences": [
+        {
+          "mixin": "durable",
+          "declaration": true
+        }
+      ],
+      "gates": [
+        "returns-a-value"
+      ],
+      "inputs": [
+        {
+          "name": "world",
           "from": "declaration"
         }
       ]

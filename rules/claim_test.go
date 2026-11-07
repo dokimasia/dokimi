@@ -199,13 +199,16 @@ func TestClaim(t *testing.T) {
 					"claim "+id+" has licences when its generator is suite",
 				)
 				for _, l := range c.Licences {
-					if l.Callable || l.Context || l.Declaration {
+					if l.Callable || l.Context {
 						expect.Equal(
 							t,
 							l.Classification,
 							rules.Classification{},
 							"a licence of claim "+id+" sets one kind",
 						)
+						continue
+					}
+					if l.Declaration && l.Classification == (rules.Classification{}) {
 						continue
 					}
 					s, ok := classified(l.Classification)

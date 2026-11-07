@@ -46,6 +46,9 @@ unclaimed:
   mixin:runs-until-cancelled:
     stance: silent
     note: The mixin documents that the callable runs until its context ends.
+  mixin:creates:
+    stance: silent
+    note: The mixin documents that the callable creates a record and returns the key of the record.
   mixin:default-on-error:
     stance: blocked
     note: The mixin declares no default value for a check to compare.

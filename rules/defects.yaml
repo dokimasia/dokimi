@@ -331,6 +331,12 @@ forms:
   hides-a-full-medium:
     changes: medium
     min-steps: 1
+  amnesiac-recovery:
+    changes: medium
+    min-steps: 2
+  blocks-after-recovery:
+    changes: declaration
+    min-steps: 1
   drops-the-field:
     changes: callable
     min-steps: 1

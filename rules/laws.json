@@ -41,6 +41,10 @@
       "depth": "generated-inputs",
       "distinct-from": []
     },
+    "call-completes-after-recovery": {
+      "depth": "quiescence",
+      "distinct-from": []
+    },
     "call-converges-once-its-scope-is-open": {
       "depth": "nothing-beyond-a-caller",
       "distinct-from": []
@@ -234,6 +238,15 @@
     "history-replays-in-its-stamped-order": {
       "depth": "generated-sequences",
       "distinct-from": []
+    },
+    "history-under-faults-is-linearizable": {
+      "depth": "quiescence",
+      "distinct-from": [
+        {
+          "law": "concurrent-history-is-linearizable",
+          "case": "A subject whose concurrent calls agree with the reference while it runs and that loses its writes at a crash."
+        }
+      ]
     },
     "induced-failure-latches": {
       "depth": "nothing-beyond-a-caller",

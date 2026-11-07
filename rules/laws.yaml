@@ -352,6 +352,14 @@ laws:
   acknowledged-write-survives-a-crash:
     depth: killable-process-or-breakable-medium
     distinct-from: []
+  history-under-faults-is-linearizable:
+    depth: quiescence
+    distinct-from:
+      - law: concurrent-history-is-linearizable
+        case: A subject whose concurrent calls agree with the reference while it runs and that loses its writes at a crash.
+  call-completes-after-recovery:
+    depth: quiescence
+    distinct-from: []
   recovery-returns-whole-records:
     depth: killable-process-or-breakable-medium
     distinct-from: []

@@ -66,10 +66,34 @@ type Options struct {
 // value of another package under a name of the package, as in ErrNotWriter =
 // agent.ErrNotWriter. Its message opens with the prefix of the package that
 // declares it, whose checks pin that prefix.
+//
+// A child of a family wraps another error value of its package at the
+// opening of its message, as ErrExposure = fmt.Errorf("%w: no exposure",
+// ErrPolicy) wraps ErrPolicy, and the rules of eidos state that wrap.
+// Ancestors are the names of the error values of the package that the value
+// wraps: the error value that it wraps, the error value that one wraps, and
+// so on, nearest first. A wrap of a variable that is no error value of the
+// package counts through that variable. Parent refers to the first of the
+// ancestors, and is nil for a value without ancestors.
 type Sentinel struct {
-	Ref      *emit.TypeRef
-	Name     string
-	Reexport bool
+	Ref       *emit.TypeRef
+	Parent    *emit.TypeRef
+	Name      string
+	Ancestors []string
+	Reexport  bool
+}
+
+// peersOf returns the error values of all with which the checks of s compare
+// s: each value but s and its ancestors, in order. A child matches each of
+// its ancestors, and its message opens with the message of each.
+func peersOf(all []Sentinel, s Sentinel) []Sentinel {
+	out := make([]Sentinel, 0, len(all))
+	for _, other := range all {
+		if other.Name != s.Name && !slices.Contains(s.Ancestors, other.Name) {
+			out = append(out, other)
+		}
+	}
+	return out
 }
 
 // Member is one field of an error type that a check writes. Value is the
@@ -231,6 +255,10 @@ var schema = directive.Schema{
 // value is set, has a message with the opening of [PrefixParam], shares no
 // message with another, has no message that opens with another, and matches
 // no other error value of the package or of a package of [NeighboursParam].
+// A child of a family wraps another error value of the package at the opening
+// of its message. Its checks pin that it matches its parent and that its
+// message opens with the message of its parent, and the checks against
+// another error value leave out its ancestors.
 // They pin that each error type reports a message with the opening, matches
 // no other error type, agrees with the standard comparison where it compares
 // itself and has no cause, exposes the cause that it was given, and puts
@@ -358,15 +386,20 @@ func (g *generator) prefixOf(m *sdk.PackageMatch, p part) string {
 // declarations, with the identity of the first. A variable is an error
 // value where the rules of its language accept its name for one. A value is
 // a re-export where its initializer resolves in its scope to a variable of
-// another package.
+// another package. The ancestors of each value are the error values of pkg
+// that it wraps, as the rules state the wrap of each variable of pkg.
 func sentinelsOf(b *rules.Bound, pkg *node.Package) ([]Sentinel, symbol.Identity) {
 	var out []Sentinel
 	var first symbol.Identity
+	wraps := map[string]*emit.TypeRef{}
 	for _, f := range pkg.Files {
 		for _, d := range f.Decls {
 			v, isVariable := d.(*node.Variable)
 			if !isVariable {
 				continue
+			}
+			if wrapped, wrap := b.Wrapped(v); wrap && wrapped.ID.Package == v.ID.Package {
+				wraps[v.Name] = &emit.TypeRef{Spelling: wrapped.Name, Target: wrapped.ID}
 			}
 			if _, named := b.SentinelBase(v.Name); !named {
 				continue
@@ -384,7 +417,35 @@ func sentinelsOf(b *rules.Bound, pkg *node.Package) ([]Sentinel, symbol.Identity
 			})
 		}
 	}
+	ancestorsOf(out, wraps)
 	return out, first
+}
+
+// ancestorsOf sets the ancestors and the parent of each error value of
+// sentinels. wraps contains the variable of the package that the initializer
+// of each variable wraps, by the name of the variable. The walk from a value
+// follows wraps through each variable, records each error value of
+// sentinels that it meets, and stops at a variable that it met, so a cycle
+// of wraps ends.
+func ancestorsOf(sentinels []Sentinel, wraps map[string]*emit.TypeRef) {
+	values := make(map[string]bool, len(sentinels))
+	for i := range sentinels {
+		values[sentinels[i].Name] = true
+	}
+	for i := range sentinels {
+		s := &sentinels[i]
+		met := map[string]bool{s.Name: true}
+		for w := wraps[s.Name]; w != nil && !met[w.Spelling]; w = wraps[w.Spelling] {
+			met[w.Spelling] = true
+			if !values[w.Spelling] {
+				continue
+			}
+			if s.Parent == nil {
+				s.Parent = w
+			}
+			s.Ancestors = append(s.Ancestors, w.Spelling)
+		}
+	}
 }
 
 // kindsOf returns the public error types of the package of m sorted by name,

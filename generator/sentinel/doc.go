@@ -18,6 +18,18 @@
 // standard comparison, exposes its cause and puts each field of text into
 // its message.
 //
+// A package can declare a family of error values, in which a child wraps its
+// parent at the opening of its message:
+//
+//	var ErrPolicy = errors.New("policy: invalid policy")
+//
+//	var ErrExposure = fmt.Errorf("%w: no exposure", ErrPolicy)
+//
+// The rules of eidos state the wrap. The checks of a child pin that it
+// matches its parent and that its message opens with the message of its
+// parent. The checks against another error value leave out the ancestors of
+// the child: its parent, the parent of its parent, and so on.
+//
 // # Options
 //
 // The option prefix sets the opening of each message of a package whose

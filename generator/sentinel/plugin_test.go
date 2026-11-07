@@ -13,6 +13,7 @@ import (
 	golang "go.dokimi.dev/eidos/lang/go"
 	"go.dokimi.dev/eidos/lang/typescript"
 	"go.dokimi.dev/eidos/sdk/diag"
+	"go.dokimi.dev/eidos/sdk/emit"
 	"go.dokimi.dev/eidos/sdk/node"
 	"go.dokimi.dev/eidos/sdk/plugin"
 	"go.dokimi.dev/eidos/sdk/plugintest"
@@ -22,13 +23,16 @@ import (
 	"go.dokimi.dev/dokimi/internal/gentest"
 )
 
-// The packages that sentinel reports.
+// The packages that sentinel reports, and the tree of Go that no module
+// builds, with its package of a cycle of wraps.
 const (
 	emptyPackage    = "example.com/shop/bad/empty"
 	selfPackage     = "example.com/shop/bad/self"
 	distantPackage  = "example.com/shop/bad/distant"
 	strangerPackage = "example.com/shop/bad/stranger"
 	aliasPackage    = "example.com/shop/alias"
+	cycleTree       = "testdata/cycles"
+	cyclePackage    = "cycle"
 )
 
 // sentinel records the checks of the error values and of the error types of
@@ -202,6 +206,68 @@ func TestSentinel(t *testing.T) {
 			}
 			expect.Equal(t, reexports, map[string]bool{"ErrBase": false, "ErrSame": false},
 				"ErrSame is ErrBase of the same package under a second name")
+		})
+
+		families := []struct {
+			name string
+			dir  string
+			pkgs []string
+			give string
+			want map[string]string
+		}{
+			{
+				name: "records the ancestors of each error value of a family, nearest first",
+				dir:  goTree, pkgs: []string{familyPackage}, give: "family",
+				want: map[string]string{
+					"ErrPolicy": "", "ErrExposure": "ErrPolicy", "ErrAccess": "ErrPolicy",
+					"ErrAnonymous": "ErrAccess ErrPolicy", "ErrOverQuota": "ErrPolicy", "ErrClosed": "",
+				},
+			},
+			{
+				name: "records no ancestor for an error value that wraps an error value of another package",
+				dir:  goTree, pkgs: []string{storePackage, foreignPackage}, give: "foreign",
+				want: map[string]string{"ErrMissing": "", "ErrStale": "", "ErrNotFound": ""},
+			},
+			{
+				name: "records each ancestor of a cycle of wraps once",
+				dir:  cycleTree, pkgs: []string{cyclePackage}, give: "cycle",
+				want: map[string]string{
+					"ErrFirst": "ErrSecond", "ErrSecond": "ErrFirst", "ErrStart": "ErrFirst ErrSecond",
+				},
+			},
+		}
+		for _, tt := range families {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				got := generate(t, golang.Target, tt.dir, tt.pkgs...).checks[tt.give]
+				ancestors := map[string]string{}
+				for _, s := range got.Sentinels {
+					ancestors[s.Name] = strings.Join(s.Ancestors, " ")
+				}
+				expect.Equal(t, ancestors, tt.want,
+					"each error value has the error values that it wraps, nearest first")
+			})
+		}
+
+		t.Run("records the reference to the parent of each child of a family", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, golang.Target, goTree, familyPackage).checks["family"]
+			parents := map[string]*emit.TypeRef{}
+			for _, s := range got.Sentinels {
+				parents[s.Name] = s.Parent
+			}
+			policy := &emit.TypeRef{Spelling: "ErrPolicy", Target: symbol.Identity{
+				Lang: golang.Lang, Package: familyPackage, Name: "ErrPolicy", Kind: symbol.KindVariable,
+			}}
+			access := &emit.TypeRef{Spelling: "ErrAccess", Target: symbol.Identity{
+				Lang: golang.Lang, Package: familyPackage, Name: "ErrAccess", Kind: symbol.KindVariable,
+			}}
+			expect.Equal(t, parents, map[string]*emit.TypeRef{
+				"ErrPolicy": nil, "ErrExposure": policy, "ErrAccess": policy, "ErrAnonymous": access,
+				"ErrOverQuota": policy, "ErrClosed": nil,
+			}, "each child refers to the nearest error value of the package that its initializer wraps")
 		})
 
 		t.Run("records each error type under the param remote as remote", func(t *testing.T) {
@@ -378,15 +444,6 @@ func TestSentinel(t *testing.T) {
 			})
 		}
 	})
-}
-
-// names returns the names of the error values, joined by spaces.
-func names(sentinels []sentinel.Sentinel) string {
-	out := make([]string, 0, len(sentinels))
-	for _, s := range sentinels {
-		out = append(out, s.Name)
-	}
-	return strings.Join(out, " ")
 }
 
 // describe returns the facts of each error type: its name, its pointer, its

@@ -64,6 +64,25 @@ func TestGolang(t *testing.T) {
 		assert.True(t, declared, "the target golang declares the helper pascal")
 		expect.Equal(t, pascal("store"), "Store", "the test of the package store is TestStoreSentinels")
 	})
+
+	t.Run("compares an error value with each error value but its ancestors", func(t *testing.T) {
+		t.Parallel()
+
+		templates, provides := sentinel.New().(plugin.TemplateProvider)
+		assert.True(t, provides, "sentinel declares templates")
+		peers, declared := templates.TemplateFuncs(golang.Target)["sentinelPeers"].(func(
+			[]sentinel.Sentinel, sentinel.Sentinel) []sentinel.Sentinel)
+		assert.True(t, declared, "the target golang declares the helper sentinelPeers")
+		policy := sentinel.Sentinel{Name: "ErrPolicy"}
+		anonymous := sentinel.Sentinel{Name: "ErrAnonymous", Ancestors: []string{"ErrAccess", "ErrPolicy"}}
+		all := []sentinel.Sentinel{
+			policy, {Name: "ErrAccess", Ancestors: []string{"ErrPolicy"}}, anonymous, {Name: "ErrClosed"},
+		}
+		expect.Equal(t, names(peers(all, anonymous)), "ErrClosed",
+			"a child compares with each error value but itself and its ancestors")
+		expect.Equal(t, names(peers(all, policy)), "ErrAccess ErrAnonymous ErrClosed",
+			"a parent compares with each of its descendants")
+	})
 }
 
 // rendered runs sentinel over the packages of the Go tree whose checks build,
@@ -73,7 +92,7 @@ func rendered(t *testing.T) fstest.MapFS {
 
 	p := sentinel.New()
 	f := fixture(t, golang.Target, goTree, p, storePackage, neighbourPackage, embeddedPackage, noprefixPackage,
-		splitPackage, typedPackage, relayPackage, scopedPackage, scopedTestPackage)
+		splitPackage, typedPackage, relayPackage, scopedPackage, scopedTestPackage, familyPackage, foreignPackage)
 	res := f.Generate(t, p)
 	assert.NoError(t, res.Err, "the generator runs whole")
 	return gentest.Rendered(t, f, res, p, gobackend.New())

@@ -29,14 +29,19 @@ func (golangPart) Lang() symbol.Lang { return golang.Lang }
 func (golangPart) Target() plugin.Target { return golang.Target }
 
 // pascalHelper is the name of the helper that writes the name of a package
-// in Pascal case, as the name of a test function contains it.
-const pascalHelper = "pascal"
+// in Pascal case, as the name of a test function contains it. peersHelper is
+// the name of the helper that returns the error values with which the checks
+// of an error value compare it.
+const (
+	pascalHelper = "pascal"
+	peersHelper  = "sentinelPeers"
+)
 
-// Options returns the template tree and the helper of the target golang.
+// Options returns the template tree and the helpers of the target golang.
 func (golangPart) Options() []sdk.TargetOption {
 	return []sdk.TargetOption{
 		sdk.TemplatesOf(golangTemplates, golang.Target),
-		sdk.Funcs(template.FuncMap{pascalHelper: naming.Pascal}),
+		sdk.Funcs(template.FuncMap{pascalHelper: naming.Pascal, peersHelper: peersOf}),
 	}
 }
 

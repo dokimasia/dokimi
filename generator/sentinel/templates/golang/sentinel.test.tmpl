@@ -2,25 +2,23 @@
 {{- range .Records}}
 {{- $r := .Decl}}
 {{- $c := .Data}}
-{{- $many := gt (len $c.Sentinels) 1}}
 {{- $near := false}}{{range $c.Neighbours}}{{if .Sentinels}}{{$near = true}}{{end}}{{end}}
 {{- range $s := $c.Sentinels}}{{$assert := import "go.dokimi.dev/assert"}}
 {{- $err := spell $s.Ref}}
+{{- $peers := sentinelPeers $c.Sentinels $s}}
 
 {{docs (wrapdocs (printf `Test%s checks the sentinel error %s. A caller matches it with errors.Is
 and reads its message, so it has a message and an identity of its own.` $s.Name $s.Name))}}
 {{- ""}}func Test{{$s.Name}}(t *{{$testing}}.T) {
 	t.Parallel()
-{{- if $many}}
+{{- if $peers}}
 
 	others := []struct {
 		name string
 		err  error
 	}{
-{{- range $c.Sentinels}}
-{{- if ne .Name $s.Name}}
+{{- range $peers}}
 		{"{{.Name}}", {{spell .Ref}}},
-{{- end}}
 {{- end}}
 	}
 {{- end}}
@@ -40,14 +38,28 @@ and reads its message, so it has a message and an identity of its own.` $s.Name 
 			{{$assert}}.HasPrefix(t, {{$err}}.Error(), {{printf "%q" $c.Prefix}}, "the message of {{$s.Name}} opens with the package prefix")
 		})
 {{- end}}
-{{- if $many}}{{$expect := import "go.dokimi.dev/assert/expect"}}
+{{- if or $peers $s.Parent}}{{$expect := import "go.dokimi.dev/assert/expect"}}
 
 		t.Run("returns a message of its own", func(t *{{$testing}}.T) {
 			t.Parallel()
+{{- with $s.Parent}}
+			{{$expect}}.NotEqual(t, {{$err}}.Error(), {{spell .}}.Error(), "{{$s.Name}} has the message of {{.Spelling}}")
+{{- end}}
+{{- if $peers}}
 			for _, other := range others {
 				{{$expect}}.NotEqual(t, {{$err}}.Error(), other.err.Error(), "{{$s.Name}} has the message of "+other.name)
 			}
+{{- end}}
 		})
+{{- end}}
+{{- with $s.Parent}}
+
+		t.Run("opens with the message of its parent", func(t *{{$testing}}.T) {
+			t.Parallel()
+			{{$assert}}.HasPrefix(t, {{$err}}.Error(), {{spell .}}.Error(), "the message of {{$s.Name}} opens with the message of {{.Spelling}}")
+		})
+{{- end}}
+{{- if $peers}}{{$expect := import "go.dokimi.dev/assert/expect"}}
 
 		t.Run("opens with the message of no other sentinel", func(t *{{$testing}}.T) {
 			t.Parallel()
@@ -58,11 +70,18 @@ and reads its message, so it has a message and an identity of its own.` $s.Name 
 		})
 {{- end}}
 	})
-{{- if or $many $near}}{{$expect := import "go.dokimi.dev/assert/expect"}}
+{{- if or $peers $s.Parent $near}}{{$expect := import "go.dokimi.dev/assert/expect"}}
 
 	t.Run("errors.Is", func(t *{{$testing}}.T) {
 		t.Parallel()
-{{- if $many}}
+{{- with $s.Parent}}
+
+		t.Run("matches its parent", func(t *{{$testing}}.T) {
+			t.Parallel()
+			{{$assert}}.ErrorIs(t, {{$err}}, {{spell .}}, "{{$s.Name}} matches {{.Spelling}}")
+		})
+{{- end}}
+{{- if $peers}}
 
 		t.Run("matches no other sentinel of the package", func(t *{{$testing}}.T) {
 			t.Parallel()

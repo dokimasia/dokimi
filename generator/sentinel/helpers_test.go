@@ -32,6 +32,8 @@ const (
 	splitPackage     = "example.com/shop/split"
 	typedPackage     = "example.com/shop/typed"
 	relayPackage     = "example.com/shop/relay"
+	familyPackage    = "example.com/shop/family"
+	foreignPackage   = "example.com/shop/foreign"
 	storeModule      = "store"
 	testTemplate     = "sentinel.test.tmpl"
 )
@@ -74,6 +76,15 @@ func run(t *testing.T, p plugin.Generator, target plugin.Target, dir string, pkg
 		got.checks[name] = r.Data
 	}
 	return got
+}
+
+// names returns the names of the error values, joined by spaces.
+func names(sentinels []sentinel.Sentinel) string {
+	out := make([]string, 0, len(sentinels))
+	for _, s := range sentinels {
+		out = append(out, s.Name)
+	}
+	return strings.Join(out, " ")
 }
 
 // statements returns the statements of a method of a record as text: the

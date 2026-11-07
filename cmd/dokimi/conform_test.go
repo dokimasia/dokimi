@@ -155,6 +155,34 @@ func TestConform(t *testing.T) {
 				"the summary counts the fixtures")
 		})
 
+		levels := []struct {
+			name      string
+			giveLevel int
+			want      string
+		}{
+			{
+				name: "counts a fixture at the level of the overlay", giveLevel: 3,
+				want: "go: level 3, 1 fixtures, 1 conformant, 0 declared differences\n",
+			},
+			{
+				name: "leaves out a fixture above the level of the overlay", giveLevel: 2,
+				want: "go: level 2, 0 fixtures, 0 conformant, 0 declared differences\n",
+			},
+		}
+		for _, tt := range levels {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				tree := corpusOf(passing, noOutcomes)
+				tree[corpusOverlay] = files.Text(fmt.Sprintf("language: go\nlevel: %d\ndiverge: []\n", tt.giveLevel))
+				dir := files.Workspace(t, tree)
+
+				stdout, stderr, status := runConform(t, dir, standalone, "--lang", "go")
+
+				assert.Equal(t, status, 0, "the corpus conforms: "+stderr)
+				assert.Contains(t, stdout, tt.want, "the summary counts the fixtures at the level and below it")
+			})
+		}
+
 		t.Run("fails a planted difference with the fixture and the two reason codes", func(t *testing.T) {
 			t.Parallel()
 			dir := files.Workspace(t, corpusOf(recording(spec.WrongReason, spec.ValueBesideError), cancelled))

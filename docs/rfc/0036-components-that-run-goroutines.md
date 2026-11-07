@@ -27,7 +27,7 @@ A storage engine, a cache with a background flusher and an RPC service run their
 - **The world of a subject.** A new family of derived checks runs the subject of a declaration on one host. Concurrent clients make the derived calls of the declaration. Between their calls the world crashes the subject and opens it again, strikes faults of its disk, its dependencies and its clock, and advances time. The claims `linearizable-under-faults` and `completes-after-recovery` judge the history of the calls against the reference of the declaration.
 - **Components in a system.** A process of the world of a system can run a Go component on a host of its own. A network of streams and datagrams connects the hosts, with the partitions and the link faults of the world.
 
-The run checks the history of the calls after every step, partition by partition. The waits of tasks and the replays of a failing case are changes of the definition of assert-spec, which the RFC requires.
+The run checks the history of the calls, partition by partition, after every step at which no client has an open call. The waits of tasks and the replays of a failing case are changes of the definition of assert-spec, which the RFC requires.
 
 ## Motivation
 
@@ -44,7 +44,7 @@ The simulation of sans-IO machines runs every machine on the goroutine of the ca
 | The door `Durable` | conform | Opens a subject over a `medium.FS`, and opens it again over what a crash of the medium left |
 | `Handle.Injector` | conform | Fails, blocks and releases the calls of the dependencies of a subject on demand |
 | The door `Reference` | conform | A reference implementation, such as a fake that the generator `fake` writes |
-| `probe.LinearizableHistory` | conform | Runs the derived calls of a declaration on concurrent clients, and checks the history against the reference through `history.SpecFrom` |
+| `probe.LinearizableHistory` | conform | Runs the derived calls of a declaration on concurrent clients, and checks the history against fresh references |
 | `Check.Around` and `prop.Around` | conform and assert-go | Run each run of a check in an environment, such as a `testing/synctest` bubble |
 | `medium.Memory` | dokimi-go | Crashes at a persistence point, tears a write, flips a bit, runs out of space, fails a call, and blocks its calls until a release |
 | `history`, `stateful` and `prop` | assert-go | The history of calls with unknown outcomes and its incremental check, machines whose steps a case chooses, the task scheduler, and the replay of a case |
@@ -53,7 +53,7 @@ For the mixin `durable`, the crash-point probe runs sequences of one to three wr
 
 ### The history is checked once per case
 
-The run of a simulation is a machine of `stateful` with the state `struct{}` (`sim/run.go:151` of dokimi-go). It checks the history for linearizability once, after the final phase, partition by key (`run.go:540`). So a violation shows only at the end of its case, and each candidate of the shrinker runs every step of the case, also the steps after the violation. `history.Linearizable` of assert-go continues the search of each partition of a growing history through `Resume`, so a check after every step costs the steps since the check before it. A partition in which a call that the check before it read as pending has completed searches again from its first call.
+The run of a simulation is a machine of `stateful` with the state `struct{}` (`sim/run.go:151` of dokimi-go). It checks the history for linearizability once, after the final phase, partition by key (`run.go:540`). So a violation shows only at the end of its case, and each candidate of the shrinker runs every step of the case, also the steps after the violation. `history.Linearizable` of assert-go continues the search of each partition of a growing history through `Resume`. A partition in which a call that the check before it read as pending has completed searches again from its first call. So a check at each step at which no client has an open call costs the steps since the check before it.
 
 ### What Go lets a harness control
 
@@ -473,9 +473,10 @@ func (p *Pool[T]) Pick(c *prop.Case, label string) T
 func (p *Pool[T]) Add(v T)
 
 // FaultyWorldHistory runs the world w over the subject of h, and checks the
-// history of the calls of its clients after every step with
-// history.Linearizable and opts. It fails when a partition of the history has
-// no order of its calls that respects their real-time order and that the
+// history of the calls of its clients with history.Linearizable and opts after
+// every step at which no client has an open call, and once more after the last
+// step while a client has one. It fails when a partition of the history has no
+// order of its calls that respects their real-time order and that the
 // reference accepts.
 func FaultyWorldHistory[S any](h *conform.Handle[S], c *prop.Case, w World[S], opts ...history.Option)
 
@@ -568,7 +569,11 @@ A callable with the mixin `creates` returns the key of the record that it create
 
 #### The checks
 
-`FaultyWorldHistory` checks the history after every step against the spec that `history.SpecFrom` builds over fresh references of the handle. Each check continues the search of each partition of the check before it through `history.Resume`, so the check of the last step covers the whole history. A partition whose search ends undecided at its budget ends the checks of the case and does not engage the check, as in `LinearizableHistory`. The options of the call, such as `history.Budget` and `history.Workers`, set the limits of each check, as the options of `LinearizableHistory` do. The generated checks pass none.
+`FaultyWorldHistory` checks the history after every step at which no client has an open call, and once more after the last step while a client has one. Each check continues the search of each partition of the check before it through `history.Resume`. No call that a check read as pending completes before the next check, so no partition searches again from its first call, and the last check covers the whole history.
+
+The checks judge the history against fresh references of the handle, as `LinearizableHistory` judges it. For a subject of an interface or a pointer type, a state of a search is a reference after the calls of an order, and the search compares two states as `assert.Equal` compares them. So the search takes two orders of the calls that leave equal references as one, and a reference needs its whole state in its value. A reference that is no pointer is a value of the interface, and the check takes a pointer to a copy of it. For a subject of any other type, a state is the list of the calls of an order, as `history.SpecFrom` states it.
+
+A partition whose search ends undecided at its budget ends the checks of the case and does not engage the check, as in `LinearizableHistory`. The options of the call, such as `history.Budget` and `history.Workers`, set the limits of each check, as the options of `LinearizableHistory` do.
 
 `WorldRecovery` ends each fault and opens a crashed subject again once the steps end. It then makes one call of each operation on each client, advances the monotonic clock of the host by `w.Bound`, and fails for each call of that recovery that is still open.
 
@@ -809,9 +814,9 @@ type None interface{ none() }
 
 A system of components alone is a `World[None, None]`. The sim generator writes the simulation of a package with `//dokimi:system` and without a machine interface. Such a package states `tolerate`, `strategy`, `require` and `isolation` on `//dokimi:system`, and states the modes `tasks` and `blocking` as values of `tolerate`. Its functions under `action`, `spec`, `invariant`, `converges`, `fingerprint` and `scenario` take a `*sim.World[sim.None, sim.None]`, and get each component of the world through `sim.ComponentOf`. The generated simulation runs each case in `conform.Bubble`, and sets `Mode` and `Blocking` from the values of `tolerate`. It has no rule of sim, because each rule of sim judges the steps of machines.
 
-### The history after every step
+### The history after each step without an open call
 
-The world of a subject and the run of a system both check each partition of the history after every step through `history.Resume`, which continues the search of each partition of the check before it. So a violation ends its case at the step where it occurs, and the check after the final phase covers the calls of that phase. A partition in which a pending call has completed since the check before it searches again from its first call.
+The world of a subject and the run of a system both check each partition of the history after every step at which no client has an open call. Each check continues the search of each partition of the check before it through `history.Resume`. A partition searches again from its first call once a call that the check before it read as pending has completed. So a check while a client has an open call would search the partition of that call again once the call completes. A violation ends its case at the first step without an open call after it. The world of a subject checks once more after its last step while a client has an open call, and the run of a system checks after its final phase, so the last check reads the whole history.
 
 ### Migration
 
@@ -821,7 +826,7 @@ The world of a subject and the run of a system both check each partition of the 
 | 2 | assert-spec | The waits of tasks, and the replays of a failing case, each through an RFC of assert-spec, its names and its vectors |
 | 3 | assert-go | The new members of `stateful` and `prop`, with their specs |
 | 4 | dokimi-spec | The machinery `quiescence`, the two claims with their laws, probes, reasons and defect forms, the input kind `world`, and the field `world` of the suite record |
-| 5 | dokimi-go | `host`: the new module. `medium`: the seven methods. `conform`: `Hosted`, `Tasks`, `Blocking`, `Bubble`, `RecordStep`, the methods of `Handle` and the aliases of the injector. `conform/probe`: `World`, `Operation`, `Pool`, the two probes and their defect forms. `sim`: components on hosts, `ComponentOf`, `Invoke`, `None`, the faults of the network and the check after every step. The copy of the spec follows its main branch |
+| 5 | dokimi-go | `host`: the new module. `medium`: the seven methods. `conform`: `Hosted`, `Tasks`, `Blocking`, `Bubble`, `RecordStep`, the methods of `Handle` and the aliases of the injector. `conform/probe`: `World`, `Operation`, `Pool`, the two probes and their defect forms. `sim`: components on hosts, `ComponentOf`, `Invoke`, `None`, the faults of the network and the check of the history after each step without an open call. The copy of the spec follows its main branch |
 | 6 | eidos | The mixin `creates` in the shape catalog |
 | 7 | dokimi | The rules of the two claims, the operations, pools and checks of the suite generator with `Produced` for a callable with the mixin `creates`, the systems without a machine interface of the sim generator, and their goldens |
 
@@ -908,7 +913,19 @@ A generator of a subsystem lists its components and its entry points in directiv
 
 The world checks the whole history once, after its last step, as the run of a system does today.
 
-**Why not:** a check after every step ends a case at the step of the violation. The shrinker then reruns fewer steps for each candidate.
+**Why not:** a check after each step without an open call ends a case at the first such step after the violation. The shrinker then reruns fewer steps for each candidate.
+
+### A check after every step
+
+The world checks the history after every step, also while a client has an open call.
+
+**Why not:** the calls of a world remain open across steps, such as a write that waits for a flush on a timer. `Resume` searches a partition again from its first call once a call that the check before it read as pending has completed, so most checks of such a world search from the first call. On 4 cores the two world checks of the corpus fixture `iface/door/hosted` called the spec about 321,000 and 197,000 times this way, and about 220,000 and 94,000 times with a check at each step without an open call.
+
+### The lists of the calls of history.SpecFrom as the states
+
+The checks judge the history against the spec that `history.SpecFrom` builds over fresh references, whose state is the list of the calls applied so far.
+
+**Why not:** two such states are equal only when they list the same calls in the same order, so the search never takes two orders of the same calls as one. A history of eight Puts that overlap, followed by a Get of the first value, needs more than 100,000 steps of the budget with those states, and at most 3,000 with references as the states. The world checks of `iface/door/hosted` ended undecided in 6 and 7 of 100 cases with those states, and in none with references.
 
 ## Drawbacks
 
@@ -923,7 +940,8 @@ The world checks the whole history once, after its last step, as the run of a sy
 - **Two clocks for the subject.** A subject reads timestamps from `Wall` and durations from `Monotonic`. A subject that measures a timeout with two reads of `Wall` sees the faults of the wall clock in that timeout, as it would on a machine whose clock steps.
 - **Flaky runs in native mode.** A race inside a subject ends a run as flaky when no replay reproduces it, and a person reads such a run. The shrinker of such a case can stop at a larger case.
 - **A restart in one process.** A crash fences the disk, the dependencies, the network and the lifetime of an incarnation. Its package variables and its `sync.Once` values remain for the next incarnation, which a restart of a real process does not keep. gochecknoglobals finds such variables in the package of a subject.
-- **The cost of a check.** A world check runs up to 100 steps per case. Each step ends with a wait for quiescence and an incremental check of the history, and a failing case in native mode costs ten replays. On 4 cores, the two world checks of the corpus fixture `iface/door/hosted` take 0.7 s and 0.9 s, and 6.5 s and 10.5 s under the race detector.
+- **The cost of a check.** A world check runs up to 100 steps per case. Each step ends with a wait for quiescence. A step without an open call adds an incremental check of the history, and a failing case in native mode costs ten replays. On 4 cores under the profile `ci`, the tests of the corpus fixture `iface/door/hosted` take 2.2 s, and 12.9 s under the race detector. Its world checks take 1.0 s and 1.1 s, and 6.4 s each under the race detector.
+- **A reference with state outside its value.** The search takes two references that compare equal as one state. Closures of one function literal compare equal, so a reference with state in a closure compares equal to a reference in another state. Such a reference needs the state in a field.
 
 ## Open questions
 

@@ -4,7 +4,7 @@ title: Concurrent callers and the consistency of their histories
 author: Roy Klopper <roy.klopper@stealthscale.io>
 status: Accepted
 created: 2026-10-28
-updated: 2026-11-02
+updated: 2026-11-07
 discussion: none
 supersedes: none
 superseded-by: none
@@ -81,10 +81,11 @@ The other five claims bind to the callable that their mixin or contract classifi
 // of h through stateful.Steps with stateful.Clients(clients) and the schedule
 // of h. The actions record each call in the history of c, as RFC-0020 states.
 // After the last step it checks the history once with history.Linearizable
-// and opts, against the spec that history.SpecFrom builds over fresh
-// references of h through reference. The check partitions the history by the
-// keys of the calls. The probe engages h only when the checker decides the
-// history.
+// and opts, against fresh references of h through reference. A state of the
+// check is a reference after the calls of an order, so the search takes two
+// orders that leave equal references as one. The check partitions the history
+// by the keys of the calls. The probe engages h only when the checker decides
+// the history.
 func LinearizableHistory[S any](
 	h *conform.Handle[S],
 	c *prop.Case,
@@ -95,7 +96,7 @@ func LinearizableHistory[S any](
 )
 ```
 
-A concurrent section of `stateful.Clients(2)` runs on the clients 0 to 2, so three clients call the subject at once. The actions and `storeReference` are those of RFC-0020, so the agreement with the reference and the check of linearizability read one history and one reference. The machine of the probe has no spec. A spec on the machine would check the history after every step with every call in one partition, and the probe checks it once after the last step, split by key, within the budget of the check. A call whose context ends before the subject returns completes as `Unknown`, and the checker lets it take effect or not. A history that the budget cannot decide does not engage the case. A property check engages when at least one case engages, so a check whose every case remains undecided is vacuous, and the census of RFC-0015 fails it.
+A concurrent section of `stateful.Clients(2)` runs on the clients 0 to 2, so three clients call the subject at once. The actions and `storeReference` are those of RFC-0020, so the agreement with the reference and the check of linearizability read one history and one reference. The machine of the probe has no spec. A spec on the machine would check the history after every step with every call in one partition, and the probe checks it once after the last step, split by key, within the budget of the check. The check compares two references as `assert.Equal` compares them. For a subject of a type other than an interface or a pointer, a state is the list of the calls of an order, as `history.SpecFrom` states it. A call whose context ends before the subject returns completes as `Unknown`, and the checker lets it take effect or not. A history that the budget cannot decide does not engage the case. A property check engages when at least one case engages, so a check whose every case remains undecided is vacuous, and the census of RFC-0015 fails it.
 
 ### The schedule of the clients
 
@@ -246,6 +247,7 @@ The generated suite runs under `-race`.
 - **Budgets.** A history check can exceed its budget and leave the case undecided. A check whose every case is undecided is vacuous, and the consumer raises the budget or partitions the history.
 - **Slow cases.** A case runs three clients and checks a history of up to 150 operations.
 - **A reference that is not safe for concurrent use.** The checker calls the reference one operation at a time, so the reference need not be safe, and the generator writes the sequential wrapper.
+- **A reference with state outside its value.** The search takes two references that compare equal as one state. Closures of one function literal compare equal, so a reference with state in a closure compares equal to a reference in another state. Such a reference needs the state in a field.
 
 ## Open questions
 

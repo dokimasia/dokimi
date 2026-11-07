@@ -32,6 +32,9 @@ const (
 	remotePackage      = "example.com/shop/remote"
 	remoteSimPackage   = "example.com/shop/remote/remotesim"
 	storePackage       = "example.com/shop/remote/store"
+	cellsPackage       = "example.com/shop/cells"
+	cellsSimPackage    = "example.com/shop/cells/cellssim"
+	tasksSimPackage    = "example.com/shop/cells/taskssim"
 	simTemplate        = "sim.tmpl"
 	testTemplate       = "sim.test.tmpl"
 )

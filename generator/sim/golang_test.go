@@ -39,7 +39,20 @@ func TestGolang(t *testing.T) {
 		t.Parallel()
 
 		golden.MatchTree(t, "golang", rendered(t, registerPackage, registerSimPackage, plainPackage, plainSimPackage,
-			genericPackage, genericSimPackage, remotePackage, remoteSimPackage, storePackage), golden.ShouldUpdate())
+			genericPackage, genericSimPackage, remotePackage, remoteSimPackage, storePackage, cellsPackage,
+			cellsSimPackage, tasksSimPackage), golden.ShouldUpdate())
+	})
+
+	t.Run("writes the simulations of systems of components that pass go vet then go test", func(t *testing.T) {
+		t.Parallel()
+
+		a := gotesting.New()
+		if !toolchain.Require(t, a) {
+			return
+		}
+		project := gentest.Project(rendered(t, cellsPackage, cellsSimPackage, tasksSimPackage), goTree, shopModule)
+		gotesting.AssertVets(t.Context(), t, project)
+		toolchain.AssertTestsPass(t.Context(), t, a, project)
 	})
 
 	t.Run("writes the calls of a dependency that pass go vet then go test", func(t *testing.T) {

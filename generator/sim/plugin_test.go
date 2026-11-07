@@ -303,6 +303,71 @@ func TestNew(t *testing.T) {
 			"the record of the tests refers to the function of the simulation")
 	})
 
+	t.Run("records the simulation of a system of components", func(t *testing.T) {
+		t.Parallel()
+
+		r := generate(t, cellsPackage, cellsSimPackage)
+		expect.Empty(t, slices.Concat(slices.Collect(r.stamps.Sink.All()), slices.Collect(r.res.Sink.All())),
+			"the system of the cells has no finding")
+		m := r.models(t)["cluster"]
+		expect.True(t, m.Components, "the system has no machine interface")
+		expect.Equal(t, m.Names, sim.Names{Simulation: "ClusterSimulation"},
+			"the name of the simulation joins the name of the system")
+		expect.Equal(t, []string{m.Event.Spelling, m.Effect.Spelling}, []string{"sim.None", "sim.None"},
+			"the events and the effects of the world are sim.None")
+		expect.Equal(t, m.System, "cluster", "the function under the directive system is the system")
+		expect.Equal(t, *m.Spec, sim.Spec{Func: "register", From: true}, "history.SpecFrom wraps the subject")
+		expect.Equal(t, m.Actions, []sim.Action{{Func: "get", Call: true}, {Func: "set", Call: true}},
+			"the actions are in the order of their identities")
+		expect.Equal(t, m.Invariants, []sim.Invariant{{
+			Statement: "The system has the spare", Func: "spawned", Defect: "lonely",
+		}}, "an invariant has the first sentence of its doc comment and its defect")
+		expect.Empty(t, m.Rules, "no rule of sim binds to a system without machines")
+	})
+
+	t.Run("records the params of the directive system of a system of components", func(t *testing.T) {
+		t.Parallel()
+
+		m := generate(t, cellsPackage, cellsSimPackage).models(t)["cluster"]
+		expect.Equal(t, m.Tolerate, []sim.Bound{
+			{Fault: "FaultCrash", N: 1}, {Fault: "FaultRestart", N: 1}, {Fault: "FaultPause", N: 1},
+		}, "the param tolerate bounds each fault that it lists")
+		expect.Equal(t, []bool{m.Tasks, m.Blocking}, []bool{false, true},
+			"the value blocking lets the world strike the blocking faults in native mode")
+		expect.Equal(t, m.Require, []sim.Share{{Fault: "FaultCrash", Share: "0.2"}},
+			"the param require gives the crash its share")
+		expect.Equal(t, m.Strategy, "uniform", "the param strategy is uniform")
+	})
+
+	t.Run("records a system of components in Tasks mode", func(t *testing.T) {
+		t.Parallel()
+
+		m := generate(t, cellsPackage, tasksSimPackage).models(t)["scheduled"]
+		expect.Equal(t, []bool{m.Tasks, m.Blocking}, []bool{true, false},
+			"the value tasks runs the hosts under a task scheduler")
+		expect.Equal(t, m.Tolerate, []sim.Bound{{Fault: "FaultCrash", N: 1}, {Fault: "FaultRestart", N: 1}},
+			"the mode is no bound of a fault")
+	})
+
+	t.Run("records the faults of the links between the hosts of components", func(t *testing.T) {
+		t.Parallel()
+
+		m := generate(t, cellsPackage, "example.com/shop/cells/linkssim").models(t)["linked"]
+		expect.Equal(t, m.Tolerate, []sim.Bound{
+			{Fault: "FaultReset", N: 1}, {Fault: "FaultSlowLink", N: 1}, {Fault: "FaultDiskReplacement", N: 1},
+		}, "the param tolerate bounds the reset, the slow link and the disk replacement")
+	})
+
+	t.Run("records the tests of a system of components", func(t *testing.T) {
+		t.Parallel()
+
+		got := generate(t, cellsPackage, cellsSimPackage).checks(t)["cluster"]
+		expect.Equal(t, got.Data, sim.Checks{Machine: "cluster", Simulation: "ClusterSimulation", Components: true},
+			"the tests call the function of the simulation of the system")
+		expect.Equal(t, gentest.Referents(got.Decl), []string{"ClusterSimulation"},
+			"the record of the tests refers to the function of the simulation")
+	})
+
 	refusals := []struct {
 		name     string
 		giveDecl string
@@ -654,6 +719,53 @@ func TestNew(t *testing.T) {
 			wantMsg: "the event Valueless of the result of Blind has no field of the type string for the value of " +
 				"Store.Get",
 		},
+		{
+			name: "refuses the mode tasks on a machine interface", giveDecl: "bad.TaskedMachine",
+			wantCode: sim.BadParam,
+			wantMsg: `the param tolerate of TaskedMachine has the entry "tasks", which is no fault with a count of ` +
+				"at least 1, such as crash:1",
+		},
+		{
+			name: "refuses the mode blocking on a machine interface", giveDecl: "bad.BlockingMachine",
+			wantCode: sim.BadParam,
+			wantMsg: `the param tolerate of BlockingMachine has the entry "blocking", which is no fault with a ` +
+				"count of at least 1, such as crash:1",
+		},
+		{
+			name: "refuses a tolerated value that is no fault and no mode", giveDecl: "badsim.bounded",
+			wantCode: sim.BadParam,
+			wantMsg: `the param tolerate of bounded has the entry "threads", which is no fault with a count of at ` +
+				"least 1, such as crash:1, and no mode, tasks or blocking",
+		},
+		{
+			name: "refuses a second system of components in the order of the identities", giveDecl: "badsim.second",
+			wantCode: sim.BadFunction,
+			wantMsg:  "second is a second function under the directive system of badsim, after bounded",
+		},
+		{
+			name: "refuses an action of a system of components whose run takes another world", giveDecl: "badsim.stray",
+			wantCode: sim.BadFunction,
+			wantMsg: "stray is under the directive action, so it needs the signature func(c *prop.Case) " +
+				"func(w *sim.World[sim.None, sim.None])",
+		},
+		{
+			name: "refuses a system of components that returns a value", giveDecl: "valuedsim.valued",
+			wantCode: sim.BadFunction,
+			wantMsg: "valued is under the directive system, so it needs the signature " +
+				"func(w *sim.World[sim.None, sim.None])",
+		},
+		{
+			name: "refuses a system of components outside the package of its simulation", giveDecl: "routedsim.routed",
+			wantCode: sim.BadFunction,
+			wantMsg:  "routed is not in the package of its simulation, so the simulation cannot call it",
+		},
+		{
+			name:     "refuses a param of the simulation on the system of a machine interface",
+			giveDecl: "crookedsim.again",
+			wantCode: sim.BadParam,
+			wantMsg: "again is the system of a machine interface, so its directive system takes no param strategy. " +
+				"State it on the directive sim of the interface",
+		},
 	}
 	fixtures := map[string][]string{
 		"misfit":     {"example.com/shop/misfit"},
@@ -662,6 +774,9 @@ func TestNew(t *testing.T) {
 		"partial":    {"example.com/shop/partial", "example.com/shop/partial/partialsim"},
 		"silent":     {"example.com/shop/silent", "example.com/shop/silent/silentsim"},
 		"crookedsim": {"example.com/shop/crooked", "example.com/shop/crooked/crookedsim"},
+		"badsim":     {cellsPackage, "example.com/shop/cells/badsim"},
+		"valuedsim":  {"example.com/shop/cells/valuedsim"},
+		"routedsim":  {"example.com/shop/cells/routedsim"},
 	}
 	for _, tt := range refusals {
 		t.Run(tt.name, func(t *testing.T) {
@@ -673,6 +788,28 @@ func TestNew(t *testing.T) {
 			expect.Equal(t, got.Code, tt.wantCode, "the finding has the code of the defect")
 			expect.Equal(t, got.Msg, tt.wantMsg, "the finding names the declaration and the defect")
 			expect.Empty(t, r.models(t), "sim records no simulation of a machine that it refuses")
+		})
+	}
+
+	strays := []struct {
+		name     string
+		giveDecl string
+	}{
+		{name: "leaves a system without a world to the simulation of a machine interface", giveDecl: "idle"},
+		{name: "leaves a system whose events are no sim.None to a machine interface", giveDecl: "half"},
+		{name: "leaves a system whose effects are no sim.None to a machine interface", giveDecl: "twin"},
+		{name: "leaves a system over another generic type of sim.None to a machine interface", giveDecl: "paired"},
+	}
+	for _, tt := range strays {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			r := generate(t, fixtures["valuedsim"]...)
+			decl := r.f.Find(t, symbol.KindFunction, "", tt.giveDecl)
+			for d := range r.res.Sink.All() {
+				expect.NotEqual(t, d.Pos, decl.Position(), "sim reports nothing at the system "+tt.giveDecl)
+			}
+			gentest.Unrecorded(t, r.res, decl)
 		})
 	}
 

@@ -6,6 +6,7 @@
 {{- $S := "struct{}"}}{{with $c.State}}{{$S = spell .}}{{end}}
 {{- with $c.Spec}}{{if .From}}{{$S = printf "[]%s.Operation" (import "go.dokimi.dev/assert/history")}}{{end}}{{end}}
 {{- $W := printf "*%s.World[%s, %s]" $sim $E $F}}
+{{- if not $c.Components}}
 
 {{docs (wrapdocs (printf `%s is how a world reads the events and the effects of %s.` $c.Names.Anatomy $c.Machine))}}
 {{- ""}}var {{$c.Names.Anatomy}} = {{$sim}}.Anatomy[{{$E}}, {{$F}}]{
@@ -142,10 +143,16 @@
 }
 
 {{docs (wrapdocs (printf `%s returns the simulation of the system of the machines of %s, with its checks.` $c.Names.Simulation $c.Machine))}}
+{{- else}}
+
+{{docs (wrapdocs (printf `%s returns the simulation of the system of the components that %s spawns, with its checks.` $c.Names.Simulation $c.System))}}
+{{- end}}
 {{- ""}}func {{$c.Names.Simulation}}() {{$sim}}.Simulation[{{$E}}, {{$F}}, {{$S}}] {
 	return {{$sim}}.Simulation[{{$E}}, {{$F}}, {{$S}}]{
+{{- if not $c.Components}}
 		Anatomy: {{$c.Names.Anatomy}},
-		System:  {{$c.System}},
+{{- end}}
+		System: {{$c.System}},
 {{- with $c.Spec}}
 {{- if .From}}
 		Spec: {{$history := import "go.dokimi.dev/assert/history"}}{{$history}}.SpecFrom({{.Func}}),
@@ -197,6 +204,7 @@
 {{- end}}
 		},
 {{- end}}
+{{- if $c.Rules}}
 		Rules: []{{$sim}}.Rule{
 {{- range $c.Rules}}
 			{
@@ -209,6 +217,7 @@
 			},
 {{- end}}
 		},
+{{- end}}
 {{- if $c.Invariants}}
 		Invariants: []{{$sim}}.Invariant[{{$E}}, {{$F}}]{
 {{- range $c.Invariants}}
@@ -230,6 +239,10 @@
 {{- end}}
 		},
 {{- end}}
+{{- if $c.Components}}
+		Around: {{import "go.dokimi.dev/conform"}}.Bubble,
+		Mode:   {{import "go.dokimi.dev/spec"}}.{{if $c.Tasks}}ModeTasks{{else}}ModeNative{{end}},
+{{- end}}
 {{- if eq $c.Strategy "uniform"}}
 		Strategy: {{$sim}}.Uniform(),
 {{- else if eq $c.Strategy "pct"}}
@@ -239,6 +252,9 @@
 		Isolation: {{$sim}}.Serializable,
 {{- else if eq $c.Isolation "snapshot-isolation"}}
 		Isolation: {{$sim}}.SnapshotIsolation,
+{{- end}}
+{{- if $c.Blocking}}
+		Blocking: true,
 {{- end}}
 	}
 }

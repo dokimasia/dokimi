@@ -27,8 +27,8 @@ func TestCodes(t *testing.T) {
 		},
 		{
 			Name: "BadParam", Give: sim.BadParam, WantCode: "DOKIMISIM-0003",
-			WantMeaning: "a param tolerate, require or strategy of the directive sim has a value that names no fault " +
-				"or no strategy",
+			WantMeaning: "a param tolerate, require or strategy of the directive sim or system has a value that is " +
+				"not a fault, a mode or a strategy, or is on the directive system of a machine interface",
 		},
 		{
 			Name: "NoPerform", Give: sim.NoPerform, WantCode: "DOKIMISIM-0004",
@@ -50,8 +50,9 @@ func TestCodes(t *testing.T) {
 		},
 		{
 			Name: "BadFunction", Give: sim.BadFunction, WantCode: "DOKIMISIM-0008",
-			WantMeaning: "a function under a directive of sim does not have the signature of its directive, or is " +
-				"not in the package of the simulation of its machine interface",
+			WantMeaning: "a function under a directive of sim does not have the signature of its directive, is a " +
+				"second function under a directive that a simulation takes once, or is not in the package of the " +
+				"simulation of its machine interface",
 		},
 		{
 			Name: "BadPerform", Give: sim.BadPerform, WantCode: "DOKIMISIM-0009",

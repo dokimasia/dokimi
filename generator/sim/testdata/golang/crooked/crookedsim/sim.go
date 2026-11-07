@@ -25,9 +25,10 @@ type pair[E, F any] struct{}
 func system(*sim.World[crooked.Event, crooked.Effect]) {}
 
 // again is a second system, under the spelling of the directive with the
-// name of the plugin.
+// name of the plugin. Its directive states a param of the simulation, which
+// the directive sim of a machine interface takes.
 //
-//dokimi:sim:system
+//dokimi:sim:system strategy=uniform
 func again(*sim.World[crooked.Event, crooked.Effect]) {}
 
 // broken is a system that takes no world.

@@ -137,14 +137,16 @@ const (
 	snapshotIsolation = "snapshot-isolation"
 )
 
-// The words of the names of the declarations of a simulation, and the name
-// of the step method and the error method of a machine.
+// The words of the names of the declarations of a simulation, the name of
+// the step method and the error method of a machine, and the name of the type
+// of the events and the effects of a system of components.
 const (
 	anatomyWord    = "anatomy"
 	performWord    = "perform"
 	simulationWord = "simulation"
 	stepMethod     = "Step"
 	errMethod      = "Err"
+	noneType       = "None"
 )
 
 // faultErrors is the handle of the errors that the directive fault of a
@@ -158,8 +160,18 @@ var faults = map[string]string{
 	"drop": "FaultDrop", "delay": "FaultDelay", "duplicate": "FaultDuplicate", "lose-before": "FaultLoseBefore",
 	"lose-after": "FaultLoseAfter", "outage": "FaultOutage", "slow": "FaultSlow", "clock-jump": "FaultClockJump",
 	"clock-strobe": "FaultClockStrobe", "torn-write": "FaultTornWrite", "corruption": "FaultCorruption",
-	"full-disk": "FaultFullDisk",
+	"full-disk": "FaultFullDisk", "reset": "FaultReset", "slow-link": "FaultSlowLink",
+	"disk-replacement": "FaultDiskReplacement",
 }
+
+// The values of the param tolerate of the directive system that state the
+// modes of a system of components: tasks runs its hosts under a task
+// scheduler, and blocking lets a world in native mode strike the blocking
+// faults.
+const (
+	tasksMode    = "tasks"
+	blockingMode = "blocking"
+)
 
 // Model is the data of the record of the simulation of one machine
 // interface, and the template of the family of the simulations reads it.
@@ -186,6 +198,12 @@ var faults = map[string]string{
 // their order. Strategy is uniform, pct or empty for the default, and Depth
 // the depth of pct. Isolation is the isolation level, and empty for none.
 // Timeouts reports whether an effect has a field that bounds its call.
+//
+// Components reports a system of components without a machine interface.
+// Machine and System are then the name of its function under the directive
+// system, Event and Effect are sim.None, and Names has the name of the
+// simulation alone. Tasks and Blocking report the modes tasks and blocking of
+// its param tolerate.
 type Model struct {
 	Event       *emit.TypeRef
 	Effect      *emit.TypeRef
@@ -214,6 +232,9 @@ type Model struct {
 	Require     []Share
 	Depth       int
 	Timeouts    bool
+	Components  bool
+	Tasks       bool
+	Blocking    bool
 }
 
 // Names are the names of the declarations of the simulation of a machine
@@ -357,9 +378,12 @@ type Share struct {
 // Checks is the data of the record of the tests of the simulation of one
 // machine interface, and the template of the family of the tests reads it:
 // the name of the interface and the name of the function of its simulation.
+// Components reports a system of components, whose Machine is the name of
+// its function under the directive system.
 type Checks struct {
 	Machine    string
 	Simulation string
+	Components bool
 }
 
 // part is the part of sim for one language.
@@ -390,20 +414,42 @@ var simSchema = directive.Schema{
 			Key: TolerateParam, Type: directive.TypeList, ListOf: directive.TypeString,
 			Doc: "the most faults of each kind in force at once, such as [crash:1, partition:1]",
 		},
-		{
-			Key: RequireParam, Type: directive.TypeList, ListOf: directive.TypeString,
-			Doc: "the share of the cases in which each kind of fault strikes, such as [crash:0.2]",
-		},
-		{
-			Key: StrategyParam, Type: directive.TypeString,
-			Doc: "the strategy that picks the next process: uniform, or pct:<depth>, pct:3 by default",
-		},
-		{
-			Key: IsolationParam, Type: directive.TypeString, Choices: []string{serializable, snapshotIsolation},
-			Doc: "the isolation level that the list-append transactions of the clients must have",
-		},
+		requireSpec, strategySpec, isolationSpec,
 	},
 	Doc: "generates the deterministic simulation of a system of the sans-IO machines of the interface, and its tests",
+}
+
+// The params of a simulation that the directive sim of a machine interface
+// and the directive system of a system of components share.
+var (
+	requireSpec = directive.ParamSpec{
+		Key: RequireParam, Type: directive.TypeList, ListOf: directive.TypeString,
+		Doc: "the share of the cases in which each kind of fault strikes, such as [crash:0.2]",
+	}
+	strategySpec = directive.ParamSpec{
+		Key: StrategyParam, Type: directive.TypeString,
+		Doc: "the strategy that picks the next process: uniform, or pct:<depth>, pct:3 by default",
+	}
+	isolationSpec = directive.ParamSpec{
+		Key: IsolationParam, Type: directive.TypeString, Choices: []string{serializable, snapshotIsolation},
+		Doc: "the isolation level that the list-append transactions of the clients must have",
+	}
+)
+
+// systemSchema is the directive of the function that builds the processes of
+// a system. Its params state the simulation of a system of components, which
+// has no directive sim.
+var systemSchema = directive.Schema{
+	Name: SystemDirective,
+	Params: []directive.ParamSpec{
+		{
+			Key: TolerateParam, Type: directive.TypeList, ListOf: directive.TypeString,
+			Doc: "the most faults of each kind in force at once and the modes tasks and blocking of a system of " +
+				"components, such as [crash:1, tasks]",
+		},
+		requireSpec, strategySpec, isolationSpec,
+	},
+	Doc: "marks the function that builds the processes of the system",
 }
 
 // tokenSchema is the directive of a token type.
@@ -464,12 +510,7 @@ type functional struct {
 // functionals are the directives of the functions of the consumer, in the
 // order in which a simulation binds their functions.
 var functionals = []functional{
-	{
-		bind: (*invocation).bindSystem,
-		schema: directive.Schema{
-			Name: SystemDirective, Doc: "marks the function that builds the processes of the system",
-		},
-	},
+	{bind: (*invocation).bindSystem, schema: systemSchema},
 	{
 		bind: (*invocation).bindAction,
 		schema: directive.Schema{
@@ -547,10 +588,11 @@ type generator struct {
 // The annotate half stamps the facts of the directives token, reply and
 // perform on their types, and the facts of the directives of the consumer on
 // their functions. The generate half records a [Model] into the family [Word]
-// for each interface under [SimDirective], and a [Checks] into the family
-// [Word] under the tag [TestTag]. The template of the family writes the
-// anatomy of the machine, the function that performs its effects and the
-// function that returns its simulation. The template of the tests writes
+// for each interface under [SimDirective] and for each system of components
+// under [SystemDirective], and a [Checks] into the family [Word] under the tag
+// [TestTag]. The template of the family writes the anatomy of the machine,
+// the function that performs its effects and the function that returns its
+// simulation. A system of components has no anatomy and no performer. The template of the tests writes
 // TestSimulation, TestSimulationFalsify and FuzzSimulation. sim serves Go,
 // the language of its part, and leaves a declaration of another language
 // alone. It reports the findings of the package documentation and records
@@ -572,8 +614,11 @@ func New() sdk.Dual {
 		sdk.Directive(performSchema, sdk.OnStruct(lang.Served(parts, g.concludePerform))),
 	)
 	for i := range functionals {
-		handlers = append(handlers,
-			sdk.Directive(functionals[i].schema, sdk.OnFunction(lang.Served(parts, g.concludeFunction))))
+		rule := sdk.OnFunction(lang.Served(parts, g.concludeFunction))
+		if functionals[i].schema.Name == SystemDirective {
+			rule = sdk.OnFunction(lang.Served(parts, g.systemOf))
+		}
+		handlers = append(handlers, sdk.Directive(functionals[i].schema, rule))
 	}
 	return b.Handle(handlers...).Dual()
 }
@@ -710,22 +755,27 @@ func unsigned(b *sdkrules.Bound, ref *node.TypeRef) bool {
 	return false
 }
 
-// invocation is the state of the simulation of one machine interface: the
-// match of the interface, the generator, its event and effect interfaces,
-// the rules of its language, the package of the simulation, and whether a
-// finding refused the interface.
+// invocation is the state of the simulation of one machine interface or of
+// one system of components: the match of the interface or of the function of
+// the system, the generator, its event and effect interfaces, the rules of
+// its language, the package of the simulation, the name and the position of
+// the interface or of the function, and whether a finding refused it. iface
+// is the machine interface, and nil for a system of components.
 type invocation struct {
-	m       *sdk.InterfaceMatch
+	m       sdk.SubjectMatch
 	g       *generator
+	iface   *node.Interface
 	event   *node.TypeRef
 	effect  *node.TypeRef
 	b       sdkrules.Bound
 	pkg     symbol.Identity
+	name    string
+	pos     position.Pos
 	refused bool
 }
 
-// refuse reports the finding of code at pos, and refuses the interface, so
-// sim records nothing for it.
+// refuse reports the finding of code at pos, and refuses the interface or
+// the system, so sim records nothing for it.
 func (in *invocation) refuse(code diag.Code, pos position.Pos, format string, args ...any) {
 	in.m.ErrorfAt(code, pos, format, args...)
 	in.refused = true
@@ -735,28 +785,120 @@ func (in *invocation) refuse(code diag.Code, pos position.Pos, format string, ar
 // directive, and the record of its tests.
 func (g *generator) simulationOf(m *sdk.InterfaceMatch, _ part, e *sdk.Emitter) error {
 	pkg, _ := e.File().Package()
-	in := &invocation{m: m, b: m.Rules(), g: g, pkg: pkg}
-	model, ok := in.model()
-	if !ok {
+	i := m.Interface
+	in := &invocation{m: m, b: m.Rules(), g: g, pkg: pkg, iface: i, name: i.Name, pos: i.Pos}
+	if model, ok := in.model(); ok {
+		record(e, &i.ID, &model, Checks{Machine: i.Name, Simulation: model.Names.Simulation})
+	}
+	return nil
+}
+
+// systemOf records the simulation of a system of components: a function
+// under the directive system whose world is *sim.World[sim.None, sim.None].
+// The function of any other world is the system of a machine interface,
+// which the simulation of the interface binds. systemOf reports [BadParam] at
+// such a function for each param of a simulation that its directive states.
+func (g *generator) systemOf(m *sdk.FunctionMatch, _ part, e *sdk.Emitter) error {
+	pkg, _ := e.File().Package()
+	fn := m.Function
+	in := &invocation{m: m, b: m.Rules(), g: g, pkg: pkg, name: fn.Name, pos: fn.Pos}
+	none, isNone := in.noneOf(fn)
+	if !isNone {
+		in.machineSystem(fn)
 		return nil
 	}
-	i := m.Interface
-	record := &emit.Function{Origin: i.ID, Name: model.Names.Simulation, Visibility: symbol.VisibilityPublic}
-	e.File().Record(model, record)
-	test := &emit.Struct{Origin: i.ID, Name: model.Names.Simulation, Visibility: symbol.VisibilityPublic}
+	in.event, in.effect = none, none
+	if model, ok := in.components(fn); ok {
+		record(e, &fn.ID, &model, Checks{Machine: fn.Name, Simulation: model.Names.Simulation, Components: true})
+	}
+	return nil
+}
+
+// record records the model of the simulation of the declaration origin into
+// the family of the simulations, and checks into the family of the tests.
+func record(e *sdk.Emitter, origin *symbol.Identity, model *Model, checks Checks) {
+	simulation := &emit.Function{Origin: *origin, Name: model.Names.Simulation, Visibility: symbol.VisibilityPublic}
+	e.File().Record(*model, simulation)
+	test := &emit.Struct{Origin: *origin, Name: model.Names.Simulation, Visibility: symbol.VisibilityPublic}
 	test.Fields.Append(&emit.Field{
 		Name: simulationWord,
-		Type: &emit.TypeRef{Spelling: model.Names.Simulation, Target: i.ID, Emitted: true},
+		Type: &emit.TypeRef{Spelling: model.Names.Simulation, Target: *origin, Emitted: true},
 	})
-	e.File(TestTag).Record(Checks{Machine: i.Name, Simulation: model.Names.Simulation}, test)
-	return nil
+	e.File(TestTag).Record(checks, test)
+}
+
+// noneOf returns the type ref of sim.None where the first parameter of the
+// function fn is *sim.World[sim.None, sim.None], and false for any other
+// function.
+func (in *invocation) noneOf(fn *node.Function) (*node.TypeRef, bool) {
+	if len(fn.Params) == 0 {
+		return nil, false
+	}
+	t := sdkrules.Unaliased(pointed(fn.Params[0].Type), in.b.View())
+	//dokimi:mutate-skip ror-false, lcr-left: sim.World has two type parameters, so the world of a package that compiles has two type arguments, and the guard keeps the world of source that does not compile from an index out of range
+	if !named(t, simPackage, "World") || len(t.Args) != 2 {
+		return nil, false
+	}
+	if !named(t.Args[0], simPackage, noneType) || !named(t.Args[1], simPackage, noneType) {
+		return nil, false
+	}
+	return t.Args[0], true
+}
+
+// machineSystem reports [BadParam] at the system fn of a machine interface
+// for each param of a simulation that its directive states, because the
+// directive sim of the interface states the simulation.
+func (in *invocation) machineSystem(fn *node.Function) {
+	d := in.m.Directive()
+	for _, key := range []directive.ParamKey{TolerateParam, RequireParam, StrategyParam, IsolationParam} {
+		if _, stated := d.Param(key); stated {
+			in.refuse(BadParam, fn.Pos, "%s is the system of a machine interface, so its directive system takes no "+
+				"param %s. State it on the directive sim of the interface", fn.Name, key)
+		}
+	}
+}
+
+// components returns the model of the simulation of the system of components
+// fn, and false after a finding. It refuses fn where an earlier function of
+// the package in the order of the identities is the system of components,
+// and it checks the signature of fn, the params of its directive and the
+// functions of the consumer in turn.
+func (in *invocation) components(fn *node.Function) (Model, bool) {
+	systems := slices.DeleteFunc(in.carriers(SystemDirective), func(f *node.Function) bool {
+		_, isNone := in.noneOf(f)
+		return !isNone
+	})
+	switch at := slices.IndexFunc(systems, func(f *node.Function) bool { return f.ID == fn.ID }); {
+	case at < 0:
+		in.refuse(BadFunction, fn.Pos, "%s is not in the package of its simulation, so the simulation cannot "+
+			"call it", fn.Name)
+		return Model{}, false
+	case at > 0:
+		in.twice(fn, SystemDirective, systems[0].Name)
+		return Model{}, false
+	}
+	model := Model{
+		Machine: fn.Name, System: fn.Name, Components: true,
+		Event:  sdkrules.EmitRef(in.event),
+		Effect: sdkrules.EmitRef(in.effect),
+		Names:  Names{Simulation: naming.Pascal(fn.Name + "Simulation")},
+	}
+	if !in.system(fn) {
+		in.refuseForm(fn, SystemDirective, systemForm)
+	}
+	in.params(&model)
+	in.functions(&model)
+	if in.refused {
+		return Model{}, false
+	}
+	return model, true
 }
 
 // model returns the model of the simulation of the interface, and false
 // after a finding. It checks the params, the lifecycle, the anatomy and the
 // functions of a machine in turn, so one run reports the findings of each.
 func (in *invocation) model() (Model, bool) {
-	i := in.m.Interface
+	i := in.iface
 	if in.machine(); in.refused {
 		return Model{}, false
 	}
@@ -790,7 +932,7 @@ func (in *invocation) model() (Model, bool) {
 // of a sans-IO machine, and sets the event and the effect interfaces. It
 // reports [BadMachine] for each method that the interface lacks.
 func (in *invocation) machine() {
-	i := in.m.Interface
+	i := in.iface
 	set, _ := in.b.MembersOf(i)
 	var step, failure *node.Method
 	for i := range set.Members {
@@ -855,21 +997,30 @@ func (in *invocation) members(ref *node.TypeRef) []*node.Struct {
 }
 
 // params reads the params tolerate, require, strategy and isolation of the
-// directive into the model. It reports [BadParam] at each value that names
-// no fault or no strategy. A share that does not parse is 0, infinite or NaN,
-// so its range refuses it.
+// directive into the model, and the modes tasks and blocking of a system of
+// components. It reports [BadParam] at each value that is not a fault, a mode
+// or a strategy. A share that does not parse is 0, infinite or NaN, so its
+// range refuses it.
 func (in *invocation) params(model *Model) {
 	d := in.m.Directive()
-	i := in.m.Interface
 	if tolerate, stated := d.Param(TolerateParam); stated {
 		for at := range tolerate.List {
 			entry := tolerate.List[at].Str
 			kind, count, _ := strings.Cut(entry, ":")
-			if n, err := strconv.Atoi(count); faults[kind] != "" && err == nil && n > 0 {
+			n, err := strconv.Atoi(count)
+			switch {
+			case faults[kind] != "" && err == nil && n > 0:
 				model.Tolerate = append(model.Tolerate, Bound{Fault: faults[kind], N: n})
-			} else {
-				in.refuse(BadParam, i.Pos, "the param tolerate of %s has the entry %q, which is no fault with a "+
-					"count of at least 1, such as crash:1", i.Name, entry)
+			case in.iface == nil && entry == tasksMode:
+				model.Tasks = true
+			case in.iface == nil && entry == blockingMode:
+				model.Blocking = true
+			case in.iface == nil:
+				in.refuse(BadParam, in.pos, "the param tolerate of %s has the entry %q, which is no fault with a "+
+					"count of at least 1, such as crash:1, and no mode, tasks or blocking", in.name, entry)
+			default:
+				in.refuse(BadParam, in.pos, "the param tolerate of %s has the entry %q, which is no fault with a "+
+					"count of at least 1, such as crash:1", in.name, entry)
 			}
 		}
 	}
@@ -880,8 +1031,8 @@ func (in *invocation) params(model *Model) {
 			if f, _ := strconv.ParseFloat(share, 64); faults[kind] != "" && f > 0 && f <= 1 {
 				model.Require = append(model.Require, Share{Fault: faults[kind], Share: share})
 			} else {
-				in.refuse(BadParam, i.Pos, "the param require of %s has the entry %q, which is no fault with a "+
-					"share above 0 and at most 1, such as crash:0.2", i.Name, entry)
+				in.refuse(BadParam, in.pos, "the param require of %s has the entry %q, which is no fault with a "+
+					"share above 0 and at most 1, such as crash:0.2", in.name, entry)
 			}
 		}
 	}
@@ -894,8 +1045,8 @@ func (in *invocation) params(model *Model) {
 		case name == pctStrategy && err == nil && n > 0:
 			model.Strategy, model.Depth = pctStrategy, n
 		default:
-			in.refuse(BadParam, i.Pos, "the param strategy of %s is %q, which is neither uniform nor pct with a "+
-				"depth of at least 1, such as pct:3", i.Name, strategy.Str)
+			in.refuse(BadParam, in.pos, "the param strategy of %s is %q, which is neither uniform nor pct with a "+
+				"depth of at least 1, such as pct:3", in.name, strategy.Str)
 		}
 	}
 	if isolation, stated := d.Param(IsolationParam); stated {
@@ -908,7 +1059,7 @@ func (in *invocation) params(model *Model) {
 // its form.
 func (in *invocation) lifecycle(model *Model, events []*node.Struct) {
 	d := in.m.Directive()
-	i := in.m.Interface
+	i := in.iface
 	find := func(key directive.ParamKey) *node.Struct {
 		at := slices.IndexFunc(events, func(s *node.Struct) bool { return s.ID == d.Params[key].Target })
 		if at < 0 {
@@ -994,10 +1145,10 @@ func (in *invocation) anatomy(model *Model, events, effects []*node.Struct) {
 			}
 		case !performed:
 			in.refuse(NoPerform, f.Pos, "the effect %s of %s has no directive perform. Write //dokimi:perform "+
-				"func=<function> on %s", f.Name, in.m.Interface.Name, f.Name)
+				"func=<function> on %s", f.Name, in.name, f.Name)
 		case !in.performer(fn, f):
 			in.refuse(BadFunction, f.Pos, "the package of the simulation of %s has no function %s with the "+
-				"signature %s, with T the effect %s", in.m.Interface.Name, fn, performForm, f.Name)
+				"signature %s, with T the effect %s", in.name, fn, performForm, f.Name)
 		default:
 			model.Performs = append(model.Performs, Perform{Type: refOf(f), Func: fn, Timeout: timeout})
 		}
@@ -1162,32 +1313,43 @@ func (in *invocation) instances(f *node.Struct) ([]*emit.TypeRef, bool) {
 // simulation of another machine interface. functions reports [BadFunction] at
 // a function that does not have the signature of its directive, at a second
 // function of a directive that a simulation has once, and at the interface
-// where the package has no function under the directive system.
+// where the package has no function under the directive system. A system of
+// components is its own function under the directive system, so functions
+// binds the other directives alone for it.
 func (in *invocation) functions(model *Model) {
-	reader := in.b.View().Reader()
 	for i := range functionals {
 		d := &functionals[i]
-		// The reader keys a directive by its spelling as written, bare or
-		// canonical, and returns the functions of a spelling in identity order.
-		var carriers []*node.Function
-		canonical := directive.Schema{Plugin: string(ID), Name: d.schema.Name}.Canonical()
-		for _, name := range []directive.Name{d.schema.Name, canonical} {
-			for sym := range reader.ByDirective(name) {
-				// The validation of the directives admits a function alone.
-				if fn, _ := sym.(*node.Function); fn.ID.Package == in.pkg.Package {
-					carriers = append(carriers, fn)
-				}
-			}
+		if d.schema.Name == SystemDirective && in.iface == nil {
+			continue
 		}
+		carriers := in.carriers(d.schema.Name)
 		if d.schema.Name == SystemDirective && len(carriers) == 0 {
-			in.refuse(BadFunction, in.m.Interface.Pos, "the package of the simulation of %s has no function under "+
-				"the directive system, so the simulation has no processes", in.m.Interface.Name)
+			in.refuse(BadFunction, in.pos, "the package of the simulation of %s has no function under the "+
+				"directive system, so the simulation has no processes", in.name)
 		}
-		slices.SortFunc(carriers, func(a, b *node.Function) int { return a.ID.Compare(b.ID) })
 		for _, fn := range carriers {
 			d.bind(in, model, fn)
 		}
 	}
+}
+
+// carriers returns the functions of the package of the simulation under the
+// directive name, in the order of their identities. The reader keys a
+// directive by its spelling as written, bare or canonical.
+func (in *invocation) carriers(name directive.Name) []*node.Function {
+	reader := in.b.View().Reader()
+	var out []*node.Function
+	canonical := directive.Schema{Plugin: string(ID), Name: name}.Canonical()
+	for _, spelling := range []directive.Name{name, canonical} {
+		for sym := range reader.ByDirective(spelling) {
+			// The validation of the directives admits a function alone.
+			if fn, _ := sym.(*node.Function); fn.ID.Package == in.pkg.Package {
+				out = append(out, fn)
+			}
+		}
+	}
+	slices.SortFunc(out, func(a, b *node.Function) int { return a.ID.Compare(b.ID) })
+	return out
 }
 
 // The import paths of the packages whose types the signatures of the
@@ -1216,15 +1378,36 @@ const (
 // refuseForm reports [BadFunction] at the function fn under the directive
 // name, which needs the signature form.
 func (in *invocation) refuseForm(fn *node.Function, name directive.Name, form string) {
+	if in.iface == nil {
+		in.refuse(BadFunction, fn.Pos, "%s is under the directive %s, so it needs the signature %s", fn.Name, name,
+			in.form(form))
+		return
+	}
 	in.refuse(BadFunction, fn.Pos, "%s is under the directive %s, so it needs the signature %s, with E and F the "+
-		"event and the effect interfaces of %s", fn.Name, name, form, in.m.Interface.Name)
+		"event and the effect interfaces of %s", fn.Name, name, form, in.name)
+}
+
+// form returns the signature form of a function of the simulation: form
+// itself for a machine interface, and form with the world of a system of
+// components in place of the world of E and F.
+func (in *invocation) form(form string) string {
+	if in.iface != nil {
+		return form
+	}
+	return strings.ReplaceAll(form, "[E, F]", "[sim.None, sim.None]")
 }
 
 // twice reports [BadFunction] at the function fn, the second function under
-// the directive name after the function first.
+// the directive name after the function first, of the machine interface or
+// of the package of a system of components.
 func (in *invocation) twice(fn *node.Function, name directive.Name, first string) {
+	owner := in.name
+	if in.iface == nil {
+		pkg, _ := in.m.Reader().PackageOf(fn.ID.PackageIdentity())
+		owner = pkg.Name
+	}
 	in.refuse(BadFunction, fn.Pos, "%s is a second function under the directive %s of %s, after %s", fn.Name,
-		name, in.m.Interface.Name, first)
+		name, owner, first)
 }
 
 // bindSystem sets the system of the model to the function fn.
@@ -1303,7 +1486,7 @@ func (in *invocation) bindInvariant(model *Model, fn *node.Function) {
 		in.refuseForm(fn, InvariantDirective, checkForm)
 	case !in.system(planted):
 		in.refuse(BadFunction, fn.Pos, "the defect %s of the invariant %s needs the signature %s", defect.Name,
-			fn.Name, systemForm)
+			fn.Name, in.form(systemForm))
 	default:
 		model.Invariants = append(model.Invariants, Invariant{
 			Statement: statementOf(fn), Func: fn.Name, Defect: defect.Name,

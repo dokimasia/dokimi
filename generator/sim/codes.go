@@ -29,12 +29,16 @@ var BadLifecycle = diag.MustRegister(CodePrefix, diag.CodeSpec{
 })
 
 // BadParam reports a param tolerate, require or strategy of the directive sim
-// with a value that names no fault or no strategy, or a count or a share out
-// of its range. The finding is an Error at the interface, and sim writes
-// nothing for it.
+// or of the directive system of a system of components with a value that is
+// not a fault, a mode or a strategy, or with a count or a share out of its
+// range. It also reports a param of a simulation on the directive system of a
+// machine interface, because the directive sim of the interface has the
+// params of its simulation. The finding is an Error at the interface or at
+// the function, and sim writes nothing for its simulation.
 var BadParam = diag.MustRegister(CodePrefix, diag.CodeSpec{
-	Number:  3,
-	Meaning: "a param tolerate, require or strategy of the directive sim has a value that names no fault or no strategy",
+	Number: 3,
+	Meaning: "a param tolerate, require or strategy of the directive sim or system has a value that is not a fault, " +
+		"a mode or a strategy, or is on the directive system of a machine interface",
 })
 
 // NoPerform reports an effect type of a machine interface under the directive
@@ -75,13 +79,16 @@ var BadToken = diag.MustRegister(CodePrefix, diag.CodeSpec{
 })
 
 // BadFunction reports a function under a directive of sim that does not have
-// the signature of its directive, or that is not in the package of the
+// the signature of its directive, that is a second function under a directive
+// that a simulation takes once, or that is not in the package of the
 // simulation of its machine interface. The simulation cannot call the
 // function, so the finding is an Error at the function, and sim writes
-// nothing for its interface.
+// nothing for its interface or its system.
 var BadFunction = diag.MustRegister(CodePrefix, diag.CodeSpec{
-	Number:  8,
-	Meaning: "a function under a directive of sim does not have the signature of its directive, or is not in the package of the simulation of its machine interface",
+	Number: 8,
+	Meaning: "a function under a directive of sim does not have the signature of its directive, is a second " +
+		"function under a directive that a simulation takes once, or is not in the package of the simulation of " +
+		"its machine interface",
 })
 
 // BadPerform reports a directive perform that names both a function and a

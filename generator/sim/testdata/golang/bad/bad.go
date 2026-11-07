@@ -238,6 +238,27 @@ type ZeroCount interface {
 	Err() error
 }
 
+// TaskedMachine states the mode tasks, which only a system of components has.
+//
+//dokimi:sim start=Started stop=Stopped tolerate=[tasks]
+type TaskedMachine interface {
+	// Step applies ev and appends its effects to out.
+	Step(ev Event, out []Effect) []Effect
+	// Err returns the error of the machine.
+	Err() error
+}
+
+// BlockingMachine states the mode blocking, which only a system of
+// components has.
+//
+//dokimi:sim start=Started stop=Stopped tolerate=[blocking]
+type BlockingMachine interface {
+	// Step applies ev and appends its effects to out.
+	Step(ev Event, out []Effect) []Effect
+	// Err returns the error of the machine.
+	Err() error
+}
+
 // WholeShare requires a fault in more than every case.
 //
 //dokimi:sim start=Started stop=Stopped require=[crash:2]

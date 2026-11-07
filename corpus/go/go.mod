@@ -6,13 +6,14 @@ module go.dokimi.dev/dokimi/corpus/go
 go 1.27.3
 
 require (
-	go.dokimi.dev/assert v0.17.0
-	go.dokimi.dev/conform v0.13.1
-	go.dokimi.dev/fault v0.2.2
-	go.dokimi.dev/medium v0.1.1
-	go.dokimi.dev/sim v0.1.3
-	go.dokimi.dev/spec v0.4.1
-	go.dokimi.dev/stub v0.3.1
+	go.dokimi.dev/assert v0.18.0
+	go.dokimi.dev/conform v0.15.1-0.20261107112608-c2e90997ed72
+	go.dokimi.dev/fault v0.2.3
+	go.dokimi.dev/host v0.1.1-0.20261107112608-c2e90997ed72
+	go.dokimi.dev/medium v0.2.0
+	go.dokimi.dev/sim v0.4.2-0.20261107112608-c2e90997ed72
+	go.dokimi.dev/spec v0.5.0
+	go.dokimi.dev/stub v0.3.2
 )
 
 require github.com/google/jsonschema-go v0.4.3 // indirect

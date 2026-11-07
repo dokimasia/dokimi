@@ -44,3 +44,4 @@ Proposals, and the argument that produced them. An RFC is written to be argued w
 | [0033](0033-the-isolation-levels-of-transactions.md) | The isolation levels of transactions | Accepted |
 | [0034](0034-the-runtime-contract-and-the-rules-of-the-generator.md) | The runtime contract and the rules of the generator | Accepted |
 | [0035](0035-the-repeated-parts-of-the-generated-go-code.md) | The repeated parts of the generated Go code | Accepted |
+| [0036](0036-components-that-run-goroutines.md) | A simulation of components that run goroutines | Accepted |

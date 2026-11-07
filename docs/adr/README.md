@@ -29,3 +29,6 @@ Each ADR records one decision and what it cost. Once an ADR is accepted, do not 
 | [0018](0018-the-tests-of-enumerations-and-errors-are-fixed-templates.md) | The tests of enumerations and errors are fixed templates | Accepted |
 | [0019](0019-a-generated-binding-draws-the-inputs-of-its-calls-in-its-check.md) | A generated binding draws the inputs of its calls in its check | Accepted |
 | [0020](0020-the-text-surface-of-a-go-enumeration-declares-kanon-strict.md) | The text surface of a Go enumeration declares kanon.Strict | Accepted |
+| [0021](0021-a-suite-takes-the-options-of-its-falsification.md) | A suite takes the options of its falsification | Accepted |
+| [0022](0022-a-child-error-value-matches-its-parent-and-opens-with-its-message.md) | A child error value matches its parent and opens with its message | Accepted |
+| [0023](0023-the-requests-of-a-world-depend-only-on-its-choices.md) | The requests of a world depend only on its choices | Accepted |

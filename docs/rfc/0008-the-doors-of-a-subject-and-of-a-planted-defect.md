@@ -7,7 +7,7 @@ created: 2026-10-27
 updated: 2026-10-27
 discussion: https://github.com/dokimasia/dokimi/issues/31
 supersedes: RFC-0003 in part
-superseded-by: none
+superseded-by: ADR-0021 in part
 produces-adr: tbd
 ---
 

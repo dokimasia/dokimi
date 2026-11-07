@@ -59,6 +59,7 @@ Each of these directives changes what a generator writes, and none of them gener
 | Require a share of the outcomes of a property check in each application | `options=machineOptions` beside `defect`, where `machineOptions` takes the handle and returns `[]prop.Option`, such as `prop.Require` |
 | Run each run of a check inside a `testing/synctest` bubble, also on its planted defect | `around=bubble` beside `defect`, where `bubble` takes a `*testing.T` and a `func(*testing.T)` and calls `synctest.Test` |
 | Pass the doors and other options of an application to the test of a subject | `//dokimi:subject store.Store new=New options=StoreOptions`, where `StoreOptions` returns the list of options |
+| Give the planted defects of a suite a value that only a package above the kit builds, such as the reference that they wrap | `//dokimi:suite falsify=falsifyOptions`, where `falsifyOptions` is a function of the external test package of the kit that returns the list of options. The spec of the suite passes them to `conform.Falsify` and `conform.FalsifyAllocs` |
 | Excuse a check that an implementation does not pass | `//dokimi:excuse Store.Get/keeps-the-item reason="…"` beside `subject` |
 | Cap the allocations, the bytes or the latency of a call | `//dokimi:budget allocs=1 bytes=96 p99=2us mean=1us warmup=500` on the method or the function |
 | Take the text of each constant from its trailing comment | `//dokimi:enum text=comment` |
@@ -255,6 +256,11 @@ var (
 
 The generated spec fails where a message does not open with `kv:`, where two messages are the same,
 and where one error value matches another.
+
+A child error value wraps a parent of its package, as in
+`ErrStale = fmt.Errorf("%w: stale", ErrConflict)`. The spec of a child replaces the two checks
+against its parent. It fails where the child does not match its parent, and where its message does
+not open with the message of its parent.
 
 ## Run the generators
 

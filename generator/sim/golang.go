@@ -31,6 +31,12 @@ func (golangPart) Lang() symbol.Lang { return golang.Lang }
 // Target returns the target golang.
 func (golangPart) Target() plugin.Target { return golang.Target }
 
+// Tested reports whether the file at the path is a test file of Go: its name
+// ends in _test.go, as the go command reads it.
+func (golangPart) Tested(path string) bool {
+	return strings.HasSuffix(path, golang.TestSuffix+golang.Extension)
+}
+
 // The helpers of a plan share one namespace, so the name of each helper of
 // sim opens with sim. quoteHelper writes a text as a Go string literal, and
 // fieldHelper returns the type of the field of a record by its name.

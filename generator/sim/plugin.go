@@ -410,6 +410,10 @@ type Checks struct {
 // part is the part of sim for one language.
 type part interface {
 	lang.Part
+	// Tested reports whether the file at the path is a test file of the
+	// language. No file outside the tests of its package refers to a type of
+	// such a file.
+	Tested(path string) bool
 }
 
 // parts are the parts of sim. RFC-0025 designs the Go runtime alone.
@@ -806,13 +810,15 @@ func unsigned(b *sdkrules.Bound, ref *node.TypeRef) bool {
 
 // invocation is the state of the simulation of one machine interface or of
 // one system of components: the match of the interface or of the function of
-// the system, the generator, its event and effect interfaces, the rules of
-// its language, the package of the simulation, the name and the position of
-// the interface or of the function, and whether a finding refused it. iface
-// is the machine interface, and nil for a system of components.
+// the system, the generator, the part of its language, its event and effect
+// interfaces, the rules of its language, the package of the simulation, the
+// name and the position of the interface or of the function, and whether a
+// finding refused it. iface is the machine interface, and nil for a system
+// of components.
 type invocation struct {
 	m       sdk.SubjectMatch
 	g       *generator
+	part    part
 	iface   *node.Interface
 	event   *node.TypeRef
 	effect  *node.TypeRef
@@ -832,10 +838,10 @@ func (in *invocation) refuse(code diag.Code, pos position.Pos, format string, ar
 
 // simulationOf records the simulation of a machine interface under the
 // directive, and the record of its tests.
-func (g *generator) simulationOf(m *sdk.InterfaceMatch, _ part, e *sdk.Emitter) error {
+func (g *generator) simulationOf(m *sdk.InterfaceMatch, p part, e *sdk.Emitter) error {
 	pkg, _ := e.File().Package()
 	i := m.Interface
-	in := &invocation{m: m, b: m.Rules(), g: g, pkg: pkg, iface: i, name: i.Name, pos: i.Pos}
+	in := &invocation{m: m, b: m.Rules(), g: g, part: p, pkg: pkg, iface: i, name: i.Name, pos: i.Pos}
 	if model, ok := in.model(); ok {
 		record(e, &i.ID, &model, Checks{Machine: i.Name, Simulation: model.Names.Simulation})
 	}
@@ -847,10 +853,10 @@ func (g *generator) simulationOf(m *sdk.InterfaceMatch, _ part, e *sdk.Emitter) 
 // The function of any other world is the system of a machine interface,
 // which the simulation of the interface binds. systemOf reports [BadParam] at
 // such a function for each param of a simulation that its directive states.
-func (g *generator) systemOf(m *sdk.FunctionMatch, _ part, e *sdk.Emitter) error {
+func (g *generator) systemOf(m *sdk.FunctionMatch, p part, e *sdk.Emitter) error {
 	pkg, _ := e.File().Package()
 	fn := m.Function
-	in := &invocation{m: m, b: m.Rules(), g: g, pkg: pkg, name: fn.Name, pos: fn.Pos}
+	in := &invocation{m: m, b: m.Rules(), g: g, part: p, pkg: pkg, name: fn.Name, pos: fn.Pos}
 	none, isNone := in.noneOf(fn)
 	if !isNone {
 		in.machineSystem(fn)
@@ -1050,12 +1056,14 @@ func (in *invocation) isInterface(ref *node.TypeRef) bool {
 }
 
 // members returns the structs of the view that implement the interface ref,
-// in identity order.
+// in identity order. It leaves out each struct of a test file, because the
+// anatomy refers to each member. A file outside the tests of a package cannot
+// refer to a struct of a test file.
 func (in *invocation) members(ref *node.TypeRef) []*node.Struct {
 	var out []*node.Struct
 	for _, id := range in.b.Implementers(ref) {
 		decl, _ := in.b.View().Lookup(id)
-		if s, isStruct := decl.(*node.Struct); isStruct {
+		if s, isStruct := decl.(*node.Struct); isStruct && !in.part.Tested(s.Pos.File) {
 			out = append(out, s)
 		}
 	}

@@ -174,6 +174,26 @@ func TestNew(t *testing.T) {
 		expect.False(t, m.Timeouts, "no effect has a timeout")
 	})
 
+	t.Run("leaves out the types of the test files that embed an effect", func(t *testing.T) {
+		t.Parallel()
+
+		r := generate(t, plainPackage, plainSimPackage, plainPackage+"_test")
+		expect.Empty(t, slices.Concat(slices.Collect(r.stamps.Sink.All()), slices.Collect(r.res.Sink.All())),
+			"the types of the test files are no effects of Plain")
+		m := r.models(t)["Plain"]
+		assert.Length(t, m.Performs, 1, "Beta is the one effect of Plain")
+		expect.Equal(t, m.Performs[0].Func, "beta", "the function beta performs Beta")
+	})
+
+	t.Run("leaves out a type other than a struct that implements the effect interface", func(t *testing.T) {
+		t.Parallel()
+
+		r := generate(t, plainPackage, plainSimPackage)
+		expect.Empty(t, slices.Concat(slices.Collect(r.stamps.Sink.All()), slices.Collect(r.res.Sink.All())),
+			"Batched is no effect of Plain")
+		assert.Length(t, r.models(t)["Plain"].Performs, 1, "Beta is the one effect of Plain")
+	})
+
 	t.Run("records the call of a dependency that performs an effect", func(t *testing.T) {
 		t.Parallel()
 

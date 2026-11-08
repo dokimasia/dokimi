@@ -29,6 +29,14 @@ type Beta struct{}
 
 func (Beta) effect() {}
 
+// Batched is an interface that implements Effect. The anatomy leaves it out,
+// because each effect of a machine is a struct.
+type Batched interface {
+	Effect
+	// Batch returns the size of the batch of the effect.
+	Batch() int
+}
+
 // Plain is the machine of the package.
 //
 //dokimi:sim start=Started stop=Stopped tolerate=[pause:1] require=[pause:1] strategy=uniform isolation=serializable

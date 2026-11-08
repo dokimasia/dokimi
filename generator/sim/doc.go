@@ -44,6 +44,10 @@
 //	//dokimi:perform func=write dependency=Store result=Written timeout=Timeout
 //	type Write struct{ ... }
 //
+// The events and the effects of a machine leave out the types of the test
+// files, because the anatomy refers to each event and each effect. A file
+// outside the tests of a package cannot refer to a type of a test file.
+//
 // The directives system, action, spec, invariant, converges, fingerprint and
 // scenario mark the functions of the consumer that build the system and
 // check it. A system and the defect of an invariant that take inputs from the

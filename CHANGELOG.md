@@ -1,5 +1,44 @@
 # go.dokimi.dev/dokimi
 
+## 0.10.0
+
+### Minor Changes
+
+- d74c1ef: Let a `rules.Licence` of a declaration name a classification that a callable of the declaration must have.
+- c2eb6f1: Check that a child error value of a family matches its parent and opens with its message, in place of the two checks that refused it.
+- 48a0255: Add the params `mean-steps` and `max-steps` to `//dokimi:sim` and `//dokimi:system` for the steps of a case.
+- 20889c0: Accept the faults `reset`, `slow-link` and `disk-replacement` in the params `tolerate` and `require` of a simulation.
+- cf24c4e: Add the param `dependency` to `//dokimi:perform func=`, so the faults of the interface that the function calls strike its effect.
+- cf24c4e: **Breaking:** Require a function under `//dokimi:perform func=` to return `sim.Outcome[E, F]`.
+- b89679f: Add the param `end` to `//dokimi:perform func=` for the event that ends a wait at an outage after the wait has delivered an event.
+- b89679f: Add the param `ends` to `//dokimi:perform` for an effect that ends the waits of the effects that it lists.
+- 48a0255: Accept a function of `//dokimi:perform func=` that takes a pointer to its effect.
+- cf24c4e: Accept a system and the defect of an invariant of the form `func(c *prop.Case) func(w *sim.World[E, F])`, which take their inputs from the case.
+- 20889c0: Generate the simulation of a system of components from a function under `//dokimi:system` whose world is `*sim.World[sim.None, sim.None]`, with the modes `tasks` and `blocking` in its param `tolerate`.
+- e9a9822: Add the param `falsify` to the directive `suite` for the function of the options that the spec of the suite passes to `conform.Falsify` and `conform.FalsifyAllocs`.
+- e9a9822: Generate the world of a declaration with the mixin `durable`, and the checks of `linearizable-under-faults` and `completes-after-recovery` over it.
+- d74c1ef: Add the rules of the claims `linearizable-under-faults` and `completes-after-recovery`, with their laws and defect forms.
+- e9a9822: Add the key that a call of the mixin `creates` returns to the pool of its type in the world of a declaration.
+
+### Patch Changes
+
+- e9a9822: Fix the doc comments of the planted defects of durable claims to state the clause and the door in separate sentences.
+- 9f75b0a: Fix `dokimi run` to update `dokimi.go.lock` in a clone without `.dokimi/`.
+- 7686b19: Fix `dokimi conform` to show the last output of a test binary that ends in the middle of a test.
+- 7ac433a: Require `go.dokimi.dev/assert` v0.19.0.
+- c26cbdf: Require `go.dokimi.dev/assert` v0.20.0 and `go.dokimi.dev/spec` v0.5.1.
+- 7ac433a: Require `go.dokimi.dev/eidos/core` v0.14.0 and the releases of the other eidos modules that depend on it.
+- cf24c4e: Require `go.dokimi.dev/eidos/core` v0.15.0 and `go.dokimi.dev/eidos/sdk` v0.11.0, and the releases of the other eidos modules that depend on them.
+- c797659: Require `go.dokimi.dev/eidos/lang/go` v0.8.2.
+- 1ff4198: Fix the strict run of a tree in which a module imports the S3 client of the AWS SDK.
+- c26cbdf: Require `go.stealthscale.io/cli` v0.8.1 and `go.yaml.in/yaml/v3` v3.0.6.
+- cf24c4e: Fix the simulation to bind a performer whose outcome has a name of its own.
+- 20889c0: Report `DOKIMISIM-0003` at the directive system of a machine interface that states a param of its simulation.
+- cb10807: Fix the sim generator to leave the types of test files out of the events and the effects of a machine.
+- e9a9822: Fix the suite to start a struct once from its own sources where a transparent alias spells it.
+- 530c71d: Fix the suite of a callable whose input contains `proto.Message`.
+- 1db2c45: Fix the check of `linearizable-under-faults` to search its history within the budget of the other history checks.
+
 ## 0.9.1
 
 ### Patch Changes

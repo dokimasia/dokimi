@@ -51,3 +51,4 @@ Proposals, and the argument that produced them. An RFC is written to be argued w
 | [0040](0040-deliveries-and-choices-of-the-active-phase.md) | The deliveries and the choices of the active phase | Accepted |
 | [0041](0041-the-final-phase-of-a-long-convergence.md) | The final phase of a long convergence and the timers of a performer | Accepted |
 | [0042](0042-the-outcome-at-a-loss-after-the-effect.md) | The outcome of an effect at a loss after the effect | Accepted |
+| [0043](0043-the-restarts-of-a-host-in-the-final-phase.md) | The restarts of a host in the final phase | Accepted |

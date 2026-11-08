@@ -263,7 +263,7 @@ go:
   # race-go runs go test -race with args. -p=1 tests one package at a time, because the race
   # detector multiplies the memory of a test.
   race:
-    args: [-count=1, -p=4]
+    args: [-count=1, -p=4, -timeout=20m]
   # fuzz-go fuzzes each fuzz target whose name matches the regular expression match, for time each,
   # with args. -fuzzminimizetime bounds the minimization of a new input, which go test runs for 60s
   # by default.
@@ -352,7 +352,7 @@ go:
     # commit and release, and each input is a string. run is the list of the lines of a command of
     # bash.
     steps: []
-    timeout: 30
+    timeout: 60
 spec:
   # The tools of spec.
   tools:

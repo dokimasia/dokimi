@@ -46,3 +46,4 @@ Proposals, and the argument that produced them. An RFC is written to be argued w
 | [0035](0035-the-repeated-parts-of-the-generated-go-code.md) | The repeated parts of the generated Go code | Accepted |
 | [0036](0036-components-that-run-goroutines.md) | A simulation of components that run goroutines | Accepted |
 | [0037](0037-hosts-started-machines-and-the-inputs-of-a-system.md) | Hosts, started machines and the inputs of a system | Accepted |
+| [0038](0038-the-end-of-a-wait.md) | The end of a wait | Accepted |

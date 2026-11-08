@@ -21,6 +21,11 @@ type Store interface {
 //dokimi:token
 type Token uint64
 
+// Ticket links an effect to the event of its result, as Token does.
+//
+//dokimi:token
+type Ticket uint64
+
 // ReplyToken links an inbound call to the reply to it.
 //
 //dokimi:token reply
@@ -56,12 +61,16 @@ type Valueless struct {
 	Token Token
 }
 
+// Ended is the end of a wait.
+type Ended struct{ Token Token }
+
 func (Started) event()   {}
 func (Stopped) event()   {}
 func (Stored) event()    {}
 func (Untokened) event() {}
 func (Errorless) event() {}
 func (Valueless) event() {}
+func (Ended) event()     {}
 
 // Twice names both a function and a call.
 //
@@ -162,8 +171,88 @@ type Strayed struct{ Token Token }
 //dokimi:perform func=unmark dependency=Store result=Stored
 type Unmarked struct{ Key string }
 
+// Watch waits for the items of a feed.
+//
+//dokimi:perform func=watch
+type Watch struct{ Token Token }
+
+// EndsCall ends a wait beside a call.
+//
+//dokimi:perform ends=[Watch] call=Store.Put result=Stored
+type EndsCall struct{ Token Token }
+
+// EndsDependency ends a wait beside a dependency.
+//
+//dokimi:perform ends=[Watch] func=watch dependency=Store
+type EndsDependency struct{ Token Token }
+
+// EndsResult ends a wait beside a result.
+//
+//dokimi:perform ends=[Watch] result=Stored
+type EndsResult struct{ Token Token }
+
+// EndsTimeout ends a wait beside a timeout.
+//
+//dokimi:perform ends=[Watch] timeout=Timeout
+type EndsTimeout struct{ Token Token }
+
+// EndsEnd ends a wait beside an end event.
+//
+//dokimi:perform ends=[Watch] end=Ended
+type EndsEnd struct{ Token Token }
+
+// Endless names an end event without a dependency.
+//
+//dokimi:perform func=watch end=Ended
+type Endless struct{ Token Token }
+
+// Untied ends a wait without a field of a token.
+//
+//dokimi:perform ends=[Watch]
+type Untied struct{}
+
+// Misended ends the wait of an event.
+//
+//dokimi:perform ends=[Stored]
+type Misended struct{ Token Token }
+
+// Unaligned ends the wait of an effect without a token.
+//
+//dokimi:perform ends=[Tokenless]
+type Unaligned struct{ Token Token }
+
+// Unended names an end event without a field of the token.
+//
+//dokimi:perform func=unend dependency=Store result=Stored end=Untokened
+type Unended struct{ Token Token }
+
+// Ticketed waits for the items of a feed under a ticket.
+//
+//dokimi:perform func=ticket
+type Ticketed struct{ Ticket Ticket }
+
+// Mistyped ends the wait of an effect whose token has another type.
+//
+//dokimi:perform ends=[Ticketed]
+type Mistyped struct{ Token Token }
+
 // helper is no method of a dependency.
 func helper(context.Context) error { return nil }
+
+// watch performs Watch.
+func watch(*sim.World[Event, Effect], *sim.Process[Event, Effect], Watch) sim.Outcome[Event, Effect] {
+	return sim.Outcome[Event, Effect]{}
+}
+
+// unend performs Unended.
+func unend(*sim.World[Event, Effect], *sim.Process[Event, Effect], Unended) sim.Outcome[Event, Effect] {
+	return sim.Outcome[Event, Effect]{}
+}
+
+// ticket performs Ticketed.
+func ticket(*sim.World[Event, Effect], *sim.Process[Event, Effect], Ticketed) sim.Outcome[Event, Effect] {
+	return sim.Outcome[Event, Effect]{}
+}
 
 // stray performs Strayed.
 func stray(*sim.World[Event, Effect], *sim.Process[Event, Effect], Strayed) sim.Outcome[Event, Effect] {
@@ -175,20 +264,33 @@ func unmark(*sim.World[Event, Effect], *sim.Process[Event, Effect], Unmarked) si
 	return sim.Outcome[Event, Effect]{}
 }
 
-func (Twice) effect()      {}
-func (Neither) effect()    {}
-func (Resultless) effect() {}
-func (Keyless) effect()    {}
-func (Lost) effect()       {}
-func (Silent) effect()     {}
-func (Blind) effect()      {}
-func (Unhosted) effect()   {}
-func (Tokenless) effect()  {}
-func (Routed) effect()     {}
-func (Failless) effect()   {}
-func (Orphan) effect()     {}
-func (Strayed) effect()    {}
-func (Unmarked) effect()   {}
+func (Twice) effect()          {}
+func (Neither) effect()        {}
+func (Resultless) effect()     {}
+func (Keyless) effect()        {}
+func (Lost) effect()           {}
+func (Silent) effect()         {}
+func (Blind) effect()          {}
+func (Unhosted) effect()       {}
+func (Tokenless) effect()      {}
+func (Routed) effect()         {}
+func (Failless) effect()       {}
+func (Orphan) effect()         {}
+func (Strayed) effect()        {}
+func (Unmarked) effect()       {}
+func (Watch) effect()          {}
+func (EndsCall) effect()       {}
+func (EndsDependency) effect() {}
+func (EndsResult) effect()     {}
+func (EndsTimeout) effect()    {}
+func (EndsEnd) effect()        {}
+func (Endless) effect()        {}
+func (Untied) effect()         {}
+func (Misended) effect()       {}
+func (Unaligned) effect()      {}
+func (Unended) effect()        {}
+func (Ticketed) effect()       {}
+func (Mistyped) effect()       {}
 
 // Machine is the machine of a node.
 //

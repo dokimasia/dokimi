@@ -263,6 +263,30 @@ func TestNew(t *testing.T) {
 			"the errors are those of the methods of the store, in the order of the methods, each once")
 	})
 
+	t.Run("records the effects that end a wait, and the end event of a wait", func(t *testing.T) {
+		t.Parallel()
+
+		r := generateWithFaults(t, waitsPackage, waitsSimPackage)
+		expect.Empty(t, slices.Concat(slices.Collect(r.stamps.Sink.All()), slices.Collect(r.res.Sink.All())),
+			"the leader has no finding")
+		m := r.models(t)["Leader"]
+		expect.Equal(t, spelled(m.Tokens), []string{"Campaign.Token", "Watch.Token"},
+			"each effect that starts a wait has a token")
+		expect.Equal(t, spelled(m.Ends), []string{"Resign.Token", "Unwatch.Token"},
+			"each effect that ends a wait has the token of its wait")
+		performed := make([]string, 0, len(m.Performs))
+		for _, p := range m.Performs {
+			performed = append(performed, p.Type.Spelling+"."+p.Func)
+		}
+		expect.Equal(t, performed, []string{"Campaign.campaign", "Resign.resign", "Watch.watch"},
+			"the resign has a function of its own, and the unwatch has none")
+		d := m.Performs[0].Dependency
+		assert.NotNil(t, d, "the campaign has the dependency of its function")
+		assert.NotNil(t, d.End, "the campaign has an end event")
+		expect.Equal(t, []string{d.End.Event.Spelling, d.End.Token, d.End.Err}, []string{"TermEnded", "Token", ""},
+			"the end of the term takes the token of the campaign, and has no error")
+	})
+
 	t.Run("records a system and a defect that take inputs from the case", func(t *testing.T) {
 		t.Parallel()
 
@@ -306,6 +330,36 @@ func TestNew(t *testing.T) {
 			name: "refuses a perform of a function with a result and without a dependency", giveDecl: "Orphan",
 			wantMsg: "the directive perform of Orphan names a function and a result without a dependency. A " +
 				"function without a dependency has no failure that the world builds",
+		},
+		{
+			name: "refuses the end of a wait beside a call", giveDecl: "EndsCall",
+			wantMsg: "the directive perform of EndsCall names ends beside call. An effect that ends a wait starts " +
+				"no call and has no result",
+		},
+		{
+			name: "refuses the end of a wait beside a dependency", giveDecl: "EndsDependency",
+			wantMsg: "the directive perform of EndsDependency names ends beside dependency. An effect that ends a " +
+				"wait starts no call and has no result",
+		},
+		{
+			name: "refuses the end of a wait beside a result", giveDecl: "EndsResult",
+			wantMsg: "the directive perform of EndsResult names ends beside result. An effect that ends a wait " +
+				"starts no call and has no result",
+		},
+		{
+			name: "refuses the end of a wait beside a timeout", giveDecl: "EndsTimeout",
+			wantMsg: "the directive perform of EndsTimeout names ends beside timeout. An effect that ends a wait " +
+				"starts no call and has no result",
+		},
+		{
+			name: "refuses the end of a wait beside an end event", giveDecl: "EndsEnd",
+			wantMsg: "the directive perform of EndsEnd names ends beside end. An effect that ends a wait starts no " +
+				"call and has no result",
+		},
+		{
+			name: "refuses an end event without a dependency", giveDecl: "Endless",
+			wantMsg: "the directive perform of Endless names an end without a dependency. Only an outage of the " +
+				"dependency ends a wait with its end event",
 		},
 	}
 	for _, tt := range misfits {
@@ -807,6 +861,32 @@ func TestNew(t *testing.T) {
 			wantCode: sim.BadPerform,
 			wantMsg: "the event Valueless of the result of Blind has no field of the type string for the value of " +
 				"Store.Get",
+		},
+		{
+			name: "refuses the end of a wait by an effect without a token", giveDecl: "misfit.Untied",
+			wantCode: sim.BadPerform, wantMsg: "the effect Untied ends a wait, so it needs one field of a token",
+		},
+		{
+			name: "refuses the end of the wait of an event", giveDecl: "misfit.Misended", wantCode: sim.BadPerform,
+			wantMsg: "the param ends of Misended names Stored, which is no effect of Machine with a field of the " +
+				"token type Token",
+		},
+		{
+			name: "refuses the end of the wait of an effect without a token", giveDecl: "misfit.Unaligned",
+			wantCode: sim.BadPerform,
+			wantMsg: "the param ends of Unaligned names Tokenless, which is no effect of Machine with a field of the " +
+				"token type Token",
+		},
+		{
+			name:     "refuses the end of the wait of an effect with a token of another type",
+			giveDecl: "misfit.Mistyped", wantCode: sim.BadPerform,
+			wantMsg: "the param ends of Mistyped names Ticketed, which is no effect of Machine with a field of the " +
+				"token type Token",
+		},
+		{
+			name: "refuses an end event without a field of the token", giveDecl: "misfit.Unended",
+			wantCode: sim.BadPerform,
+			wantMsg:  "the end event Untokened of Unended has no field of the type Token for the token of Unended",
 		},
 		{
 			name: "refuses the mode tasks on a machine interface", giveDecl: "bad.TaskedMachine",

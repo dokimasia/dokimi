@@ -62,7 +62,9 @@ const (
 // the result. With FuncParam, its param DependencyParam names the interface of
 // the dependency that the function calls, and ResultParam the event of the
 // failure of the effect. Its param TimeoutParam names the field of the effect
-// that bounds its call. The other directives mark the
+// that bounds its call. Its param EndParam names the event that ends the wait
+// of the effect after the wait has delivered an event, and its param EndsParam
+// the effects whose waits the effect ends. The other directives mark the
 // functions of the consumer: SystemDirective the system, ActionDirective an
 // action with the positional params CallParam and FinalParam, SpecDirective
 // the spec of the calls, InvariantDirective an invariant with the param
@@ -96,6 +98,8 @@ const (
 	DependencyParam      directive.ParamKey = "dependency"
 	ResultParam          directive.ParamKey = "result"
 	TimeoutParam         directive.ParamKey = "timeout"
+	EndParam             directive.ParamKey = "end"
+	EndsParam            directive.ParamKey = "ends"
 	CallParam            directive.ParamKey = "call"
 	FinalParam           directive.ParamKey = "final"
 	DefectParam          directive.ParamKey = "defect"
@@ -114,7 +118,9 @@ const (
 // KeyCallee contains the identity of the method of a dependency that performs
 // an effect, KeyDependency the identity of the interface of the dependency
 // that the function of an effect calls, and KeyResult the identity of the
-// event of the result of the call or of the failure of the effect.
+// event of the result of the call or of the failure of the effect. KeyEnd
+// contains the identity of the event that ends the wait of an effect, and
+// KeyEnds the identities of the effects whose waits an effect ends.
 const (
 	KeyDefect     meta.KeyName = "sim.defect"
 	KeyWithin     meta.KeyName = "sim.within"
@@ -128,6 +134,8 @@ const (
 	KeyCallee     meta.KeyName = "sim.callee"
 	KeyDependency meta.KeyName = "sim.dependency"
 	KeyResult     meta.KeyName = "sim.result"
+	KeyEnd        meta.KeyName = "sim.end"
+	KeyEnds       meta.KeyName = "sim.ends"
 )
 
 // The spellings of the positional params of the directives token and action,
@@ -186,12 +194,13 @@ const (
 // declarations of its simulation. Event and Effect are its event and effect
 // interfaces. Started, Stopped and Cancelled are the events of its lifecycle,
 // and Cancelled is nil without the param cancel. Calls are the inbound calls
-// with their reply tokens, Tokens the effects with their tokens, Replies the
-// types of its replies, with an instantiation of a generic reply for each
-// type of its union, and Performs the effects with their performers, each in
-// the order of their identities. Unknown are the errors of the replies that
-// leave the outcome of their call unknown, in the order of the replies and
-// of their directives.
+// with their reply tokens, Tokens the effects that start a call or a wait
+// with their tokens, Ends the effects that end a wait with the tokens of
+// their waits, Replies the types of its replies, with an instantiation of a
+// generic reply for each type of its union, and Performs the effects with
+// their performers, each in the order of their identities. Unknown are the
+// errors of the replies that leave the outcome of their call unknown, in the
+// order of the replies and of their directives.
 //
 // System is the function of the system, and Inputs reports a system that
 // takes its inputs from the case. Spec is the spec of the calls of the
@@ -227,6 +236,7 @@ type Model struct {
 	Isolation   string
 	Calls       []Field
 	Tokens      []Field
+	Ends        []Field
 	Replies     []Reply
 	Unknown     []*emit.TypeRef
 	Performs    []Perform
@@ -300,14 +310,25 @@ type Perform struct {
 // effect in its field Err. Errors are the errors that a loss of the effect can
 // take: the errors that the directive fault declares on the method of a call,
 // or on the methods of the interface of a function in the order of the
-// methods, each error once.
+// methods, each error once. End is the event that ends the wait of the effect
+// after the wait has delivered an event, and nil for an effect without one.
 type Dependency struct {
 	Event       *emit.TypeRef
+	End         *End
 	Name        string
 	Token       string
 	EffectToken string
 	Err         string
 	Errors      []*emit.TypeRef
+}
+
+// End is the event that ends a wait after the wait has delivered an event:
+// its type, the field that takes the token of the effect, and the field of the
+// type error, empty for an event without one.
+type End struct {
+	Event *emit.TypeRef
+	Token string
+	Err   string
 }
 
 // Call is the call of a method of a dependency that performs an effect.
@@ -524,6 +545,15 @@ var performSchema = directive.Schema{
 			Doc: "the event of the result of the call, or of the failure of the effect that the function performs",
 		},
 		{Key: TimeoutParam, Type: directive.TypeString, Doc: "the field of the effect that bounds its call"},
+		{
+			Key: EndParam, Type: directive.TypeReference, Resolution: directive.ResolveTypeInScope,
+			Doc: "the event that ends the wait of the effect after the wait has delivered an event, such as TermEnded",
+		},
+		{
+			Key: EndsParam, Type: directive.TypeList, ListOf: directive.TypeReference,
+			Resolution: directive.ResolveTypeInScope,
+			Doc:        "the effects whose waits the effect ends, such as [Watch]",
+		},
 	},
 	Doc: "names the function or the call of a dependency that performs the effect",
 }
@@ -611,6 +641,8 @@ type generator struct {
 	callee     meta.Key[symbol.Identity]
 	dependency meta.Key[symbol.Identity]
 	result     meta.Key[symbol.Identity]
+	end        meta.Key[symbol.Identity]
+	ends       meta.Key[[]symbol.Identity]
 }
 
 // New returns sim, a plugin with an annotate half and a generate half.
@@ -664,7 +696,7 @@ func (g *generator) register(r *meta.Registry) error {
 	on := func(kind symbol.Kind, name meta.KeyName, doc string) meta.KeySpec {
 		return meta.KeySpec{Name: name, Kinds: []symbol.Kind{kind}, Doc: doc}
 	}
-	var errs [13]error
+	var errs [15]error
 	errs[0] = r.ClaimNamespace(KeyDefect.Namespace())
 	g.defect, errs[1] = meta.Register[symbol.Identity](r, on(symbol.KindFunction, KeyDefect,
 		"contains the identity of the function that builds the system with the planted defect of the invariant"))
@@ -691,6 +723,10 @@ func (g *generator) register(r *meta.Registry) error {
 			"of the effect that a function with a dependency performs"))
 	g.dependency, errs[12] = meta.Register[symbol.Identity](r, on(symbol.KindStruct, KeyDependency,
 		"contains the identity of the interface of the dependency that the function of the effect calls"))
+	g.end, errs[13] = meta.Register[symbol.Identity](r, on(symbol.KindStruct, KeyEnd,
+		"contains the identity of the event that ends the wait of the effect after the wait has delivered an event"))
+	g.ends, errs[14] = meta.Register[[]symbol.Identity](r, on(symbol.KindStruct, KeyEnds,
+		"contains the identities of the effects whose waits the effect ends"))
 	return errors.Join(errs[:]...)
 }
 
@@ -727,18 +763,40 @@ func (g *generator) concludeReply(m *sdk.StructMatch, _ part, st *sdk.Stamper) e
 
 // concludePerform stamps the function or the call that performs an effect,
 // the dependency of the function, the event of the result of the call or of
-// the failure of the function, and the field that bounds the call. It reports
-// [BadPerform] at a directive that names both a function and a call or
-// neither, at a call without a result, at a dependency without a function or
-// without a result, and at a function with a result and without a dependency,
-// and stamps nothing for it.
+// the failure of the function, the event that ends the wait of the effect,
+// the effects whose waits the effect ends, and the field that bounds the call.
+// It reports [BadPerform] at a directive that names both a function and a
+// call, at one that names neither and no ends, at a call without a result, at
+// a dependency without a function or without a result, at a function with a
+// result and without a dependency, at ends beside a call, a dependency, a
+// result, a timeout or an end, and at an end without a dependency. It stamps
+// nothing for such a directive.
 func (g *generator) concludePerform(m *sdk.StructMatch, _ part, st *sdk.Stamper) error {
 	d := m.Directive()
 	fn, function := d.Param(FuncParam)
 	call, called := d.Param(CallParam)
 	dependency, depends := d.Param(DependencyParam)
 	result, resulted := d.Param(ResultParam)
+	end, ended := d.Param(EndParam)
 	name := m.Struct.Name
+	if ends, ending := d.Param(EndsParam); ending {
+		for _, key := range []directive.ParamKey{CallParam, DependencyParam, ResultParam, TimeoutParam, EndParam} {
+			if _, stated := d.Param(key); stated {
+				m.Errorf(BadPerform, "the directive perform of %s names ends beside %s. An effect that ends a wait "+
+					"starts no call and has no result", name, key)
+				return nil
+			}
+		}
+		targets := make([]symbol.Identity, 0, len(ends.List))
+		for i := range ends.List {
+			targets = append(targets, ends.List[i].Target)
+		}
+		sdk.Stamp(st, g.ends, targets)
+		if function {
+			sdk.Stamp(st, g.perform, fn.Str)
+		}
+		return nil
+	}
 	switch {
 	case function && called:
 		m.Errorf(BadPerform, "the directive perform of %s names both a function and a call. Name one of them", name)
@@ -762,6 +820,10 @@ func (g *generator) concludePerform(m *sdk.StructMatch, _ part, st *sdk.Stamper)
 		m.Errorf(BadPerform, "the directive perform of %s names a function and a result without a dependency. A "+
 			"function without a dependency has no failure that the world builds", name)
 		return nil
+	case ended && !depends:
+		m.Errorf(BadPerform, "the directive perform of %s names an end without a dependency. Only an outage of the "+
+			"dependency ends a wait with its end event", name)
+		return nil
 	case called:
 		sdk.Stamp(st, g.callee, call.Target)
 		sdk.Stamp(st, g.result, result.Target)
@@ -769,6 +831,9 @@ func (g *generator) concludePerform(m *sdk.StructMatch, _ part, st *sdk.Stamper)
 		sdk.Stamp(st, g.perform, fn.Str)
 		sdk.Stamp(st, g.dependency, dependency.Target)
 		sdk.Stamp(st, g.result, result.Target)
+		if ended {
+			sdk.Stamp(st, g.end, end.Target)
+		}
 	default:
 		sdk.Stamp(st, g.perform, fn.Str)
 	}
@@ -1189,10 +1254,11 @@ func (in *invocation) tokenFields(s *node.Struct, kind string) []*node.Field {
 	return out
 }
 
-// anatomy sets the inbound calls, the tokens, the replies and the performers
-// of the model from the events and the effects of the machine. It reports
-// [NoPerform], [BadReply], [BadFunction] and [BadPerform] at the effects at
-// fault.
+// anatomy sets the inbound calls, the tokens, the ends of waits, the replies
+// and the performers of the model from the events and the effects of the
+// machine. An effect under the param ends has no token of its own and may
+// have no performer. It reports [NoPerform], [BadReply], [BadFunction] and
+// [BadPerform] at the effects at fault.
 func (in *invocation) anatomy(model *Model, events, effects []*node.Struct) {
 	for _, ev := range events {
 		if model.Cancelled != nil && ev.ID == model.Cancelled.Type.Target {
@@ -1207,7 +1273,11 @@ func (in *invocation) anatomy(model *Model, events, effects []*node.Struct) {
 			in.reply(model, f, names)
 			continue
 		}
-		if fields := in.tokenFields(f, tokenKind); len(fields) == 1 {
+		waits, ending := sdk.FactOf(in.m, f.ID, in.g.ends)
+		if ending && !in.ends(model, f, waits, effects) {
+			continue
+		}
+		if fields := in.tokenFields(f, tokenKind); len(fields) == 1 && !ending {
 			model.Tokens = append(model.Tokens, Field{Type: refOf(f), Field: fields[0].Name})
 		}
 		fn, performed := sdk.FactOf(in.m, f.ID, in.g.perform)
@@ -1220,6 +1290,9 @@ func (in *invocation) anatomy(model *Model, events, effects []*node.Struct) {
 				model.Performs = append(model.Performs,
 					Perform{Type: refOf(f), Call: call, Dependency: dep, Timeout: timeout})
 			}
+		case !performed && ending:
+			// The world ends the wait of an effect without a function, through
+			// the cancel of the wait alone.
 		case !performed:
 			in.refuse(NoPerform, f.Pos, "the effect %s of %s has no directive perform. Write //dokimi:perform "+
 				"func=<function> on %s", f.Name, in.name, f.Name)
@@ -1236,6 +1309,30 @@ func (in *invocation) anatomy(model *Model, events, effects []*node.Struct) {
 		}
 	}
 	model.Timeouts = slices.ContainsFunc(model.Performs, func(p Perform) bool { return p.Timeout != "" })
+}
+
+// ends adds the effect f, which ends the waits of the effects waits, to the
+// ends of the model with its field of a token, and reports false after a
+// finding. It reports [BadPerform] at f where f has no field of a token, and
+// where an effect of waits is no effect of the machine with a field of the
+// token type of f.
+func (in *invocation) ends(model *Model, f *node.Struct, waits []symbol.Identity, effects []*node.Struct) bool {
+	tokens := in.tokenFields(f, tokenKind)
+	if len(tokens) != 1 {
+		in.refuse(BadPerform, f.Pos, "the effect %s ends a wait, so it needs one field of a token", f.Name)
+		return false
+	}
+	sameToken := func(t *node.Field) bool { return t.Type.Target == tokens[0].Type.Target }
+	for _, id := range waits {
+		at := slices.IndexFunc(effects, func(e *node.Struct) bool { return e.ID == id })
+		if at < 0 || !slices.ContainsFunc(in.tokenFields(effects[at], tokenKind), sameToken) {
+			in.refuse(BadPerform, f.Pos, "the param ends of %s names %s, which is no effect of %s with a field of "+
+				"the token type %s", f.Name, id.Name, in.name, tokens[0].Type.Spelling)
+			return false
+		}
+	}
+	model.Ends = append(model.Ends, Field{Type: refOf(f), Field: tokens[0].Name})
+	return true
 }
 
 // called returns the call of the method callee of an interface that performs
@@ -1294,11 +1391,12 @@ func (in *invocation) called(f *node.Struct, callee *symbol.Identity) (*Call, *D
 	return call, dep, true
 }
 
-// depended returns the dependency of the function that performs the effect
-// f: the interface dependency, the event of the failure of f, and the errors
-// that the directive fault declares on the methods of the interface. It
-// reports [BadPerform] at f where dependency names no interface, where f has
-// no field of a token, and where the event has no field to bind.
+// depended returns the interface dependency of the function that performs the
+// effect f. The dependency has the event of the failure of f and the event
+// that ends the wait of f. Its errors are the errors that the directive fault
+// declares on the methods of the interface. It reports [BadPerform] at f where
+// dependency is not an interface, where f has no field of a token, and where
+// an event has no field to bind.
 func (in *invocation) depended(f *node.Struct, dependency *symbol.Identity) (*Dependency, bool) {
 	decl, _ := in.b.View().Lookup(*dependency)
 	host, isInterface := decl.(*node.Interface)
@@ -1310,6 +1408,11 @@ func (in *invocation) depended(f *node.Struct, dependency *symbol.Identity) (*De
 	if !bound {
 		return nil, false
 	}
+	if end, ended := sdk.FactOf(in.m, f.ID, in.g.end); ended {
+		if dep.End, bound = in.endOf(f, &end); !bound {
+			return nil, false
+		}
+	}
 	set, _ := in.b.MembersOf(host)
 	methods := make([]symbol.Identity, 0, len(set.Members))
 	for i := range set.Members {
@@ -1319,6 +1422,30 @@ func (in *invocation) depended(f *node.Struct, dependency *symbol.Identity) (*De
 	}
 	dep.Errors = in.errorsOf(methods...)
 	return dep, true
+}
+
+// endOf returns the event end that ends the wait of the effect f, with the
+// field that takes the token of f and its field of the type error. It reports
+// [BadPerform] at f where the event has no field of the token type of f. The
+// failure of f has checked that f has one field of a token.
+func (in *invocation) endOf(f *node.Struct, end *symbol.Identity) (*End, bool) {
+	token := in.tokenFields(f, tokenKind)[0]
+	var fields []*node.Field
+	d, _ := in.b.View().Lookup(*end)
+	if ev, isStruct := d.(*node.Struct); isStruct {
+		fields = ev.Fields
+	}
+	e := &End{
+		Event: &emit.TypeRef{Spelling: end.Name, Target: *end},
+		Token: fieldWhere(fields, func(t *node.TypeRef) bool { return t.Target == token.Type.Target }),
+		Err:   fieldWhere(fields, in.isError),
+	}
+	if e.Token == "" {
+		in.refuse(BadPerform, f.Pos, "the end event %s of %s has no field of the type %s for the token of %s",
+			end.Name, f.Name, token.Type.Spelling, f.Name)
+		return nil, false
+	}
+	return e, true
 }
 
 // failure returns the dependency host of the effect f, whose event of the

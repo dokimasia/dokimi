@@ -37,6 +37,8 @@ const (
 	tasksSimPackage    = "example.com/shop/cells/taskssim"
 	placedPackage      = "example.com/shop/placed"
 	placedSimPackage   = "example.com/shop/placed/placedsim"
+	waitsPackage       = "example.com/shop/waits"
+	waitsSimPackage    = "example.com/shop/waits/waitssim"
 	simTemplate        = "sim.tmpl"
 	testTemplate       = "sim.test.tmpl"
 )

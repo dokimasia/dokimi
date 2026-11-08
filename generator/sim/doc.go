@@ -44,6 +44,20 @@
 //	//dokimi:perform func=write dependency=Store result=Written timeout=Timeout
 //	type Write struct{ ... }
 //
+// An outage of the dependency ends the wait of such an effect. A wait that
+// has delivered an event ends with the event of the param end, and any other
+// wait ends with the event of the param result:
+//
+//	//dokimi:perform func=campaign dependency=Store result=Campaigned end=TermEnded
+//	type Campaign struct{ ... }
+//
+// The param ends marks an effect that ends the waits of the effects that it
+// lists, such as an unwatch. The anatomy returns no token for such an effect,
+// and the world cancels the wait of its token. Its function is optional:
+//
+//	//dokimi:perform ends=[Watch]
+//	type Unwatch struct{ ... }
+//
 // The events and the effects of a machine leave out the types of the test
 // files, because the anatomy refers to each event and each effect. A file
 // outside the tests of a package cannot refer to a type of a test file.

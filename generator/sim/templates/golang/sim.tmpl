@@ -66,6 +66,18 @@
 {{- else}}
 	Token: func({{$F}}) (uint64, bool) { return 0, false },
 {{- end}}
+{{- if $c.Ends}}
+	Ends: func(f {{$F}}) (uint64, bool) {
+		switch f := f.(type) {
+{{- range $c.Ends}}
+		case {{spell .Type}}:
+			return uint64(f.{{.Field}}), true
+{{- end}}
+		default:
+			return 0, false
+		}
+	},
+{{- end}}
 {{- $depended := false}}{{range $c.Performs}}{{if .Dependency}}{{$depended = true}}{{end}}{{end}}
 {{- if $depended}}
 	Dependency: func(f {{$F}}) (string, bool) {
@@ -88,6 +100,19 @@
 			return nil, false
 		}
 	},
+{{- $ended := false}}{{range $c.Performs}}{{with .Dependency}}{{if .End}}{{$ended = true}}{{end}}{{end}}{{end}}
+{{- if $ended}}
+	End: func(f {{$F}}, err error) ({{$E}}, bool) {
+		switch f := f.(type) {
+{{- range $p := $c.Performs}}{{with $p.Dependency}}{{$d := .}}{{with .End}}
+		case {{spell $p.Type}}:
+			return {{spell .Event}}{ {{- .Token}}: f.{{$d.EffectToken}}{{with .Err}}, {{.}}: err{{end}}}, true
+{{- end}}{{end}}{{end}}
+		default:
+			return nil, false
+		}
+	},
+{{- end}}
 	Errors: func(f {{$F}}) []error {
 		switch f.(type) {
 {{- range $p := $c.Performs}}{{with $p.Dependency}}{{if .Errors}}

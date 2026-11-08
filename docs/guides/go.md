@@ -272,7 +272,8 @@ not open with the message of its parent.
    its checks on a planted defect.
 4. Commit the generated files and `dokimi.go.lock` with the directives that produce them. The lock
    has a line for each check, each ceiling, each refusal and each unclaimed classification of the
-   suites of the module.
+   suites of the module. It has the marker and the digest of a generated file, so a run in a clone
+   without `.dokimi/` updates it.
 5. Run `dokimi run --check --strict ./...` in CI. It fails on a file that a run would change and on
    every warning. It reports `DOKIMISUITE-0012` for each check that the committed lock lists and the
    run no longer generates.

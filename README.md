@@ -257,9 +257,10 @@ store/storetest/store_suite.go: error EID-0064: store/storetest/store_suite.go i
 ```
 
 A run also writes `dokimi.go.lock` at the root of the module. It has one line for each check, each
-ceiling, each refusal and each unclaimed classification of the suites of the module. Commit it with
-the generated files. `--check` reports each check that the committed lock lists and the run no
-longer generates:
+ceiling, each refusal and each unclaimed classification of the suites of the module. The lock opens
+with the marker of dokimi and ends with the digest of its lines, as a generated file does, so a run
+in a fresh clone updates it. Commit it with the generated files. `--check` reports each check that
+the committed lock lists and the run no longer generates:
 
 ```text
 dokimi.go.lock:12: error DOKIMISUITE-0012: store.get/zero-on-error (zero-on-error) of example.com/shop/store is no longer generated as the lock states. Commit the regenerated lock to approve the change (suite)

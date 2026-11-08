@@ -18,7 +18,9 @@ import (
 )
 
 // LockTag is the tag of the family of the lock, and LockName the name of the
-// file of the lock of a plan whose layout does not rename it.
+// file of the lock of a plan whose layout does not rename it. The family
+// states the comment syntax "#", so the run stamps the lock with the frame of
+// the brand and recognises it in a clone without the state directory.
 const (
 	LockTag  = "lock"
 	LockName = "dokimi.lock"

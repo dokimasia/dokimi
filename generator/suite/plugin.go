@@ -794,6 +794,7 @@ func New() sdk.Dual {
 		Output(plugin.Output{Tag: TestTag, Per: plugin.PerSource, External: true, Word: Word, Template: conformTemplate}).
 		Output(plugin.Output{
 			Tag: LockTag, Per: plugin.PerPlan, Word: lockWord, Name: LockName, LineSet: true, Template: lockTemplate,
+			Comment: plugin.CommentSyntax{Line: []string{"#"}},
 		}).
 		Removed(lost)
 	lang.Register(b, parts)

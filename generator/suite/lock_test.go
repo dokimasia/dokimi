@@ -40,15 +40,15 @@ func TestLock(t *testing.T) {
 	t.Run("New", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("declares the lock as a line set of one file per plan", func(t *testing.T) {
+		t.Run("declares the lock as a line set of one file per plan in the comment syntax #", func(t *testing.T) {
 			t.Parallel()
 			outputs, declares := suite.New().(plugin.OutputProvider)
 			assert.True(t, declares, "the plugin declares its families")
 
 			assert.Contains(t, outputs.Outputs(), plugin.Output{
 				Tag: suite.LockTag, Per: plugin.PerPlan, Word: "lock", Name: suite.LockName, LineSet: true,
-				Template: lockTemplate,
-			}, "the lock is a data family of line sets")
+				Template: lockTemplate, Comment: plugin.CommentSyntax{Line: []string{"#"}},
+			}, "the lock is a data family of line sets, which the run frames in # comments")
 		})
 
 		t.Run("records a line for each derived check with its partners", func(t *testing.T) {

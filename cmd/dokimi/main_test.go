@@ -17,8 +17,11 @@ import (
 	"go.dokimi.dev/assert/files"
 	"go.dokimi.dev/eidos/cli/acceptancetest"
 	gotesting "go.dokimi.dev/eidos/lang/go/testing"
+	"go.dokimi.dev/eidos/sdk/output"
+	"go.dokimi.dev/eidos/sdk/plugin"
 
 	"go.dokimi.dev/dokimi"
+	"go.dokimi.dev/dokimi/generator/suite"
 )
 
 // childVar is the variable of the environment that makes the test binary
@@ -104,6 +107,37 @@ type Index interface {
 `
 )
 
+// storeLock is the body of the lock of storeSource: a line for each check and
+// for each generated binding of both suites. stateDir is the state directory
+// of the brand, which a fresh clone does not have.
+const (
+	storeLock = "# dokimi lock 1\n" +
+		"# Each line is one check, ceiling, refusal or unclaimed classification. Commit this file.\n" +
+		"example.com/shop/store\tindex.add\tshape:composite-writer\tsilent\t-\n" +
+		"example.com/shop/store\tindex.add/cancel\tcancel\tcheck\t-\n" +
+		"example.com/shop/store\tindex.add/cancel#generated\tcancel\tcheck\t-\n" +
+		"example.com/shop/store\tindex.add/smoke\tsmoke\tcheck\t-\n" +
+		"example.com/shop/store\tindex.add/smoke#generated\tsmoke\tcheck\t-\n" +
+		"example.com/shop/store\tindex.find/cancel\tcancel\tcheck\t-\n" +
+		"example.com/shop/store\tindex.find/cancel#generated\tcancel\tcheck\t-\n" +
+		"example.com/shop/store\tindex.find/read-after-write\tread-after-write\tcheck\twrite=index.add\n" +
+		"example.com/shop/store\tindex.find/read-after-write#generated\tread-after-write\tcheck\t" +
+		"write=index.add\n" +
+		"example.com/shop/store\tindex.find/reads-each-last-write\treads-each-last-write\tcheck\t" +
+		"write=index.add\n" +
+		"example.com/shop/store\tindex.find/smoke\tsmoke\tcheck\t-\n" +
+		"example.com/shop/store\tindex.find/smoke#generated\tsmoke\tcheck\t-\n" +
+		"example.com/shop/store\tindex.find/zero-on-error\tzero-on-error\tcheck\t-\n" +
+		"example.com/shop/store\tindex.find/zero-on-error#generated\tzero-on-error\tcheck\t-\n" +
+		"example.com/shop/store\tstore.get/cancel\tcancel\tcheck\t-\n" +
+		"example.com/shop/store\tstore.get/cancel#generated\tcancel\tcheck\t-\n" +
+		"example.com/shop/store\tstore.get/smoke\tsmoke\tcheck\t-\n" +
+		"example.com/shop/store\tstore.get/smoke#generated\tsmoke\tcheck\t-\n" +
+		"example.com/shop/store\tstore.get/zero-on-error\tzero-on-error\tcheck\t-\n" +
+		"example.com/shop/store\tstore.get/zero-on-error#generated\tzero-on-error\tcheck\t-\n"
+	stateDir = ".dokimi"
+)
+
 // shop returns the tree of a module with the package store of source.
 func shop(source string) files.Tree {
 	return files.Tree{
@@ -179,38 +213,50 @@ func TestDokimi(t *testing.T) {
 			})
 		}
 
-		t.Run("writes the lock of the plan go at the root of the workspace", func(t *testing.T) {
+		t.Run("writes the lock of the plan go at the root of the workspace in its frame", func(t *testing.T) {
 			t.Parallel()
 			dir := files.Workspace(t, shop(storeSource))
 
 			out, status := dokimiRun(t, bin, dir, "run")
 
 			assert.Equal(t, status, 0, "the run passes: "+out)
-			files.HasContent(t, filepath.Join(dir, lockFile), "# dokimi lock 1\n"+
-				"# Each line is one check, ceiling, refusal or unclaimed classification. Commit this file.\n"+
-				"example.com/shop/store\tindex.add\tshape:composite-writer\tsilent\t-\n"+
-				"example.com/shop/store\tindex.add/cancel\tcancel\tcheck\t-\n"+
-				"example.com/shop/store\tindex.add/cancel#generated\tcancel\tcheck\t-\n"+
-				"example.com/shop/store\tindex.add/smoke\tsmoke\tcheck\t-\n"+
-				"example.com/shop/store\tindex.add/smoke#generated\tsmoke\tcheck\t-\n"+
-				"example.com/shop/store\tindex.find/cancel\tcancel\tcheck\t-\n"+
-				"example.com/shop/store\tindex.find/cancel#generated\tcancel\tcheck\t-\n"+
-				"example.com/shop/store\tindex.find/read-after-write\tread-after-write\tcheck\twrite=index.add\n"+
-				"example.com/shop/store\tindex.find/read-after-write#generated\tread-after-write\tcheck\t"+
-				"write=index.add\n"+
-				"example.com/shop/store\tindex.find/reads-each-last-write\treads-each-last-write\tcheck\t"+
-				"write=index.add\n"+
-				"example.com/shop/store\tindex.find/smoke\tsmoke\tcheck\t-\n"+
-				"example.com/shop/store\tindex.find/smoke#generated\tsmoke\tcheck\t-\n"+
-				"example.com/shop/store\tindex.find/zero-on-error\tzero-on-error\tcheck\t-\n"+
-				"example.com/shop/store\tindex.find/zero-on-error#generated\tzero-on-error\tcheck\t-\n"+
-				"example.com/shop/store\tstore.get/cancel\tcancel\tcheck\t-\n"+
-				"example.com/shop/store\tstore.get/cancel#generated\tcancel\tcheck\t-\n"+
-				"example.com/shop/store\tstore.get/smoke\tsmoke\tcheck\t-\n"+
-				"example.com/shop/store\tstore.get/smoke#generated\tsmoke\tcheck\t-\n"+
-				"example.com/shop/store\tstore.get/zero-on-error\tzero-on-error\tcheck\t-\n"+
-				"example.com/shop/store\tstore.get/zero-on-error#generated\tzero-on-error\tcheck\t-\n",
+			framing, err := output.NewContract(dokimi.Brand, plugin.CommentSyntax{Line: []string{"#"}})
+			assert.NoError(t, err, "the comment syntax of the lock frames a file")
+			want, err := framing.Stamp(plugin.RenderedFile{Plugins: []plugin.ID{suite.ID}, Body: []byte(storeLock)})
+			assert.NoError(t, err, "the lines of the lock stamp")
+			files.HasContent(t, filepath.Join(dir, lockFile), string(want),
 				"the lock has a line for each check and for each generated binding of both suites")
+		})
+
+		t.Run("updates the lock in a workspace without the state directory", func(t *testing.T) {
+			t.Parallel()
+			oneSuite := strings.Replace(storeSource, "//\n//dokimi:suite\ntype Index", "type Index", 1)
+			dir := files.Workspace(t, shop(oneSuite))
+			out, status := dokimiRun(t, bin, dir, "run")
+			assert.Equal(t, status, 0, "the first run writes the lock: "+out)
+			assert.NoError(t, os.RemoveAll(filepath.Join(dir, stateDir)),
+				"the state directory is removed, as a fresh clone has none")
+			files.Write(t, dir, files.Tree{storeFile: files.Text(storeSource)})
+
+			out, status = dokimiRun(t, bin, dir, "run")
+
+			assert.Equal(t, status, 0, "the frame of the lock proves that dokimi wrote it: "+out)
+			body, _, _ := output.Body([]byte(files.Read(t, filepath.Join(dir, lockFile))))
+			assert.Equal(t, string(body), storeLock, "the lock has the lines of both suites")
+		})
+
+		t.Run("refuses a lock that a person wrote at the path of the lock", func(t *testing.T) {
+			t.Parallel()
+			tree := shop(storeSource)
+			tree[lockFile] = files.Text("# dokimi lock 1\n")
+			dir := files.Workspace(t, tree)
+
+			out, status := dokimiRun(t, bin, dir, "run")
+
+			assert.Equal(t, status, 1, "the run fails")
+			expect.Contains(t, out, "error EID-0056: dokimi.go.lock is a file the dokimi brand did not write",
+				"the run names the lock that dokimi did not write")
+			files.HasContent(t, filepath.Join(dir, lockFile), "# dokimi lock 1\n", "the lock of the person remains")
 		})
 
 		losses := []struct {

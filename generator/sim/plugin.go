@@ -4,6 +4,7 @@
 package sim
 
 import (
+	"cmp"
 	"errors"
 	"slices"
 	"strconv"
@@ -50,8 +51,9 @@ const (
 // SimDirective puts a machine interface under sim. Its params StartParam,
 // StopParam and CancelParam name the events of the lifecycle, TolerateParam
 // the faults in force at once, RequireParam the share of the cases in which
-// each fault strikes, StrategyParam the strategy of the scheduling, and
-// IsolationParam the isolation level of the transactions of the clients.
+// each fault strikes, StrategyParam the strategy of the scheduling,
+// IsolationParam the isolation level of the transactions of the clients, and
+// MeanStepsParam and MaxStepsParam the mean and the most steps of a case.
 // TokenDirective marks the type of a token, and with its positional param
 // KindParam set to reply the type of a reply token. ReplyDirective marks the
 // effect of a reply. Its params ValueParam, ErrParam and ToParam name its
@@ -89,6 +91,8 @@ const (
 	RequireParam         directive.ParamKey = "require"
 	StrategyParam        directive.ParamKey = "strategy"
 	IsolationParam       directive.ParamKey = "isolation"
+	MeanStepsParam       directive.ParamKey = "mean-steps"
+	MaxStepsParam        directive.ParamKey = "max-steps"
 	KindParam            directive.ParamKey = "kind"
 	ValueParam           directive.ParamKey = "value"
 	ErrParam             directive.ParamKey = "err"
@@ -187,6 +191,10 @@ const (
 	blockingMode = "blocking"
 )
 
+// defaultMaxSteps is the most steps of a case of the package stateful of the
+// assert library, without the param max-steps.
+const defaultMaxSteps = 100
+
 // Model is the data of the record of the simulation of one machine
 // interface, and the template of the family of the simulations reads it.
 //
@@ -213,7 +221,9 @@ const (
 // Tolerate and Require are the faults of the params tolerate and require, in
 // their order. Strategy is uniform, pct or empty for the default, and Depth
 // the depth of pct. Isolation is the isolation level, and empty for none.
-// Timeouts reports whether an effect has a field that bounds its call.
+// MeanSteps and MaxSteps are the mean and the most steps of a case, and 0 for
+// the defaults of the package stateful. Timeouts reports whether an effect
+// has a field that bounds its call.
 //
 // Components reports a system of components without a machine interface.
 // Machine and System are then the name of its function under the directive
@@ -248,6 +258,8 @@ type Model struct {
 	Tolerate    []Bound
 	Require     []Share
 	Depth       int
+	MeanSteps   int
+	MaxSteps    int
 	Inputs      bool
 	Timeouts    bool
 	Components  bool
@@ -292,15 +304,17 @@ type Reply struct {
 
 // Perform is one effect with the function or the call that performs it, and
 // the field of the effect that bounds its call, empty for none. Func is the
-// name of the function, and empty for an effect that Call performs.
-// Dependency is the dependency that the call or the function calls, and nil
-// for a function without one.
+// name of the function, and empty for an effect that Call performs. Pointer
+// reports a function that takes a pointer to the effect. Dependency is the
+// dependency that the call or the function calls, and nil for a function
+// without one.
 type Perform struct {
 	Type       *emit.TypeRef
 	Call       *Call
 	Dependency *Dependency
 	Func       string
 	Timeout    string
+	Pointer    bool
 }
 
 // Dependency is the dependency of an effect, whose faults strike the effect:
@@ -460,7 +474,7 @@ var simSchema = directive.Schema{
 			Key: TolerateParam, Type: directive.TypeList, ListOf: directive.TypeString,
 			Doc: "the most faults of each kind in force at once, such as [crash:1, partition:1]",
 		},
-		requireSpec, strategySpec, isolationSpec,
+		requireSpec, strategySpec, isolationSpec, meanStepsSpec, maxStepsSpec,
 	},
 	Doc: "generates the deterministic simulation of a system of the sans-IO machines of the interface, and its tests",
 }
@@ -480,6 +494,14 @@ var (
 		Key: IsolationParam, Type: directive.TypeString, Choices: []string{serializable, snapshotIsolation},
 		Doc: "the isolation level that the list-append transactions of the clients must have",
 	}
+	meanStepsSpec = directive.ParamSpec{
+		Key: MeanStepsParam, Type: directive.TypeInt,
+		Doc: "the mean number of steps of the active phase of a case, 30 by default",
+	}
+	maxStepsSpec = directive.ParamSpec{
+		Key: MaxStepsParam, Type: directive.TypeInt,
+		Doc: "the most steps of the active phase of a case, 100 by default",
+	}
 )
 
 // systemSchema is the directive of the function that builds the processes of
@@ -493,7 +515,7 @@ var systemSchema = directive.Schema{
 			Doc: "the most faults of each kind in force at once and the modes tasks and blocking of a system of " +
 				"components, such as [crash:1, tasks]",
 		},
-		requireSpec, strategySpec, isolationSpec,
+		requireSpec, strategySpec, isolationSpec, meanStepsSpec, maxStepsSpec,
 	},
 	Doc: "marks the function that builds the processes of the system",
 }
@@ -987,7 +1009,9 @@ func worldOf(fn *node.Function) *node.TypeRef {
 // directive sim of the interface states the simulation.
 func (in *invocation) machineSystem(fn *node.Function) {
 	d := in.m.Directive()
-	for _, key := range []directive.ParamKey{TolerateParam, RequireParam, StrategyParam, IsolationParam} {
+	for _, key := range []directive.ParamKey{
+		TolerateParam, RequireParam, StrategyParam, IsolationParam, MeanStepsParam, MaxStepsParam,
+	} {
 		if _, stated := d.Param(key); stated {
 			in.refuse(BadParam, fn.Pos, "%s is the system of a machine interface, so its directive system takes no "+
 				"param %s. State it on the directive sim of the interface", fn.Name, key)
@@ -1135,11 +1159,11 @@ func (in *invocation) members(ref *node.TypeRef) []*node.Struct {
 	return out
 }
 
-// params reads the params tolerate, require, strategy and isolation of the
-// directive into the model, and the modes tasks and blocking of a system of
-// components. It reports [BadParam] at each value that is not a fault, a mode
-// or a strategy. A share that does not parse is 0, infinite or NaN, so its
-// range refuses it.
+// params reads the params tolerate, require, strategy, isolation, mean-steps
+// and max-steps of the directive into the model, and the modes tasks and
+// blocking of a system of components. It reports [BadParam] at each value that
+// is not a fault, a mode, a strategy or a count in its range. A share that
+// does not parse is 0, infinite or NaN, so its range refuses it.
 func (in *invocation) params(model *Model) {
 	d := in.m.Directive()
 	if tolerate, stated := d.Param(TolerateParam); stated {
@@ -1190,6 +1214,31 @@ func (in *invocation) params(model *Model) {
 	}
 	if isolation, stated := d.Param(IsolationParam); stated {
 		model.Isolation = isolation.Str
+	}
+	in.steps(model)
+}
+
+// steps reads the params mean-steps and max-steps of the directive into the
+// model. It reports [BadParam] at a count less than 1, and at a mean greater
+// than the most steps of a case, which is 100 without max-steps.
+func (in *invocation) steps(model *Model) {
+	d := in.m.Directive()
+	for _, p := range []struct {
+		into *int
+		key  directive.ParamKey
+	}{{into: &model.MeanSteps, key: MeanStepsParam}, {into: &model.MaxSteps, key: MaxStepsParam}} {
+		if count, stated := d.Param(p.key); stated {
+			if count.Int < 1 {
+				in.refuse(BadParam, in.pos, "the param %s of %s is %d, which is no count of at least 1", p.key,
+					in.name, count.Int)
+				continue
+			}
+			*p.into = int(count.Int)
+		}
+	}
+	if most := cmp.Or(model.MaxSteps, defaultMaxSteps); model.MeanSteps > most {
+		in.refuse(BadParam, in.pos, "the param mean-steps of %s is %d, which is above the most steps of a case, %d. "+
+			"Set the param max-steps to at least %d", in.name, model.MeanSteps, most, model.MeanSteps)
 	}
 }
 
@@ -1284,6 +1333,7 @@ func (in *invocation) anatomy(model *Model, events, effects []*node.Struct) {
 		callee, called := sdk.FactOf(in.m, f.ID, in.g.callee)
 		dependency, depends := sdk.FactOf(in.m, f.ID, in.g.dependency)
 		timeout, _ := sdk.FactOf(in.m, f.ID, in.g.timeout)
+		fit, pointer := in.performer(fn, f)
 		switch {
 		case called:
 			if call, dep, bound := in.called(f, &callee); bound {
@@ -1296,16 +1346,17 @@ func (in *invocation) anatomy(model *Model, events, effects []*node.Struct) {
 		case !performed:
 			in.refuse(NoPerform, f.Pos, "the effect %s of %s has no directive perform. Write //dokimi:perform "+
 				"func=<function> on %s", f.Name, in.name, f.Name)
-		case !in.performer(fn, f):
+		case !fit:
 			in.refuse(BadFunction, f.Pos, "the package of the simulation of %s has no function %s with the "+
 				"signature %s, with T the effect %s", in.name, fn, performForm, f.Name)
 		case depends:
 			if dep, bound := in.depended(f, &dependency); bound {
 				model.Performs = append(model.Performs,
-					Perform{Type: refOf(f), Func: fn, Dependency: dep, Timeout: timeout})
+					Perform{Type: refOf(f), Func: fn, Dependency: dep, Timeout: timeout, Pointer: pointer})
 			}
 		default:
-			model.Performs = append(model.Performs, Perform{Type: refOf(f), Func: fn, Timeout: timeout})
+			model.Performs = append(model.Performs,
+				Perform{Type: refOf(f), Func: fn, Timeout: timeout, Pointer: pointer})
 		}
 	}
 	model.Timeouts = slices.ContainsFunc(model.Performs, func(p Perform) bool { return p.Timeout != "" })
@@ -1646,7 +1697,8 @@ const (
 	specForm        = "func() history.Spec[S] or func() history.Subject"
 	withinForm      = "func() time.Duration"
 	fingerprintForm = "func(w *sim.World[E, F]) uint64"
-	performForm     = "func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E, F]"
+	performForm     = "func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E, F] or " +
+		"func(w *sim.World[E, F], p *sim.Process[E, F], f *T) sim.Outcome[E, F]"
 )
 
 // refuseForm reports [BadFunction] at the function fn under the directive
@@ -1821,14 +1873,24 @@ func (in *invocation) action(fn *node.Function, call bool) bool {
 }
 
 // performer reports whether the package of the simulation declares the
-// function named name with the signature of the performer of the effect f.
-func (in *invocation) performer(name string, f *node.Struct) bool {
+// function named name with a signature of the performer of the effect f, and
+// whether the function takes a pointer to the effect.
+func (in *invocation) performer(name string, f *node.Struct) (fit, pointer bool) {
 	id := symbol.Identity{Lang: f.ID.Lang, Package: in.pkg.Package, Name: name, Kind: symbol.KindFunction}
 	d, _ := in.b.View().Lookup(id)
 	fn, isFunction := d.(*node.Function)
+	if !isFunction || !fits(returnTypes(fn.Returns), in.outcome) {
+		return false, false
+	}
 	effect := func(ref *node.TypeRef) bool { return ref.Target == f.ID }
-	return isFunction && fits(paramTypes(fn.Params), in.world, in.process, effect) &&
-		fits(returnTypes(fn.Returns), in.outcome)
+	if fits(paramTypes(fn.Params), in.world, in.process, effect) {
+		return true, false
+	}
+	addressed := func(ref *node.TypeRef) bool {
+		t := pointed(ref)
+		return t != nil && t.Target == f.ID
+	}
+	return fits(paramTypes(fn.Params), in.world, in.process, addressed), true
 }
 
 // world reports whether the type ref is a pointer to the world of the

@@ -259,6 +259,46 @@ type BlockingMachine interface {
 	Err() error
 }
 
+// StepLess sets a mean of steps below 1.
+//
+//dokimi:sim start=Started stop=Stopped mean-steps=0
+type StepLess interface {
+	// Step applies ev and appends its effects to out.
+	Step(ev Event, out []Effect) []Effect
+	// Err returns the error of the machine.
+	Err() error
+}
+
+// MostLess sets a most of steps below 1.
+//
+//dokimi:sim start=Started stop=Stopped max-steps=0
+type MostLess interface {
+	// Step applies ev and appends its effects to out.
+	Step(ev Event, out []Effect) []Effect
+	// Err returns the error of the machine.
+	Err() error
+}
+
+// ShortMost sets a most of steps below its mean of steps.
+//
+//dokimi:sim start=Started stop=Stopped mean-steps=50 max-steps=20
+type ShortMost interface {
+	// Step applies ev and appends its effects to out.
+	Step(ev Event, out []Effect) []Effect
+	// Err returns the error of the machine.
+	Err() error
+}
+
+// LongMean sets a mean of steps above the most steps of a case by default.
+//
+//dokimi:sim start=Started stop=Stopped mean-steps=200
+type LongMean interface {
+	// Step applies ev and appends its effects to out.
+	Step(ev Event, out []Effect) []Effect
+	// Err returns the error of the machine.
+	Err() error
+}
+
 // WholeShare requires a fault in more than every case.
 //
 //dokimi:sim start=Started stop=Stopped require=[crash:2]

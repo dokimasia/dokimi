@@ -157,7 +157,7 @@
 		{{range $i, $v := .Values}}{{if $i}}, {{end}}ev.{{$v}}{{end}}{{if .Fails}}{{if .Values}}, {{end}}ev.{{$d.Err}}{{end}}{{if or .Values .Fails}} = {{end}}{{$sim}}.Dependency[{{spell .Interface}}](w, p).{{.Method}}({{range $i, $a := .Args}}{{if $i}}, {{end}}{{if $a.Context}}w.Context(){{else}}f.{{$a.Field}}{{end}}{{end}})
 		return {{$sim}}.Outcome[{{$E}}, {{$F}}]{Event: ev}
 {{- else}}
-		return {{.Func}}(w, p, f)
+		return {{.Func}}(w, p, {{if .Pointer}}&{{end}}f)
 {{- end}}
 {{- end}}
 	default:
@@ -268,6 +268,12 @@
 {{- if $c.Components}}
 		Around: {{import "go.dokimi.dev/conform"}}.Bubble,
 		Mode:   {{import "go.dokimi.dev/spec"}}.{{if $c.Tasks}}ModeTasks{{else}}ModeNative{{end}},
+{{- end}}
+{{- with $c.MeanSteps}}
+		MeanSteps: {{.}},
+{{- end}}
+{{- with $c.MaxSteps}}
+		MaxSteps: {{.}},
 {{- end}}
 {{- if eq $c.Strategy "uniform"}}
 		Strategy: {{$sim}}.Uniform(),

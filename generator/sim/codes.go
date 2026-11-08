@@ -28,17 +28,19 @@ var BadLifecycle = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Meaning: "a param start, stop or cancel of the directive sim names no event type of the form of its event",
 })
 
-// BadParam reports a param tolerate, require or strategy of the directive sim
-// or of the directive system of a system of components with a value that is
-// not a fault, a mode or a strategy, or with a count or a share out of its
-// range. It also reports a param of a simulation on the directive system of a
-// machine interface, because the directive sim of the interface has the
-// params of its simulation. The finding is an Error at the interface or at
-// the function, and sim writes nothing for its simulation.
+// BadParam reports a param tolerate, require, strategy, mean-steps or
+// max-steps of the directive sim or of the directive system of a system of
+// components with a value that is not a fault, a mode or a strategy, or with
+// a count or a share out of its range. A mean-steps greater than the most
+// steps of a case is out of its range. It also reports a param of a simulation on the
+// directive system of a machine interface, because the directive sim of the
+// interface has the params of its simulation. The finding is an Error at the
+// interface or at the function, and sim writes nothing for its simulation.
 var BadParam = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number: 3,
-	Meaning: "a param tolerate, require or strategy of the directive sim or system has a value that is not a fault, " +
-		"a mode or a strategy, or is on the directive system of a machine interface",
+	Meaning: "a param tolerate, require, strategy, mean-steps or max-steps of the directive sim or system has a " +
+		"value that is not a fault, a mode, a strategy or a count in its range, or is on the directive system of a " +
+		"machine interface",
 })
 
 // NoPerform reports an effect type of a machine interface under the directive

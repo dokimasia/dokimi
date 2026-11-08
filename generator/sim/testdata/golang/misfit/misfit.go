@@ -236,6 +236,16 @@ type Ticketed struct{ Ticket Ticket }
 //dokimi:perform ends=[Ticketed]
 type Mistyped struct{ Token Token }
 
+// Pointed names a function that takes a pointer to another effect.
+//
+//dokimi:perform func=point
+type Pointed struct{ Token Token }
+
+// Misvalued names a function that takes another effect.
+//
+//dokimi:perform func=misvalue
+type Misvalued struct{ Token Token }
+
 // helper is no method of a dependency.
 func helper(context.Context) error { return nil }
 
@@ -246,6 +256,16 @@ func watch(*sim.World[Event, Effect], *sim.Process[Event, Effect], Watch) sim.Ou
 
 // unend performs Unended.
 func unend(*sim.World[Event, Effect], *sim.Process[Event, Effect], Unended) sim.Outcome[Event, Effect] {
+	return sim.Outcome[Event, Effect]{}
+}
+
+// point takes a pointer to Watch in place of Pointed.
+func point(*sim.World[Event, Effect], *sim.Process[Event, Effect], *Watch) sim.Outcome[Event, Effect] {
+	return sim.Outcome[Event, Effect]{}
+}
+
+// misvalue takes Watch in place of Misvalued.
+func misvalue(*sim.World[Event, Effect], *sim.Process[Event, Effect], Watch) sim.Outcome[Event, Effect] {
 	return sim.Outcome[Event, Effect]{}
 }
 
@@ -291,6 +311,8 @@ func (Unaligned) effect()      {}
 func (Unended) effect()        {}
 func (Ticketed) effect()       {}
 func (Mistyped) effect()       {}
+func (Pointed) effect()        {}
+func (Misvalued) effect()      {}
 
 // Machine is the machine of a node.
 //

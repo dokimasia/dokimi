@@ -13,6 +13,9 @@
 //		Err() error
 //	}
 //
+// The params mean-steps and max-steps of the directive sim set the mean and
+// the most steps of the active phase of a case, 30 and 100 by default.
+//
 // A function under the directive system whose world is
 // *sim.World[sim.None, sim.None] is a system of components, which has no
 // machine interface:
@@ -22,12 +25,13 @@
 //		sim.SpawnComponent(w, "cell", cells.Open)
 //	}
 //
-// Its directive system states the params tolerate, require, strategy and
-// isolation of its simulation. The values tasks and blocking of tolerate are
-// its modes. tasks runs the hosts of its components under a task scheduler of
-// each case, and blocking lets a world in native mode strike the blocking
-// faults. The simulation runs each case in conform.Bubble, and has no rule of
-// sim, because each rule of sim judges the steps of machines.
+// Its directive system states the params tolerate, require, strategy,
+// isolation, mean-steps and max-steps of its simulation. The values tasks and
+// blocking of tolerate are its modes. tasks runs the hosts of its components
+// under a task scheduler of each case, and blocking lets a world in native
+// mode strike the blocking faults. The simulation runs each case in
+// conform.Bubble, and has no rule of sim, because each rule of sim judges the
+// steps of machines.
 //
 // The events of the machine are the types that implement its event
 // interface, and its effects the types that implement its effect interface.
@@ -36,10 +40,11 @@
 // reply the type of the field that links an inbound call to its reply. The
 // directive reply marks the effect of a reply. The directive perform names
 // the function that performs an effect, or the method of a dependency that
-// performs it. A function that calls a dependency names the interface of the
-// dependency in the param dependency and the event of the failure of the
-// effect in the param result, so the faults of the dependency strike the
-// effect:
+// performs it. The function takes the effect or a pointer to the effect, and
+// a pointer avoids the copy of a large effect. A function that calls a
+// dependency names the interface of the dependency in the param dependency
+// and the event of the failure of the effect in the param result, so the
+// faults of the dependency strike the effect:
 //
 //	//dokimi:perform func=write dependency=Store result=Written timeout=Timeout
 //	type Write struct{ ... }

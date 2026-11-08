@@ -103,7 +103,7 @@ func (Unwatch) effect()  {}
 
 // Leader is the machine of the leader.
 //
-//dokimi:sim start=Started stop=Stopped tolerate=[outage:1, lose-after:1]
+//dokimi:sim start=Started stop=Stopped tolerate=[outage:1, lose-after:1] mean-steps=1 max-steps=200
 //dokimi:out path=waitssim/
 type Leader interface {
 	// Step applies ev and appends its effects to out.

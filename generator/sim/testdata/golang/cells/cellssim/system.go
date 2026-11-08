@@ -22,7 +22,7 @@ const (
 
 // cluster spawns the cell and the spare.
 //
-//dokimi:system tolerate=[crash:1, restart:1, pause:1, blocking] require=[crash:0.2] strategy=uniform
+//dokimi:system tolerate=[crash:1, restart:1, pause:1, blocking] require=[crash:0.2] strategy=uniform mean-steps=60 max-steps=60
 func cluster(w *sim.World[sim.None, sim.None]) {
 	sim.SpawnComponent(w, cellName, cells.Open)
 	sim.SpawnComponent(w, spareName, cells.Open)

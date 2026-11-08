@@ -99,7 +99,7 @@ func performLeader(
 	case waits.Resign:
 		return resign(w, p, f)
 	case waits.Watch:
-		return watch(w, p, f)
+		return watch(w, p, &f)
 	default:
 		return sim.Outcome[waits.Event, waits.Effect]{}
 	}
@@ -157,5 +157,7 @@ func LeaderSimulation() sim.Simulation[waits.Event, waits.Effect, struct{}] {
 				Form:      "reuses-a-token",
 			},
 		},
+		MeanSteps: 1,
+		MaxSteps:  200,
 	}
 }

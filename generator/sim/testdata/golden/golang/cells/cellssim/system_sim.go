@@ -49,9 +49,11 @@ func ClusterSimulation() sim.Simulation[sim.None, sim.None, []history.Operation]
 				Defect:    func(*prop.Case) func(w *sim.World[sim.None, sim.None]) { return lonely },
 			},
 		},
-		Around:   conform.Bubble,
-		Mode:     spec.ModeNative,
-		Strategy: sim.Uniform(),
-		Blocking: true,
+		Around:    conform.Bubble,
+		Mode:      spec.ModeNative,
+		MeanSteps: 60,
+		MaxSteps:  60,
+		Strategy:  sim.Uniform(),
+		Blocking:  true,
 	}
 }

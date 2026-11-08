@@ -46,8 +46,9 @@ func campaign(w *world, p *sim.Process[waits.Event, waits.Effect], f waits.Campa
 func resign(*world, *sim.Process[waits.Event, waits.Effect], waits.Resign) outcome { return outcome{} }
 
 // watch watches the feed of the leader. Its wait delivers one item, and ends
-// without an item once the world cancels the watch.
-func watch(_ *world, _ *sim.Process[waits.Event, waits.Effect], f waits.Watch) outcome {
+// without an item once the world cancels the watch. It takes a pointer to the
+// effect.
+func watch(_ *world, _ *sim.Process[waits.Event, waits.Effect], f *waits.Watch) outcome {
 	return stream(waits.Watched{Token: f.Token}, nil)
 }
 

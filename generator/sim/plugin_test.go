@@ -287,6 +287,27 @@ func TestNew(t *testing.T) {
 			"the end of the term takes the token of the campaign, and has no error")
 	})
 
+	t.Run("records the mean and the most steps of a case", func(t *testing.T) {
+		t.Parallel()
+
+		m := generateWithFaults(t, waitsPackage, waitsSimPackage).models(t)["Leader"]
+		expect.Equal(t, []int{m.MeanSteps, m.MaxSteps}, []int{1, 200},
+			"the params mean-steps and max-steps set the steps of a case, a mean of 1 included")
+	})
+
+	t.Run("records a performer that takes a pointer to its effect", func(t *testing.T) {
+		t.Parallel()
+
+		m := generateWithFaults(t, waitsPackage, waitsSimPackage).models(t)["Leader"]
+		pointers := make([]string, 0, len(m.Performs))
+		for _, p := range m.Performs {
+			if p.Pointer {
+				pointers = append(pointers, p.Type.Spelling)
+			}
+		}
+		expect.Equal(t, pointers, []string{"Watch"}, "the function watch alone takes a pointer to its effect")
+	})
+
 	t.Run("records a system and a defect that take inputs from the case", func(t *testing.T) {
 		t.Parallel()
 
@@ -468,6 +489,8 @@ func TestNew(t *testing.T) {
 		expect.Equal(t, m.Require, []sim.Share{{Fault: "FaultCrash", Share: "0.2"}},
 			"the param require gives the crash its share")
 		expect.Equal(t, m.Strategy, "uniform", "the param strategy is uniform")
+		expect.Equal(t, []int{m.MeanSteps, m.MaxSteps}, []int{60, 60},
+			"the params mean-steps and max-steps set the steps of a case, a mean of the most included")
 	})
 
 	t.Run("records a system of components in Tasks mode", func(t *testing.T) {
@@ -519,7 +542,43 @@ func TestNew(t *testing.T) {
 			name: "refuses an effect whose performer the simulation lacks", giveDecl: "partial.Flush",
 			wantCode: sim.BadFunction,
 			wantMsg: "the package of the simulation of Flusher has no function flush with the signature " +
-				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E, F], with T the effect Flush",
+				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E, F] or " +
+				"func(w *sim.World[E, F], p *sim.Process[E, F], f *T) sim.Outcome[E, F], with T the effect Flush",
+		},
+		{
+			name: "refuses a performer that takes a pointer to another effect", giveDecl: "misfit.Pointed",
+			wantCode: sim.BadFunction,
+			wantMsg: "the package of the simulation of Machine has no function point with the signature " +
+				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E, F] or " +
+				"func(w *sim.World[E, F], p *sim.Process[E, F], f *T) sim.Outcome[E, F], with T the effect Pointed",
+		},
+		{
+			name: "refuses a performer that takes another effect", giveDecl: "misfit.Misvalued",
+			wantCode: sim.BadFunction,
+			wantMsg: "the package of the simulation of Machine has no function misvalue with the signature " +
+				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E, F] or " +
+				"func(w *sim.World[E, F], p *sim.Process[E, F], f *T) sim.Outcome[E, F], with T the effect " +
+				"Misvalued",
+		},
+		{
+			name: "refuses a mean of steps below 1", giveDecl: "bad.StepLess", wantCode: sim.BadParam,
+			wantMsg: "the param mean-steps of StepLess is 0, which is no count of at least 1",
+		},
+		{
+			name: "refuses a most of steps below 1", giveDecl: "bad.MostLess", wantCode: sim.BadParam,
+			wantMsg: "the param max-steps of MostLess is 0, which is no count of at least 1",
+		},
+		{
+			name: "refuses a mean of steps above the most steps of a case", giveDecl: "bad.ShortMost",
+			wantCode: sim.BadParam,
+			wantMsg: "the param mean-steps of ShortMost is 50, which is above the most steps of a case, 20. Set the " +
+				"param max-steps to at least 50",
+		},
+		{
+			name: "refuses a mean of steps above the most steps of a case by default", giveDecl: "bad.LongMean",
+			wantCode: sim.BadParam,
+			wantMsg: "the param mean-steps of LongMean is 200, which is above the most steps of a case, 100. Set " +
+				"the param max-steps to at least 200",
 		},
 		{
 			name: "refuses a call without a reply", giveDecl: "silent.Asker", wantCode: sim.NoReply,
@@ -803,24 +862,28 @@ func TestNew(t *testing.T) {
 			name: "refuses a performer that takes a world in place of a process", giveDecl: "partial.Wrong",
 			wantCode: sim.BadFunction,
 			wantMsg: "the package of the simulation of Flusher has no function wrong with the signature " +
-				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E, F], with T the effect Wrong",
+				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E, F] or " +
+				"func(w *sim.World[E, F], p *sim.Process[E, F], f *T) sim.Outcome[E, F], with T the effect Wrong",
 		},
 		{
 			name: "refuses a performer of another effect", giveDecl: "partial.Pair", wantCode: sim.BadFunction,
 			wantMsg: "the package of the simulation of Flusher has no function pair with the signature " +
-				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E, F], with T the effect Pair",
+				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E, F] or " +
+				"func(w *sim.World[E, F], p *sim.Process[E, F], f *T) sim.Outcome[E, F], with T the effect Pair",
 		},
 		{
 			name: "refuses a performer that returns an outcome of another package", giveDecl: "partial.Odd",
 			wantCode: sim.BadFunction,
 			wantMsg: "the package of the simulation of Flusher has no function odd with the signature " +
-				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E, F], with T the effect Odd",
+				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E, F] or " +
+				"func(w *sim.World[E, F], p *sim.Process[E, F], f *T) sim.Outcome[E, F], with T the effect Odd",
 		},
 		{
 			name: "refuses a performer that returns an outcome whose events are the effects", giveDecl: "partial.Skew",
 			wantCode: sim.BadFunction,
 			wantMsg: "the package of the simulation of Flusher has no function skew with the signature " +
-				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E, F], with T the effect Skew",
+				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E, F] or " +
+				"func(w *sim.World[E, F], p *sim.Process[E, F], f *T) sim.Outcome[E, F], with T the effect Skew",
 		},
 		{
 			name: "refuses a dependency that is no interface", giveDecl: "misfit.Strayed", wantCode: sim.BadPerform,

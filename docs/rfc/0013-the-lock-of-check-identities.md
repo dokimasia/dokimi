@@ -7,7 +7,7 @@ created: 2026-10-28
 updated: 2026-10-30
 discussion: none
 supersedes: RFC-0003 in part
-superseded-by: none
+superseded-by: ADR-0024 in part
 produces-adr: tbd
 ---
 

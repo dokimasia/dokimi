@@ -48,3 +48,6 @@ Proposals, and the argument that produced them. An RFC is written to be argued w
 | [0037](0037-hosts-started-machines-and-the-inputs-of-a-system.md) | Hosts, started machines and the inputs of a system | Accepted |
 | [0038](0038-the-end-of-a-wait.md) | The end of a wait | Accepted |
 | [0039](0039-hosts-that-exit-the-steps-of-a-case-and-performers-of-a-pointer.md) | Hosts that exit, the steps of a case and performers of a pointer | Accepted |
+| [0040](0040-deliveries-and-choices-of-the-active-phase.md) | The deliveries and the choices of the active phase | Accepted |
+| [0041](0041-the-final-phase-of-a-long-convergence.md) | The final phase of a long convergence and the timers of a performer | Accepted |
+| [0042](0042-the-outcome-at-a-loss-after-the-effect.md) | The outcome of an effect at a loss after the effect | Accepted |

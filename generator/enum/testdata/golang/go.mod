@@ -2,4 +2,4 @@ module example.com/shop
 
 go 1.27.3
 
-require go.dokimi.dev/assert v0.19.0
+require go.dokimi.dev/assert v0.20.0

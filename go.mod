@@ -7,7 +7,7 @@ go 1.27.3
 
 require (
 	github.com/google/jsonschema-go v0.4.3
-	go.dokimi.dev/assert v0.19.0
+	go.dokimi.dev/assert v0.20.0
 	go.dokimi.dev/eidos/cli v0.3.8
 	go.dokimi.dev/eidos/core v0.15.0
 	go.dokimi.dev/eidos/lang v0.4.6
@@ -15,9 +15,9 @@ require (
 	go.dokimi.dev/eidos/lang/typescript v0.5.3
 	go.dokimi.dev/eidos/plugin/shape v0.5.2
 	go.dokimi.dev/eidos/sdk v0.11.0
-	go.dokimi.dev/spec v0.5.0
-	go.stealthscale.io/cli v0.7.0
-	go.yaml.in/yaml/v3 v3.0.5
+	go.dokimi.dev/spec v0.5.1
+	go.stealthscale.io/cli v0.8.1
+	go.yaml.in/yaml/v3 v3.0.6
 	golang.org/x/mod v0.42.0
 )
 
@@ -30,7 +30,7 @@ require (
 	github.com/tailscale/hujson v0.0.0-20260727124030-b80ff77dac4f // indirect
 	github.com/tree-sitter/go-tree-sitter v0.25.0 // indirect
 	go.dokimi.dev/eidos/declarative v0.1.15 // indirect
-	go.stealthscale.io/cli/yaml v0.1.7 // indirect
+	go.stealthscale.io/cli/yaml v0.1.9 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/tools v0.52.0 // indirect

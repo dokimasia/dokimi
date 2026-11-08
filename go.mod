@@ -16,8 +16,8 @@ require (
 	go.dokimi.dev/eidos/plugin/shape v0.5.2
 	go.dokimi.dev/eidos/sdk v0.11.0
 	go.dokimi.dev/spec v0.5.0
-	go.stealthscale.io/cli v0.7.0
-	go.yaml.in/yaml/v3 v3.0.5
+	go.stealthscale.io/cli v0.8.1
+	go.yaml.in/yaml/v3 v3.0.6
 	golang.org/x/mod v0.42.0
 )
 

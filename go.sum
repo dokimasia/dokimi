@@ -64,8 +64,8 @@ go.dokimi.dev/eidos/declarative v0.1.15 h1:fjzP2DUeUmImwHM+7f4QM4eWEoHhmG50nl6dA
 go.dokimi.dev/eidos/declarative v0.1.15/go.mod h1:OqvLSdZdAV+ybXfqq+Y2ZijTBBouqZNoifN7VMDTWDo=
 go.dokimi.dev/eidos/lang v0.4.6 h1:BO0NGXM+/ZRyMdzeqCLALBiW+0Ksr7RUz1qw3IGr6Ek=
 go.dokimi.dev/eidos/lang v0.4.6/go.mod h1:rMJWQHLzwkkA05hmWBZCG62wHfNiDjsRM8mnAQ4his8=
-go.dokimi.dev/eidos/lang/go v0.8.1 h1:/V3PgfuRAYFbCL1paNREK0Fo1b5rGp8lobIIhdaQ4lA=
-go.dokimi.dev/eidos/lang/go v0.8.1/go.mod h1:l2H3KNM5bsQIWKxcWcYuqtpxqXJgPXsT/wVD3vrJ4fg=
+go.dokimi.dev/eidos/lang/go v0.8.2-0.20261108103227-1765ac1980a4 h1:FomsRtyRcuQa9QGI8Ntgt3UfVJrsOhrDZx7ptjwAwBc=
+go.dokimi.dev/eidos/lang/go v0.8.2-0.20261108103227-1765ac1980a4/go.mod h1:l2H3KNM5bsQIWKxcWcYuqtpxqXJgPXsT/wVD3vrJ4fg=
 go.dokimi.dev/eidos/lang/typescript v0.5.3 h1:EYSseoXz00MpnCbgRJ/0jCB9WD1aIz3GpSPksGoQmUE=
 go.dokimi.dev/eidos/lang/typescript v0.5.3/go.mod h1:dC4x9wrodMLTNS88mqzehE+wolE5miCS6IUk/NM2hxs=
 go.dokimi.dev/eidos/plugin/shape v0.5.2 h1:ODqXH2/UNfpvJaRxYQBR1h5OgxTXQyuEBeU86rDhCoE=

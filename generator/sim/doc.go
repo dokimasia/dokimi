@@ -34,10 +34,20 @@
 // A type under the directive token is the type of the field that links an
 // effect to the event of its result, and a type under the directive token
 // reply the type of the field that links an inbound call to its reply. The
-// directive reply marks the effect of a reply, and the directive perform
-// names the function that performs an effect. The directives system, action,
-// spec, invariant, converges, fingerprint and scenario mark the functions of
-// the consumer that build the system and check it.
+// directive reply marks the effect of a reply. The directive perform names
+// the function that performs an effect, or the method of a dependency that
+// performs it. A function that calls a dependency names the interface of the
+// dependency in the param dependency and the event of the failure of the
+// effect in the param result, so the faults of the dependency strike the
+// effect:
+//
+//	//dokimi:perform func=write dependency=Store result=Written timeout=Timeout
+//	type Write struct{ ... }
+//
+// The directives system, action, spec, invariant, converges, fingerprint and
+// scenario mark the functions of the consumer that build the system and
+// check it. A system and the defect of an invariant that take inputs from the
+// case have the form of an action, func(c *prop.Case) func(w *sim.World[E, F]).
 //
 // The plugin is dual. Its annotate half stamps the facts of each directive on
 // a type or a function. Its generate half records the model of the
@@ -65,7 +75,8 @@
 // param tolerate, require or strategy that is not a fault, a mode or a
 // strategy. It also reports [BadParam] at a param of a simulation on the
 // directive system of a machine interface. It reports [NoPerform] at an effect type
-// without the directive perform, [NoReply] at a machine with an action call
+// without the directive perform, [BadPerform] at a directive perform whose
+// params or fields do not bind, [NoReply] at a machine with an action call
 // and without a reply, [BadReply] at a reply that lacks a field of its
 // directive, [BadToken] at a token type that is not an unsigned integer
 // type, and [BadFunction] at a function that does not have the signature of

@@ -53,7 +53,8 @@ type Pair struct{}
 //dokimi:perform func=odd
 type Odd struct{}
 
-// Skew is an effect whose performer returns an outcome of an effect.
+// Skew is an effect whose performer returns an outcome whose events are the
+// effects.
 //
 //dokimi:perform func=skew
 type Skew struct{}

@@ -89,8 +89,8 @@ func (*hastyPrimary) Err() error { return nil }
 // is the result of f.
 func send(
 	_ *world, _ *sim.Process[replicated.Event, replicated.Effect], f replicated.Send,
-) sim.Outcome[replicated.Event] {
-	return sim.Outcome[replicated.Event]{Message: &sim.Message[replicated.Event]{
+) sim.Outcome[replicated.Event, replicated.Effect] {
+	return sim.Outcome[replicated.Event, replicated.Effect]{Message: &sim.Message[replicated.Event]{
 		To: "backup",
 		Call: func(reply uint64) replicated.Event {
 			return replicated.Copy{Key: f.Key, Value: f.Value, Reply: replicated.ReplyToken(reply)}

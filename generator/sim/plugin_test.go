@@ -98,6 +98,7 @@ func TestNew(t *testing.T) {
 		m := generate(t, registerPackage, registerSimPackage).models(t)["Machine"]
 		expect.Equal(t, []string{m.System, m.Fingerprint}, []string{"system", "fingerprint"},
 			"the simulation has the system and the fingerprint of the consumer")
+		expect.False(t, m.Inputs, "the system takes no inputs from the case")
 		expect.Equal(t, *m.Spec, sim.Spec{Func: "spec"}, "the spec returns a history.Spec")
 		expect.Equal(t, m.State.Spelling, "string", "the state of the spec is the type argument of its spec")
 		expect.Equal(t, m.Actions, []sim.Action{
@@ -183,33 +184,74 @@ func TestNew(t *testing.T) {
 		assert.Length(t, m.Performs, 3, "each effect but the reply has a performer")
 		for _, p := range m.Performs {
 			assert.NotNil(t, p.Call, "a call of a dependency performs the effect "+p.Type.Spelling)
+			assert.NotNil(t, p.Dependency, "the effect "+p.Type.Spelling+" has the dependency of its call")
 			expect.Empty(t, p.Func, "the effect "+p.Type.Spelling+" has no function that performs it")
-			expect.Equal(t, []string{p.Call.Token, p.Call.EffectToken, p.Call.Err}, []string{"Token", "Token", "Err"},
-				"the event takes the token of the effect and the error of the call")
+			expect.Equal(t, []string{p.Dependency.Token, p.Dependency.EffectToken, p.Dependency.Err},
+				[]string{"Token", "Token", "Err"}, "the event takes the token of the effect and the error of the call")
 			expect.True(t, p.Call.Fails, "each method of a dependency returns an error")
 		}
-		get, load, put := m.Performs[0].Call, m.Performs[1].Call, m.Performs[2].Call
-		for _, call := range []*sim.Call{get, put} {
-			expect.Equal(t, []string{call.Dependency.Spelling, call.Name}, []string{"Writer", "remote.Writer"},
-				"the writer of the node performs the effect "+call.Method)
+		get, load, put := m.Performs[0], m.Performs[1], m.Performs[2]
+		for _, p := range []sim.Perform{get, put} {
+			expect.Equal(t, []string{p.Call.Interface.Spelling, p.Dependency.Name}, []string{"Writer", "remote.Writer"},
+				"the writer of the node performs the effect "+p.Call.Method)
 		}
-		expect.Equal(t, []string{load.Dependency.Spelling, load.Name, load.Method, load.Event.Spelling},
-			[]string{"Reader", "store.Reader", "Read", "Loaded"}, "the reader of another package performs a load")
-		expect.Equal(t, load.Values, []string{"Value"},
+		reader := []string{
+			load.Call.Interface.Spelling, load.Dependency.Name, load.Call.Method, load.Dependency.Event.Spelling,
+		}
+		expect.Equal(t, reader, []string{"Reader", "store.Reader", "Read", "Loaded"},
+			"the reader of another package performs a load")
+		expect.Equal(t, load.Call.Values, []string{"Value"},
 			"the event of a load takes the value of the type that the reader declares")
-		expect.Equal(t, []string{get.Method, get.Event.Spelling}, []string{"Get", "Fetched"},
+		expect.Equal(t, []string{get.Call.Method, get.Dependency.Event.Spelling}, []string{"Get", "Fetched"},
 			"a get performs the effect Get, and its event is Fetched")
-		expect.Equal(t, get.Values, []string{"Value"}, "the event of a get takes the value of the call")
-		expect.Equal(t, get.Args, []sim.Arg{{Context: true}, {Field: "Key"}},
+		expect.Equal(t, get.Call.Values, []string{"Value"}, "the event of a get takes the value of the call")
+		expect.Equal(t, get.Call.Args, []sim.Arg{{Context: true}, {Field: "Key"}},
 			"the get takes the context of the world and the key of the effect")
-		expect.Empty(t, get.Errors, "the get has no directive fault")
-		expect.Equal(t, []string{put.Method, put.Event.Spelling, m.Performs[2].Timeout},
+		expect.Empty(t, get.Dependency.Errors, "the get has no directive fault")
+		expect.Equal(t, []string{put.Call.Method, put.Dependency.Event.Spelling, put.Timeout},
 			[]string{"Put", "Stored", "Timeout"}, "a put performs the effect Put within its timeout")
-		expect.Empty(t, put.Values, "the event of a put takes no value")
-		expect.Equal(t, put.Args, []sim.Arg{{Context: true}, {Field: "Key"}, {Field: "Value"}},
+		expect.Empty(t, put.Call.Values, "the event of a put takes no value")
+		expect.Equal(t, put.Call.Args, []sim.Arg{{Context: true}, {Field: "Key"}, {Field: "Value"}},
 			"the put takes the context of the world, and the key and the value of the effect")
-		assert.Length(t, put.Errors, 1, "the directive fault of the put declares one error")
-		expect.Equal(t, put.Errors[0].Spelling, "ErrFull", "the put fails with the error of its directive fault")
+		assert.Length(t, put.Dependency.Errors, 1, "the directive fault of the put declares one error")
+		expect.Equal(t, put.Dependency.Errors[0].Spelling, "ErrFull",
+			"the put fails with the error of its directive fault")
+	})
+
+	t.Run("records the dependency of a function that performs an effect", func(t *testing.T) {
+		t.Parallel()
+
+		r := generateWithFaults(t, placedPackage, placedSimPackage)
+		expect.Empty(t, slices.Concat(slices.Collect(r.stamps.Sink.All()), slices.Collect(r.res.Sink.All())),
+			"the agents have no finding")
+		m := r.models(t)["Machine"]
+		assert.Length(t, m.Performs, 1, "the write is the one effect with a performer")
+		p := m.Performs[0]
+		expect.Equal(t, []string{p.Func, p.Timeout}, []string{"write", "Timeout"},
+			"the function write performs the write within its timeout")
+		expect.Nil(t, p.Call, "no call performs the write")
+		assert.NotNil(t, p.Dependency, "the write has the dependency of its function")
+		d := p.Dependency
+		expect.Equal(t, []string{d.Name, d.Event.Spelling, d.Token, d.EffectToken, d.Err},
+			[]string{"placed.Store", "Written", "Token", "Token", "Err"},
+			"the event of the failure takes the token of the write and the error of the store")
+		errs := make([]string, 0, len(d.Errors))
+		for _, e := range d.Errors {
+			errs = append(errs, e.Spelling)
+		}
+		expect.Equal(t, errs, []string{"ErrUnavailable", "ErrStale"},
+			"the errors are those of the methods of the store, in the order of the methods, each once")
+	})
+
+	t.Run("records a system and a defect that take inputs from the case", func(t *testing.T) {
+		t.Parallel()
+
+		m := generateWithFaults(t, placedPackage, placedSimPackage).models(t)["Machine"]
+		expect.Equal(t, []any{m.System, m.Inputs}, []any{"system", true},
+			"the system takes the timeout of the writes from the case")
+		expect.Equal(t, m.Invariants, []sim.Invariant{{
+			Statement: "The world has the agent b", Func: "spawned", Defect: "lonely", Inputs: true,
+		}}, "the defect takes the timeout of the writes from the case")
 	})
 
 	misfits := []struct {
@@ -229,6 +271,21 @@ func TestNew(t *testing.T) {
 		{
 			name: "refuses a perform of a call without a result", giveDecl: "Resultless",
 			wantMsg: "the directive perform of Resultless names a call without a result. Write result=<event>",
+		},
+		{
+			name: "refuses a perform of a dependency without a function", giveDecl: "Routed",
+			wantMsg: "the directive perform of Routed names a dependency without a function. A call names its " +
+				"dependency through its method",
+		},
+		{
+			name: "refuses a perform of a dependency without a result", giveDecl: "Failless",
+			wantMsg: "the directive perform of Failless names a dependency without a result. Write result=<event> " +
+				"for the event of the failure of the effect",
+		},
+		{
+			name: "refuses a perform of a function with a result and without a dependency", giveDecl: "Orphan",
+			wantMsg: "the directive perform of Orphan names a function and a result without a dependency. A " +
+				"function without a dependency has no failure that the world builds",
 		},
 	}
 	for _, tt := range misfits {
@@ -345,6 +402,7 @@ func TestNew(t *testing.T) {
 		m := generate(t, cellsPackage, tasksSimPackage).models(t)["scheduled"]
 		expect.Equal(t, []bool{m.Tasks, m.Blocking}, []bool{true, false},
 			"the value tasks runs the hosts under a task scheduler")
+		expect.True(t, m.Inputs, "the system takes the spare cell from the case")
 		expect.Equal(t, m.Tolerate, []sim.Bound{{Fault: "FaultCrash", N: 1}, {Fault: "FaultRestart", N: 1}},
 			"the mode is no bound of a fault")
 	})
@@ -387,7 +445,7 @@ func TestNew(t *testing.T) {
 			name: "refuses an effect whose performer the simulation lacks", giveDecl: "partial.Flush",
 			wantCode: sim.BadFunction,
 			wantMsg: "the package of the simulation of Flusher has no function flush with the signature " +
-				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E], with T the effect Flush",
+				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E, F], with T the effect Flush",
 		},
 		{
 			name: "refuses a call without a reply", giveDecl: "silent.Asker", wantCode: sim.NoReply,
@@ -406,8 +464,9 @@ func TestNew(t *testing.T) {
 		},
 		{
 			name: "refuses a system that takes no world", giveDecl: "crookedsim.broken", wantCode: sim.BadFunction,
-			wantMsg: "broken is under the directive system, so it needs the signature func(w *sim.World[E, F]), " +
-				"with E and F the event and the effect interfaces of Crooked",
+			wantMsg: "broken is under the directive system, so it needs the signature func(w *sim.World[E, F]) or " +
+				"func(c *prop.Case) func(w *sim.World[E, F]), with E and F the event and the effect interfaces of " +
+				"Crooked",
 		},
 		{
 			name: "refuses a second spec", giveDecl: "crookedsim.second", wantCode: sim.BadFunction,
@@ -474,7 +533,8 @@ func TestNew(t *testing.T) {
 		{
 			name: "refuses an invariant whose defect is no system", giveDecl: "crookedsim.misplanted",
 			wantCode: sim.BadFunction,
-			wantMsg:  "the defect counted of the invariant misplanted needs the signature func(w *sim.World[E, F])",
+			wantMsg: "the defect counted of the invariant misplanted needs the signature func(w *sim.World[E, F]) or " +
+				"func(c *prop.Case) func(w *sim.World[E, F])",
 		},
 		{
 			name: "refuses a convergence whose bound is no duration", giveDecl: "crookedsim.unbounded",
@@ -669,24 +729,33 @@ func TestNew(t *testing.T) {
 			name: "refuses a performer that takes a world in place of a process", giveDecl: "partial.Wrong",
 			wantCode: sim.BadFunction,
 			wantMsg: "the package of the simulation of Flusher has no function wrong with the signature " +
-				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E], with T the effect Wrong",
+				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E, F], with T the effect Wrong",
 		},
 		{
 			name: "refuses a performer of another effect", giveDecl: "partial.Pair", wantCode: sim.BadFunction,
 			wantMsg: "the package of the simulation of Flusher has no function pair with the signature " +
-				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E], with T the effect Pair",
+				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E, F], with T the effect Pair",
 		},
 		{
 			name: "refuses a performer that returns an outcome of another package", giveDecl: "partial.Odd",
 			wantCode: sim.BadFunction,
 			wantMsg: "the package of the simulation of Flusher has no function odd with the signature " +
-				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E], with T the effect Odd",
+				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E, F], with T the effect Odd",
 		},
 		{
-			name: "refuses a performer that returns an outcome of an effect", giveDecl: "partial.Skew",
+			name: "refuses a performer that returns an outcome whose events are the effects", giveDecl: "partial.Skew",
 			wantCode: sim.BadFunction,
 			wantMsg: "the package of the simulation of Flusher has no function skew with the signature " +
-				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E], with T the effect Skew",
+				"func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E, F], with T the effect Skew",
+		},
+		{
+			name: "refuses a dependency that is no interface", giveDecl: "misfit.Strayed", wantCode: sim.BadPerform,
+			wantMsg: "the dependency Stored of Strayed is no interface",
+		},
+		{
+			name: "refuses a dependency of an effect without a token", giveDecl: "misfit.Unmarked",
+			wantCode: sim.BadPerform,
+			wantMsg:  "the effect Unmarked has no field of a token, which the event of its result takes",
 		},
 		{
 			name: "refuses a call of a function of the package", giveDecl: "misfit.Unhosted",
@@ -752,7 +821,7 @@ func TestNew(t *testing.T) {
 			name: "refuses a system of components that returns a value", giveDecl: "valuedsim.valued",
 			wantCode: sim.BadFunction,
 			wantMsg: "valued is under the directive system, so it needs the signature " +
-				"func(w *sim.World[sim.None, sim.None])",
+				"func(w *sim.World[sim.None, sim.None]) or func(c *prop.Case) func(w *sim.World[sim.None, sim.None])",
 		},
 		{
 			name: "refuses a system of components outside the package of its simulation", giveDecl: "routedsim.routed",

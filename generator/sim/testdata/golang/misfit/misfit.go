@@ -1,7 +1,11 @@
 // Package misfit declares effects whose directives perform do not fit.
 package misfit
 
-import "context"
+import (
+	"context"
+
+	"go.dokimi.dev/sim"
+)
 
 // Store stores values under keys.
 type Store interface {
@@ -129,8 +133,47 @@ type Tokenless struct {
 	Value string
 }
 
+// Routed names a dependency beside a call.
+//
+//dokimi:perform call=Store.Put dependency=Store result=Stored
+type Routed struct {
+	Key   string
+	Value string
+	Token Token
+}
+
+// Failless names a dependency without the event of its failure.
+//
+//dokimi:perform func=perform dependency=Store
+type Failless struct{ Token Token }
+
+// Orphan names the event of a failure without a dependency.
+//
+//dokimi:perform func=perform result=Stored
+type Orphan struct{ Token Token }
+
+// Strayed names an event as its dependency.
+//
+//dokimi:perform func=stray dependency=Stored result=Stored
+type Strayed struct{ Token Token }
+
+// Unmarked has no field of a token for the event of its failure.
+//
+//dokimi:perform func=unmark dependency=Store result=Stored
+type Unmarked struct{ Key string }
+
 // helper is no method of a dependency.
 func helper(context.Context) error { return nil }
+
+// stray performs Strayed.
+func stray(*sim.World[Event, Effect], *sim.Process[Event, Effect], Strayed) sim.Outcome[Event, Effect] {
+	return sim.Outcome[Event, Effect]{}
+}
+
+// unmark performs Unmarked.
+func unmark(*sim.World[Event, Effect], *sim.Process[Event, Effect], Unmarked) sim.Outcome[Event, Effect] {
+	return sim.Outcome[Event, Effect]{}
+}
 
 func (Twice) effect()      {}
 func (Neither) effect()    {}
@@ -141,6 +184,11 @@ func (Silent) effect()     {}
 func (Blind) effect()      {}
 func (Unhosted) effect()   {}
 func (Tokenless) effect()  {}
+func (Routed) effect()     {}
+func (Failless) effect()   {}
+func (Orphan) effect()     {}
+func (Strayed) effect()    {}
+func (Unmarked) effect()   {}
 
 // Machine is the machine of a node.
 //

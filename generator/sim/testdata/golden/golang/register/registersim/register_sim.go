@@ -70,12 +70,12 @@ func performMachine(
 	w *sim.World[register.Event, register.Effect],
 	p *sim.Process[register.Event, register.Effect],
 	f register.Effect,
-) sim.Outcome[register.Event] {
+) sim.Outcome[register.Event, register.Effect] {
 	switch f := f.(type) {
 	case register.Commit:
 		return commit(w, p, f)
 	default:
-		return sim.Outcome[register.Event]{}
+		return sim.Outcome[register.Event, register.Effect]{}
 	}
 }
 
@@ -84,7 +84,7 @@ func performMachine(
 func MachineSimulation() sim.Simulation[register.Event, register.Effect, string] {
 	return sim.Simulation[register.Event, register.Effect, string]{
 		Anatomy:     machineAnatomy,
-		System:      system,
+		System:      func(*prop.Case) func(w *sim.World[register.Event, register.Effect]) { return system },
 		Spec:        spec(),
 		Fingerprint: fingerprint,
 		Tolerate: map[sim.Fault]int{
@@ -175,7 +175,11 @@ func MachineSimulation() sim.Simulation[register.Event, register.Effect, string]
 			},
 		},
 		Invariants: []sim.Invariant[register.Event, register.Effect]{
-			{Statement: "The system has the node b", Check: spawned, Defect: lonely},
+			{
+				Statement: "The system has the node b",
+				Check:     spawned,
+				Defect:    func(*prop.Case) func(w *sim.World[register.Event, register.Effect]) { return lonely },
+			},
 		},
 		Converges: []sim.Convergence[register.Event, register.Effect]{
 			{

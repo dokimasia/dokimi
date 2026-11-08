@@ -77,12 +77,12 @@ func performNode(
 	w *sim.World[replicated.Event, replicated.Effect],
 	p *sim.Process[replicated.Event, replicated.Effect],
 	f replicated.Effect,
-) sim.Outcome[replicated.Event] {
+) sim.Outcome[replicated.Event, replicated.Effect] {
 	switch f := f.(type) {
 	case replicated.Send:
 		return send(w, p, f)
 	default:
-		return sim.Outcome[replicated.Event]{}
+		return sim.Outcome[replicated.Event, replicated.Effect]{}
 	}
 }
 
@@ -91,7 +91,7 @@ func performNode(
 func NodeSimulation() sim.Simulation[replicated.Event, replicated.Effect, map[string]string] {
 	return sim.Simulation[replicated.Event, replicated.Effect, map[string]string]{
 		Anatomy:     nodeAnatomy,
-		System:      system,
+		System:      func(*prop.Case) func(w *sim.World[replicated.Event, replicated.Effect]) { return system },
 		Spec:        spec(),
 		Fingerprint: fingerprint,
 		Tolerate: map[sim.Fault]int{
@@ -189,7 +189,11 @@ func NodeSimulation() sim.Simulation[replicated.Event, replicated.Effect, map[st
 			},
 		},
 		Invariants: []sim.Invariant[replicated.Event, replicated.Effect]{
-			{Statement: "The backup holds the value of each acknowledged write", Check: durable, Defect: hasty},
+			{
+				Statement: "The backup holds the value of each acknowledged write",
+				Check:     durable,
+				Defect:    func(*prop.Case) func(w *sim.World[replicated.Event, replicated.Effect]) { return hasty },
+			},
 		},
 		Converges: []sim.Convergence[replicated.Event, replicated.Effect]{
 			{Statement: "Each write ends once the faults have ended", Check: ended, Within: settled()},
@@ -200,4 +204,4 @@ func NodeSimulation() sim.Simulation[replicated.Event, replicated.Effect, map[st
 	}
 }
 
-// dokimi:provenance sha256:f287497aef8691f13de2025d2ce1a8aa67abc8c610806f7976120e44df0c477c
+// dokimi:provenance sha256:25ac1a4a48a49e235b98fcfb3f79de24453e4be9e8dd5bfa211e41ab94b4f6ef

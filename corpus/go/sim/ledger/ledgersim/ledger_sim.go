@@ -60,12 +60,12 @@ func performLedger(
 	w *sim.World[ledger.Event, ledger.Effect],
 	p *sim.Process[ledger.Event, ledger.Effect],
 	f ledger.Effect,
-) sim.Outcome[ledger.Event] {
+) sim.Outcome[ledger.Event, ledger.Effect] {
 	switch f := f.(type) {
 	case ledger.Persist:
 		return persist(w, p, f)
 	default:
-		return sim.Outcome[ledger.Event]{}
+		return sim.Outcome[ledger.Event, ledger.Effect]{}
 	}
 }
 
@@ -74,7 +74,7 @@ func performLedger(
 func LedgerSimulation() sim.Simulation[ledger.Event, ledger.Effect, struct{}] {
 	return sim.Simulation[ledger.Event, ledger.Effect, struct{}]{
 		Anatomy: ledgerAnatomy,
-		System:  system,
+		System:  func(*prop.Case) func(w *sim.World[ledger.Event, ledger.Effect]) { return system },
 		Tolerate: map[sim.Fault]int{
 			sim.FaultCrash:     1,
 			sim.FaultRestart:   1,
@@ -147,4 +147,4 @@ func LedgerSimulation() sim.Simulation[ledger.Event, ledger.Effect, struct{}] {
 	}
 }
 
-// dokimi:provenance sha256:def397766bf3873e6fcde8bcf3894679ed0a7887ff32f64c8a42eedd218d5205
+// dokimi:provenance sha256:b73106cd51fb2d28f558920ebadee73a0c385a28d5ec58ae50dece191cdbc7b6

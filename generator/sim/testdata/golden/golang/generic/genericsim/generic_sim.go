@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"example.com/shop/generic"
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/sim"
 )
 
@@ -50,8 +51,8 @@ func performReplier(
 	w *sim.World[generic.Event, generic.Effect],
 	p *sim.Process[generic.Event, generic.Effect],
 	f generic.Effect,
-) sim.Outcome[generic.Event] {
-	return sim.Outcome[generic.Event]{}
+) sim.Outcome[generic.Event, generic.Effect] {
+	return sim.Outcome[generic.Event, generic.Effect]{}
 }
 
 // ReplierSimulation returns the simulation of the system of the machines
@@ -59,7 +60,7 @@ func performReplier(
 func ReplierSimulation() sim.Simulation[generic.Event, generic.Effect, struct{}] {
 	return sim.Simulation[generic.Event, generic.Effect, struct{}]{
 		Anatomy: replierAnatomy,
-		System:  system,
+		System:  func(*prop.Case) func(w *sim.World[generic.Event, generic.Effect]) { return system },
 		Rules: []sim.Rule{
 			{
 				ID:        "Replier/replies-once",

@@ -59,8 +59,10 @@ const (
 // outcome of its call unknown. PerformDirective names in its param FuncParam
 // the function that performs an effect, or in its param CallParam the method
 // of a dependency that performs it and in its param ResultParam the event of
-// the result. Its param TimeoutParam names the field of the effect that
-// bounds its call. The other directives mark the
+// the result. With FuncParam, its param DependencyParam names the interface of
+// the dependency that the function calls, and ResultParam the event of the
+// failure of the effect. Its param TimeoutParam names the field of the effect
+// that bounds its call. The other directives mark the
 // functions of the consumer: SystemDirective the system, ActionDirective an
 // action with the positional params CallParam and FinalParam, SpecDirective
 // the spec of the calls, InvariantDirective an invariant with the param
@@ -91,6 +93,7 @@ const (
 	ToParam              directive.ParamKey = "to"
 	UnknownParam         directive.ParamKey = "unknown"
 	FuncParam            directive.ParamKey = "func"
+	DependencyParam      directive.ParamKey = "dependency"
 	ResultParam          directive.ParamKey = "result"
 	TimeoutParam         directive.ParamKey = "timeout"
 	CallParam            directive.ParamKey = "call"
@@ -109,19 +112,22 @@ const (
 // unknown. KeyPerform contains the name of the function that performs an
 // effect, and KeyTimeout the field of the effect that bounds its call.
 // KeyCallee contains the identity of the method of a dependency that performs
-// an effect, and KeyResult the identity of the event of its result.
+// an effect, KeyDependency the identity of the interface of the dependency
+// that the function of an effect calls, and KeyResult the identity of the
+// event of the result of the call or of the failure of the effect.
 const (
-	KeyDefect  meta.KeyName = "sim.defect"
-	KeyWithin  meta.KeyName = "sim.within"
-	KeyCall    meta.KeyName = "sim.call"
-	KeyFinal   meta.KeyName = "sim.final"
-	KeyToken   meta.KeyName = "sim.token"
-	KeyReply   meta.KeyName = "sim.reply"
-	KeyUnknown meta.KeyName = "sim.unknown"
-	KeyPerform meta.KeyName = "sim.perform"
-	KeyTimeout meta.KeyName = "sim.timeout"
-	KeyCallee  meta.KeyName = "sim.callee"
-	KeyResult  meta.KeyName = "sim.result"
+	KeyDefect     meta.KeyName = "sim.defect"
+	KeyWithin     meta.KeyName = "sim.within"
+	KeyCall       meta.KeyName = "sim.call"
+	KeyFinal      meta.KeyName = "sim.final"
+	KeyToken      meta.KeyName = "sim.token"
+	KeyReply      meta.KeyName = "sim.reply"
+	KeyUnknown    meta.KeyName = "sim.unknown"
+	KeyPerform    meta.KeyName = "sim.perform"
+	KeyTimeout    meta.KeyName = "sim.timeout"
+	KeyCallee     meta.KeyName = "sim.callee"
+	KeyDependency meta.KeyName = "sim.dependency"
+	KeyResult     meta.KeyName = "sim.result"
 )
 
 // The spellings of the positional params of the directives token and action,
@@ -187,7 +193,8 @@ const (
 // leave the outcome of their call unknown, in the order of the replies and
 // of their directives.
 //
-// System is the function of the system. Spec is the spec of the calls of the
+// System is the function of the system, and Inputs reports a system that
+// takes its inputs from the case. Spec is the spec of the calls of the
 // clients, and nil without one. State is the state of the spec. Fingerprint
 // is the function of the fingerprint, and empty without one. Rules are the
 // checks of the claims of the spec whose generator is sim. Actions,
@@ -231,6 +238,7 @@ type Model struct {
 	Tolerate    []Bound
 	Require     []Share
 	Depth       int
+	Inputs      bool
 	Timeouts    bool
 	Components  bool
 	Tasks       bool
@@ -275,33 +283,44 @@ type Reply struct {
 // Perform is one effect with the function or the call that performs it, and
 // the field of the effect that bounds its call, empty for none. Func is the
 // name of the function, and empty for an effect that Call performs.
+// Dependency is the dependency that the call or the function calls, and nil
+// for a function without one.
 type Perform struct {
-	Type    *emit.TypeRef
-	Call    *Call
-	Func    string
-	Timeout string
+	Type       *emit.TypeRef
+	Call       *Call
+	Dependency *Dependency
+	Func       string
+	Timeout    string
 }
 
-// Call is the call of a method of a dependency that performs an effect.
-// Dependency is the type of the dependency, and Name its name in the faults
-// of a run, such as remote.Writer. Args are the arguments of the call, in the
-// order of the parameters of Method. Event is the event of the result. It
-// takes the token of the effect from its field EffectToken in its field
-// Token, the error of the call in its field Err, and each value of the call
-// in its field of Values. Fails reports a method with an error result.
-// Errors are the errors that the directive fault of the method declares.
-type Call struct {
-	Dependency  *emit.TypeRef
+// Dependency is the dependency of an effect, whose faults strike the effect:
+// its name in the faults of a run, such as remote.Writer, and the event of the
+// result of the effect or of its failure. The event takes the token of the
+// effect from its field EffectToken in its field Token, and the error of the
+// effect in its field Err. Errors are the errors that a loss of the effect can
+// take: the errors that the directive fault declares on the method of a call,
+// or on the methods of the interface of a function in the order of the
+// methods, each error once.
+type Dependency struct {
 	Event       *emit.TypeRef
 	Name        string
-	Method      string
 	Token       string
 	EffectToken string
 	Err         string
-	Values      []string
-	Args        []Arg
 	Errors      []*emit.TypeRef
-	Fails       bool
+}
+
+// Call is the call of a method of a dependency that performs an effect.
+// Interface is the type of the dependency. Args are the arguments of the
+// call, in the order of the parameters of Method. The event of the result
+// takes each value of the call in its field of Values. Fails reports a method
+// with an error result.
+type Call struct {
+	Interface *emit.TypeRef
+	Method    string
+	Values    []string
+	Args      []Arg
+	Fails     bool
 }
 
 // Arg is one argument of a call that performs an effect: the context of the
@@ -333,11 +352,13 @@ type Action struct {
 }
 
 // Invariant is one invariant of the consumer: its statement, the name of its
-// function and the name of the function of its defect system.
+// function and the name of the function of its defect system. Inputs reports
+// a defect system that takes its inputs from the case.
 type Invariant struct {
 	Statement string
 	Func      string
 	Defect    string
+	Inputs    bool
 }
 
 // Convergence is one convergence of the consumer: its statement, the name of
@@ -491,8 +512,12 @@ var performSchema = directive.Schema{
 			Doc: "the method of the dependency that performs the effect, such as store.Writer.Commit",
 		},
 		{
+			Key: DependencyParam, Type: directive.TypeReference, Resolution: directive.ResolveTypeInScope,
+			Doc: "the interface of the dependency that the function calls, whose faults strike the effect",
+		},
+		{
 			Key: ResultParam, Type: directive.TypeReference, Resolution: directive.ResolveTypeInScope,
-			Doc: "the event of the result of the call",
+			Doc: "the event of the result of the call, or of the failure of the effect that the function performs",
 		},
 		{Key: TimeoutParam, Type: directive.TypeString, Doc: "the field of the effect that bounds its call"},
 	},
@@ -570,17 +595,18 @@ var functionals = []functional{
 
 // generator is one instance of sim: the handles of the keys of its facts.
 type generator struct {
-	defect  meta.Key[symbol.Identity]
-	within  meta.Key[symbol.Identity]
-	call    meta.Key[bool]
-	final   meta.Key[bool]
-	token   meta.Key[string]
-	reply   meta.Key[[]string]
-	unknown meta.Key[[]symbol.Identity]
-	perform meta.Key[string]
-	timeout meta.Key[string]
-	callee  meta.Key[symbol.Identity]
-	result  meta.Key[symbol.Identity]
+	defect     meta.Key[symbol.Identity]
+	within     meta.Key[symbol.Identity]
+	call       meta.Key[bool]
+	final      meta.Key[bool]
+	token      meta.Key[string]
+	reply      meta.Key[[]string]
+	unknown    meta.Key[[]symbol.Identity]
+	perform    meta.Key[string]
+	timeout    meta.Key[string]
+	callee     meta.Key[symbol.Identity]
+	dependency meta.Key[symbol.Identity]
+	result     meta.Key[symbol.Identity]
 }
 
 // New returns sim, a plugin with an annotate half and a generate half.
@@ -634,7 +660,7 @@ func (g *generator) register(r *meta.Registry) error {
 	on := func(kind symbol.Kind, name meta.KeyName, doc string) meta.KeySpec {
 		return meta.KeySpec{Name: name, Kinds: []symbol.Kind{kind}, Doc: doc}
 	}
-	var errs [12]error
+	var errs [13]error
 	errs[0] = r.ClaimNamespace(KeyDefect.Namespace())
 	g.defect, errs[1] = meta.Register[symbol.Identity](r, on(symbol.KindFunction, KeyDefect,
 		"contains the identity of the function that builds the system with the planted defect of the invariant"))
@@ -657,7 +683,10 @@ func (g *generator) register(r *meta.Registry) error {
 	g.callee, errs[10] = meta.Register[symbol.Identity](r, on(symbol.KindStruct, KeyCallee,
 		"contains the identity of the method of the dependency that performs the effect"))
 	g.result, errs[11] = meta.Register[symbol.Identity](r, on(symbol.KindStruct, KeyResult,
-		"contains the identity of the event of the result of the call that performs the effect"))
+		"contains the identity of the event of the result of the call that performs the effect, or of the failure "+
+			"of the effect that a function with a dependency performs"))
+	g.dependency, errs[12] = meta.Register[symbol.Identity](r, on(symbol.KindStruct, KeyDependency,
+		"contains the identity of the interface of the dependency that the function of the effect calls"))
 	return errors.Join(errs[:]...)
 }
 
@@ -693,13 +722,17 @@ func (g *generator) concludeReply(m *sdk.StructMatch, _ part, st *sdk.Stamper) e
 }
 
 // concludePerform stamps the function or the call that performs an effect,
-// the event of the result of the call, and the field that bounds the call. It
-// reports [BadPerform] at a directive that names both a function and a call
-// or neither, and at a call without a result, and stamps nothing for it.
+// the dependency of the function, the event of the result of the call or of
+// the failure of the function, and the field that bounds the call. It reports
+// [BadPerform] at a directive that names both a function and a call or
+// neither, at a call without a result, at a dependency without a function or
+// without a result, and at a function with a result and without a dependency,
+// and stamps nothing for it.
 func (g *generator) concludePerform(m *sdk.StructMatch, _ part, st *sdk.Stamper) error {
 	d := m.Directive()
 	fn, function := d.Param(FuncParam)
 	call, called := d.Param(CallParam)
+	dependency, depends := d.Param(DependencyParam)
 	result, resulted := d.Param(ResultParam)
 	name := m.Struct.Name
 	switch {
@@ -713,8 +746,24 @@ func (g *generator) concludePerform(m *sdk.StructMatch, _ part, st *sdk.Stamper)
 	case called && !resulted:
 		m.Errorf(BadPerform, "the directive perform of %s names a call without a result. Write result=<event>", name)
 		return nil
+	case depends && !function:
+		m.Errorf(BadPerform, "the directive perform of %s names a dependency without a function. A call names "+
+			"its dependency through its method", name)
+		return nil
+	case depends && !resulted:
+		m.Errorf(BadPerform, "the directive perform of %s names a dependency without a result. Write "+
+			"result=<event> for the event of the failure of the effect", name)
+		return nil
+	case function && resulted && !depends:
+		m.Errorf(BadPerform, "the directive perform of %s names a function and a result without a dependency. A "+
+			"function without a dependency has no failure that the world builds", name)
+		return nil
 	case called:
 		sdk.Stamp(st, g.callee, call.Target)
+		sdk.Stamp(st, g.result, result.Target)
+	case depends:
+		sdk.Stamp(st, g.perform, fn.Str)
+		sdk.Stamp(st, g.dependency, dependency.Target)
 		sdk.Stamp(st, g.result, result.Target)
 	default:
 		sdk.Stamp(st, g.perform, fn.Str)
@@ -827,14 +876,14 @@ func record(e *sdk.Emitter, origin *symbol.Identity, model *Model, checks Checks
 	e.File(TestTag).Record(checks, test)
 }
 
-// noneOf returns the type ref of sim.None where the first parameter of the
-// function fn is *sim.World[sim.None, sim.None], and false for any other
-// function.
+// noneOf returns the type ref of sim.None where the world of the system fn is
+// *sim.World[sim.None, sim.None], and false for any other function.
 func (in *invocation) noneOf(fn *node.Function) (*node.TypeRef, bool) {
-	if len(fn.Params) == 0 {
+	world := worldOf(fn)
+	if world == nil {
 		return nil, false
 	}
-	t := sdkrules.Unaliased(pointed(fn.Params[0].Type), in.b.View())
+	t := sdkrules.Unaliased(pointed(world), in.b.View())
 	//dokimi:mutate-skip ror-false, lcr-left: sim.World has two type parameters, so the world of a package that compiles has two type arguments, and the guard keeps the world of source that does not compile from an index out of range
 	if !named(t, simPackage, "World") || len(t.Args) != 2 {
 		return nil, false
@@ -843,6 +892,23 @@ func (in *invocation) noneOf(fn *node.Function) (*node.TypeRef, bool) {
 		return nil, false
 	}
 	return t.Args[0], true
+}
+
+// worldOf returns the type of the world of the system fn: its first
+// parameter, or the first parameter of the function that it returns where it
+// takes a case first. It returns nil for a function without such a parameter.
+func worldOf(fn *node.Function) *node.TypeRef {
+	switch {
+	case len(fn.Params) == 0:
+		return nil
+	case !isCase(fn.Params[0].Type):
+		return fn.Params[0].Type
+	}
+	returns := returnTypes(fn.Returns)
+	if len(returns) == 0 || returns[0].Split == 0 {
+		return nil
+	}
+	return returns[0].Elems[0]
 }
 
 // machineSystem reports [BadParam] at the system fn of a machine interface
@@ -878,12 +944,12 @@ func (in *invocation) components(fn *node.Function) (Model, bool) {
 		return Model{}, false
 	}
 	model := Model{
-		Machine: fn.Name, System: fn.Name, Components: true,
+		Machine: fn.Name, System: fn.Name, Components: true, Inputs: in.action(fn, false),
 		Event:  sdkrules.EmitRef(in.event),
 		Effect: sdkrules.EmitRef(in.effect),
 		Names:  Names{Simulation: naming.Pascal(fn.Name + "Simulation")},
 	}
-	if !in.system(fn) {
+	if !model.Inputs && !in.scenario(fn) {
 		in.refuseForm(fn, SystemDirective, systemForm)
 	}
 	in.params(&model)
@@ -1117,7 +1183,8 @@ func (in *invocation) tokenFields(s *node.Struct, kind string) []*node.Field {
 
 // anatomy sets the inbound calls, the tokens, the replies and the performers
 // of the model from the events and the effects of the machine. It reports
-// [NoPerform], [BadReply] and [BadFunction] at the effects at fault.
+// [NoPerform], [BadReply], [BadFunction] and [BadPerform] at the effects at
+// fault.
 func (in *invocation) anatomy(model *Model, events, effects []*node.Struct) {
 	for _, ev := range events {
 		if model.Cancelled != nil && ev.ID == model.Cancelled.Type.Target {
@@ -1137,11 +1204,13 @@ func (in *invocation) anatomy(model *Model, events, effects []*node.Struct) {
 		}
 		fn, performed := sdk.FactOf(in.m, f.ID, in.g.perform)
 		callee, called := sdk.FactOf(in.m, f.ID, in.g.callee)
+		dependency, depends := sdk.FactOf(in.m, f.ID, in.g.dependency)
 		timeout, _ := sdk.FactOf(in.m, f.ID, in.g.timeout)
 		switch {
 		case called:
-			if call, bound := in.called(f, &callee); bound {
-				model.Performs = append(model.Performs, Perform{Type: refOf(f), Call: call, Timeout: timeout})
+			if call, dep, bound := in.called(f, &callee); bound {
+				model.Performs = append(model.Performs,
+					Perform{Type: refOf(f), Call: call, Dependency: dep, Timeout: timeout})
 			}
 		case !performed:
 			in.refuse(NoPerform, f.Pos, "the effect %s of %s has no directive perform. Write //dokimi:perform "+
@@ -1149,6 +1218,11 @@ func (in *invocation) anatomy(model *Model, events, effects []*node.Struct) {
 		case !in.performer(fn, f):
 			in.refuse(BadFunction, f.Pos, "the package of the simulation of %s has no function %s with the "+
 				"signature %s, with T the effect %s", in.name, fn, performForm, f.Name)
+		case depends:
+			if dep, bound := in.depended(f, &dependency); bound {
+				model.Performs = append(model.Performs,
+					Perform{Type: refOf(f), Func: fn, Dependency: dep, Timeout: timeout})
+			}
 		default:
 			model.Performs = append(model.Performs, Perform{Type: refOf(f), Func: fn, Timeout: timeout})
 		}
@@ -1157,12 +1231,13 @@ func (in *invocation) anatomy(model *Model, events, effects []*node.Struct) {
 }
 
 // called returns the call of the method callee of an interface that performs
-// the effect f. It binds each parameter of the method to the field of f with
-// its name in PascalCase, and the token of f, the error and each value of the
-// method to the fields of the event of the result by their types. It reports
-// [BadPerform] at f where callee is no method of an interface, where f has no
-// field of a token, and where a parameter or a result has no field to bind.
-func (in *invocation) called(f *node.Struct, callee *symbol.Identity) (*Call, bool) {
+// the effect f, and its dependency. It binds each parameter of the method to
+// the field of f with its name in PascalCase, and the token of f, the error
+// and each value of the method to the fields of the event of the result by
+// their types. It reports [BadPerform] at f where callee is no method of an
+// interface, where f has no field of a token, and where a parameter or a
+// result has no field to bind.
+func (in *invocation) called(f *node.Struct, callee *symbol.Identity) (*Call, *Dependency, bool) {
 	view := in.b.View()
 	decl, _ := view.Lookup(*callee)
 	method, isMethod := decl.(*node.Method)
@@ -1171,48 +1246,16 @@ func (in *invocation) called(f *node.Struct, callee *symbol.Identity) (*Call, bo
 		owner, _ := view.Lookup(method.Host)
 		host, _ = owner.(*node.Interface)
 	}
-	tokens := in.tokenFields(f, tokenKind)
-	switch {
-	case host == nil:
+	if host == nil {
 		in.refuse(BadPerform, f.Pos, "the call %s of %s is no method of an interface", callee.Name, f.Name)
-		return nil, false
-	case len(tokens) != 1:
-		in.refuse(BadPerform, f.Pos, "the effect %s has no field of a token, which the event of its result takes",
-			f.Name)
-		return nil, false
+		return nil, nil, false
 	}
-	result, _ := sdk.FactOf(in.m, f.ID, in.g.result)
-	var fields []*node.Field
-	d, _ := view.Lookup(result)
-	if ev, isStruct := d.(*node.Struct); isStruct {
-		fields = ev.Fields
-	}
-	field := func(fits func(t *node.TypeRef) bool) string {
-		if at := slices.IndexFunc(fields, func(x *node.Field) bool { return fits(x.Type) }); at >= 0 {
-			return fields[at].Name
-		}
-		return ""
-	}
-	pkg, _ := in.m.Reader().PackageOf(host.ID.PackageIdentity())
 	label := host.Name + "." + method.Name
-	call := &Call{
-		Dependency: &emit.TypeRef{Spelling: host.Name, Target: host.ID},
-		Event:      &emit.TypeRef{Spelling: result.Name, Target: result},
-		Name:       pkg.Name + "." + host.Name, Method: method.Name, EffectToken: tokens[0].Name,
-		Token: field(func(t *node.TypeRef) bool { return t.Target == tokens[0].Type.Target }),
-		Err:   field(in.isError),
+	dep, fields, bound := in.failure(f, host, label)
+	if !bound {
+		return nil, nil, false
 	}
-	unbound := func(what, role string) (*Call, bool) {
-		in.refuse(BadPerform, f.Pos, "the event %s of the result of %s has no field of the type %s for the %s",
-			result.Name, f.Name, what, role)
-		return nil, false
-	}
-	switch {
-	case call.Token == "":
-		return unbound(tokens[0].Type.Spelling, "token of "+f.Name)
-	case call.Err == "":
-		return unbound("error", "error of "+label)
-	}
+	call := &Call{Interface: &emit.TypeRef{Spelling: host.Name, Target: host.ID}, Method: method.Name}
 	sig, _ := in.b.CallableOf(method)
 	for _, p := range sig.Params {
 		if p.Role == sdkrules.ParamContext {
@@ -1223,7 +1266,7 @@ func (in *invocation) called(f *node.Struct, callee *symbol.Identity) (*Call, bo
 		if !slices.ContainsFunc(f.Fields, func(x *node.Field) bool { return x.Name == name }) {
 			in.refuse(BadPerform, f.Pos, "the effect %s has no field %s for the parameter %s of %s",
 				f.Name, name, p.Name, label)
-			return nil, false
+			return nil, nil, false
 		}
 		call.Args = append(call.Args, Arg{Field: name})
 	}
@@ -1232,17 +1275,110 @@ func (in *invocation) called(f *node.Struct, callee *symbol.Identity) (*Call, bo
 			call.Fails = true
 			continue
 		}
-		value := field(func(t *node.TypeRef) bool { return sameType(t, r.Ref) })
+		value := fieldWhere(fields, func(t *node.TypeRef) bool { return sameType(t, r.Ref) })
 		if value == "" {
-			return unbound(r.Ref.Spelling, "value of "+label)
+			in.unbound(dep.Event, f, r.Ref.Spelling, "value of "+label)
+			return nil, nil, false
 		}
 		call.Values = append(call.Values, value)
 	}
-	errs, _ := sdk.FactOf(in.m, *callee, faultErrors)
-	for _, id := range errs {
-		call.Errors = append(call.Errors, &emit.TypeRef{Spelling: id.Name, Target: id})
+	dep.Errors = in.errorsOf(*callee)
+	return call, dep, true
+}
+
+// depended returns the dependency of the function that performs the effect
+// f: the interface dependency, the event of the failure of f, and the errors
+// that the directive fault declares on the methods of the interface. It
+// reports [BadPerform] at f where dependency names no interface, where f has
+// no field of a token, and where the event has no field to bind.
+func (in *invocation) depended(f *node.Struct, dependency *symbol.Identity) (*Dependency, bool) {
+	decl, _ := in.b.View().Lookup(*dependency)
+	host, isInterface := decl.(*node.Interface)
+	if !isInterface {
+		in.refuse(BadPerform, f.Pos, "the dependency %s of %s is no interface", dependency.Name, f.Name)
+		return nil, false
 	}
-	return call, true
+	dep, _, bound := in.failure(f, host, host.Name)
+	if !bound {
+		return nil, false
+	}
+	set, _ := in.b.MembersOf(host)
+	methods := make([]symbol.Identity, 0, len(set.Members))
+	for i := range set.Members {
+		if method, isMethod := set.Members[i].Symbol.(*node.Method); isMethod {
+			methods = append(methods, method.ID)
+		}
+	}
+	dep.Errors = in.errorsOf(methods...)
+	return dep, true
+}
+
+// failure returns the dependency host of the effect f, whose event of the
+// result takes the token of f and the error of label, and the fields of that
+// event. It reports [BadPerform] at f where f has no field of a token, and
+// where the event has no field of the token type or of the type error.
+func (in *invocation) failure(f *node.Struct, host *node.Interface, label string) (*Dependency, []*node.Field, bool) {
+	tokens := in.tokenFields(f, tokenKind)
+	if len(tokens) != 1 {
+		in.refuse(BadPerform, f.Pos, "the effect %s has no field of a token, which the event of its result takes",
+			f.Name)
+		return nil, nil, false
+	}
+	result, _ := sdk.FactOf(in.m, f.ID, in.g.result)
+	var fields []*node.Field
+	d, _ := in.b.View().Lookup(result)
+	if ev, isStruct := d.(*node.Struct); isStruct {
+		fields = ev.Fields
+	}
+	pkg, _ := in.m.Reader().PackageOf(host.ID.PackageIdentity())
+	dep := &Dependency{
+		Event:       &emit.TypeRef{Spelling: result.Name, Target: result},
+		Name:        pkg.Name + "." + host.Name,
+		EffectToken: tokens[0].Name,
+		Token:       fieldWhere(fields, func(t *node.TypeRef) bool { return t.Target == tokens[0].Type.Target }),
+		Err:         fieldWhere(fields, in.isError),
+	}
+	switch {
+	case dep.Token == "":
+		in.unbound(dep.Event, f, tokens[0].Type.Spelling, "token of "+f.Name)
+		return nil, nil, false
+	case dep.Err == "":
+		in.unbound(dep.Event, f, "error", "error of "+label)
+		return nil, nil, false
+	}
+	return dep, fields, true
+}
+
+// unbound reports [BadPerform] at the effect f whose event of the result has
+// no field of the type what for the role.
+func (in *invocation) unbound(event *emit.TypeRef, f *node.Struct, what, role string) {
+	in.refuse(BadPerform, f.Pos, "the event %s of the result of %s has no field of the type %s for the %s",
+		event.Spelling, f.Name, what, role)
+}
+
+// errorsOf returns the errors that the directive fault declares on the
+// methods, in the order of the methods and of each directive, each error
+// once.
+func (in *invocation) errorsOf(methods ...symbol.Identity) []*emit.TypeRef {
+	var out []*emit.TypeRef
+	for _, method := range methods {
+		errs, _ := sdk.FactOf(in.m, method, faultErrors)
+		for _, id := range errs {
+			if !slices.ContainsFunc(out, func(e *emit.TypeRef) bool { return e.Target == id }) {
+				out = append(out, &emit.TypeRef{Spelling: id.Name, Target: id})
+			}
+		}
+	}
+	return out
+}
+
+// fieldWhere returns the name of the first of fields whose type fits, and
+// empty for none.
+func fieldWhere(fields []*node.Field, fits func(t *node.TypeRef) bool) string {
+	if at := slices.IndexFunc(fields, func(x *node.Field) bool { return fits(x.Type) }); at >= 0 {
+		return fields[at].Name
+	}
+	return ""
 }
 
 // sameType reports whether the type refs a and b name one type: one
@@ -1363,16 +1499,19 @@ const (
 
 // The forms of the signatures of the functions of the consumer, in the words
 // of a finding. E and F are the event and the effect interfaces of the
-// machine, S is the state of a spec, and T is the type of an effect.
+// machine, S is the state of a spec, and T is the type of an effect. A system
+// and the defect of an invariant have the form of a scenario, or the form of
+// an action when they take inputs from the case.
 const (
-	systemForm      = "func(w *sim.World[E, F])"
+	scenarioForm    = "func(w *sim.World[E, F])"
 	checkForm       = "func(h *sim.Check, w *sim.World[E, F])"
 	actionForm      = "func(c *prop.Case) func(w *sim.World[E, F])"
+	systemForm      = scenarioForm + " or " + actionForm
 	callForm        = "func(c *prop.Case) func(w *sim.World[E, F], client int)"
 	specForm        = "func() history.Spec[S] or func() history.Subject"
 	withinForm      = "func() time.Duration"
 	fingerprintForm = "func(w *sim.World[E, F]) uint64"
-	performForm     = "func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E]"
+	performForm     = "func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E, F]"
 )
 
 // refuseForm reports [BadFunction] at the function fn under the directive
@@ -1410,24 +1549,25 @@ func (in *invocation) twice(fn *node.Function, name directive.Name, first string
 		name, owner, first)
 }
 
-// bindSystem sets the system of the model to the function fn.
+// bindSystem sets the system of the model to the function fn, and whether it
+// takes inputs from the case.
 func (in *invocation) bindSystem(model *Model, fn *node.Function) {
-	switch {
-	case !in.system(fn):
+	switch inputs := in.action(fn, false); {
+	case !inputs && !in.scenario(fn):
 		in.refuseForm(fn, SystemDirective, systemForm)
 	case model.System != "":
 		in.twice(fn, SystemDirective, model.System)
 	default:
-		model.System = fn.Name
+		model.System, model.Inputs = fn.Name, inputs
 	}
 }
 
 // bindScenario adds the scenario fn to the model.
 func (in *invocation) bindScenario(model *Model, fn *node.Function) {
-	if in.system(fn) {
+	if in.scenario(fn) {
 		model.Scenarios = append(model.Scenarios, Scenario{Func: fn.Name})
 	} else {
-		in.refuseForm(fn, ScenarioDirective, systemForm)
+		in.refuseForm(fn, ScenarioDirective, scenarioForm)
 	}
 }
 
@@ -1481,15 +1621,16 @@ func (in *invocation) bindInvariant(model *Model, fn *node.Function) {
 	d, _ := in.b.View().Lookup(defect)
 	// The validation of the directive resolves the defect to a function alone.
 	planted, _ := d.(*node.Function)
+	inputs := in.action(planted, false)
 	switch {
 	case !in.check(fn):
 		in.refuseForm(fn, InvariantDirective, checkForm)
-	case !in.system(planted):
+	case !inputs && !in.scenario(planted):
 		in.refuse(BadFunction, fn.Pos, "the defect %s of the invariant %s needs the signature %s", defect.Name,
 			fn.Name, in.form(systemForm))
 	default:
 		model.Invariants = append(model.Invariants, Invariant{
-			Statement: statementOf(fn), Func: fn.Name, Defect: defect.Name,
+			Statement: statementOf(fn), Func: fn.Name, Defect: defect.Name, Inputs: inputs,
 		})
 	}
 }
@@ -1514,9 +1655,10 @@ func (in *invocation) bindConvergence(model *Model, fn *node.Function) {
 	}
 }
 
-// system reports whether the function fn has the signature of a system: one
-// world of the machine and no result.
-func (in *invocation) system(fn *node.Function) bool {
+// scenario reports whether the function fn has the signature of a scenario,
+// which is the form of a system without inputs: one world of the machine and
+// no result.
+func (in *invocation) scenario(fn *node.Function) bool {
 	return fits(paramTypes(fn.Params), in.world) && fits(returnTypes(fn.Returns))
 }
 
@@ -1567,9 +1709,10 @@ func (in *invocation) process(ref *node.TypeRef) bool {
 }
 
 // outcome reports whether the type ref is the outcome of an effect of the
-// machine, sim.Outcome[E].
+// machine, sim.Outcome[E, F].
 func (in *invocation) outcome(ref *node.TypeRef) bool {
-	return named(ref, simPackage, "Outcome") && slices.EqualFunc(ref.Args, []*node.TypeRef{in.event}, sameTarget)
+	t := sdkrules.Unaliased(ref, in.b.View())
+	return named(t, simPackage, "Outcome") && slices.EqualFunc(t.Args, []*node.TypeRef{in.event, in.effect}, sameTarget)
 }
 
 // machined reports whether the type ref is a pointer to the generic type

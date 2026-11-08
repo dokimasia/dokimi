@@ -31,8 +31,8 @@ func newNode(*sim.Clock) sim.Machine[register.Event, register.Effect] { return r
 // commit performs a commit on a disk that never fails.
 func commit(
 	_ *sim.World[register.Event, register.Effect], _ *sim.Process[register.Event, register.Effect], f register.Commit,
-) sim.Outcome[register.Event] {
-	return sim.Outcome[register.Event]{Event: register.Committed{Token: f.Token}}
+) sim.Outcome[register.Event, register.Effect] {
+	return sim.Outcome[register.Event, register.Effect]{Event: register.Committed{Token: f.Token}}
 }
 
 // write writes a value that the case chooses on the node a.

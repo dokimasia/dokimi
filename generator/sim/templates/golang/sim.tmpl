@@ -66,11 +66,11 @@
 {{- else}}
 	Token: func({{$F}}) (uint64, bool) { return 0, false },
 {{- end}}
-{{- $called := false}}{{range $c.Performs}}{{if .Call}}{{$called = true}}{{end}}{{end}}
-{{- if $called}}
+{{- $depended := false}}{{range $c.Performs}}{{if .Dependency}}{{$depended = true}}{{end}}{{end}}
+{{- if $depended}}
 	Dependency: func(f {{$F}}) (string, bool) {
 		switch f.(type) {
-{{- range $p := $c.Performs}}{{with $p.Call}}
+{{- range $p := $c.Performs}}{{with $p.Dependency}}
 		case {{spell $p.Type}}:
 			return {{printf "%q" .Name}}, true
 {{- end}}{{end}}
@@ -80,7 +80,7 @@
 	},
 	Fail: func(f {{$F}}, err error) ({{$E}}, bool) {
 		switch f := f.(type) {
-{{- range $p := $c.Performs}}{{with $p.Call}}
+{{- range $p := $c.Performs}}{{with $p.Dependency}}
 		case {{spell $p.Type}}:
 			return {{spell .Event}}{ {{- .Token}}: f.{{.EffectToken}}, {{.Err}}: err}, true
 {{- end}}{{end}}
@@ -90,7 +90,7 @@
 	},
 	Errors: func(f {{$F}}) []error {
 		switch f.(type) {
-{{- range $p := $c.Performs}}{{with $p.Call}}{{if .Errors}}
+{{- range $p := $c.Performs}}{{with $p.Dependency}}{{if .Errors}}
 		case {{spell $p.Type}}:
 			return []error{ {{- range $i, $e := .Errors}}{{if $i}}, {{end}}{{spell $e}}{{end -}} }
 {{- end}}{{end}}{{end}}
@@ -121,24 +121,25 @@
 }
 
 {{docs (wrapdocs (printf `%s performs the effect f of the process p of %s through the function or the call of its directive perform.` $c.Names.Perform $c.Machine))}}
-{{- ""}}func {{$c.Names.Perform}}(w {{$W}}, p *{{$sim}}.Process[{{$E}}, {{$F}}], f {{$F}}) {{$sim}}.Outcome[{{$E}}] {
+{{- ""}}func {{$c.Names.Perform}}(w {{$W}}, p *{{$sim}}.Process[{{$E}}, {{$F}}], f {{$F}}) {{$sim}}.Outcome[{{$E}}, {{$F}}] {
 {{- if $c.Performs}}
 	switch f := f.(type) {
 {{- range $c.Performs}}
 	case {{spell .Type}}:
+{{- $d := .Dependency}}
 {{- with .Call}}
-		ev := {{spell .Event}}{ {{- .Token}}: f.{{.EffectToken}}}
-		{{range $i, $v := .Values}}{{if $i}}, {{end}}ev.{{$v}}{{end}}{{if .Fails}}{{if .Values}}, {{end}}ev.{{.Err}}{{end}}{{if or .Values .Fails}} = {{end}}{{$sim}}.Dependency[{{spell .Dependency}}](w, p).{{.Method}}({{range $i, $a := .Args}}{{if $i}}, {{end}}{{if $a.Context}}w.Context(){{else}}f.{{$a.Field}}{{end}}{{end}})
-		return {{$sim}}.Outcome[{{$E}}]{Event: ev}
+		ev := {{spell $d.Event}}{ {{- $d.Token}}: f.{{$d.EffectToken}}}
+		{{range $i, $v := .Values}}{{if $i}}, {{end}}ev.{{$v}}{{end}}{{if .Fails}}{{if .Values}}, {{end}}ev.{{$d.Err}}{{end}}{{if or .Values .Fails}} = {{end}}{{$sim}}.Dependency[{{spell .Interface}}](w, p).{{.Method}}({{range $i, $a := .Args}}{{if $i}}, {{end}}{{if $a.Context}}w.Context(){{else}}f.{{$a.Field}}{{end}}{{end}})
+		return {{$sim}}.Outcome[{{$E}}, {{$F}}]{Event: ev}
 {{- else}}
 		return {{.Func}}(w, p, f)
 {{- end}}
 {{- end}}
 	default:
-		return {{$sim}}.Outcome[{{$E}}]{}
+		return {{$sim}}.Outcome[{{$E}}, {{$F}}]{}
 	}
 {{- else}}
-	return {{$sim}}.Outcome[{{$E}}]{}
+	return {{$sim}}.Outcome[{{$E}}, {{$F}}]{}
 {{- end}}
 }
 
@@ -152,7 +153,7 @@
 {{- if not $c.Components}}
 		Anatomy: {{$c.Names.Anatomy}},
 {{- end}}
-		System: {{$c.System}},
+		System: {{if $c.Inputs}}{{$c.System}}{{else}}func(*{{import "go.dokimi.dev/assert/prop"}}.Case) func(w {{$W}}) { return {{$c.System}} }{{end}},
 {{- with $c.Spec}}
 {{- if .From}}
 		Spec: {{$history := import "go.dokimi.dev/assert/history"}}{{$history}}.SpecFrom({{.Func}}),
@@ -221,7 +222,7 @@
 {{- if $c.Invariants}}
 		Invariants: []{{$sim}}.Invariant[{{$E}}, {{$F}}]{
 {{- range $c.Invariants}}
-			{Statement: {{simQuote .Statement}}, Check: {{.Func}}, Defect: {{.Defect}}},
+			{Statement: {{simQuote .Statement}}, Check: {{.Func}}, Defect: {{if .Inputs}}{{.Defect}}{{else}}func(*{{import "go.dokimi.dev/assert/prop"}}.Case) func(w {{$W}}) { return {{.Defect}} }{{end}}},
 {{- end}}
 		},
 {{- end}}

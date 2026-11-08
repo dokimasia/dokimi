@@ -15,11 +15,17 @@ import (
 // cellName is the name of the process of the cell.
 const cellName = "cell"
 
-// scheduled spawns the cell.
+// scheduled spawns the cell, and a spare cell where the case chooses one.
 //
 //dokimi:system tolerate=[crash:1, restart:1, tasks]
-func scheduled(w *sim.World[sim.None, sim.None]) {
-	sim.SpawnComponent(w, cellName, cells.Open)
+func scheduled(c *prop.Case) func(w *sim.World[sim.None, sim.None]) {
+	spare := c.Draw(prop.Boolean(), "spare")
+	return func(w *sim.World[sim.None, sim.None]) {
+		sim.SpawnComponent(w, cellName, cells.Open)
+		if spare {
+			sim.SpawnComponent(w, "spare", cells.Open)
+		}
+	}
 }
 
 // set sets the cell to a value that the case chooses.

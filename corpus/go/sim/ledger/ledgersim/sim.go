@@ -27,8 +27,10 @@ func system(w *world) {
 }
 
 // persist persists a transaction at once.
-func persist(_ *world, _ *sim.Process[ledger.Event, ledger.Effect], f ledger.Persist) sim.Outcome[ledger.Event] {
-	return sim.Outcome[ledger.Event]{Event: ledger.Persisted(f)}
+func persist(
+	_ *world, _ *sim.Process[ledger.Event, ledger.Effect], f ledger.Persist,
+) sim.Outcome[ledger.Event, ledger.Effect] {
+	return sim.Outcome[ledger.Event, ledger.Effect]{Event: ledger.Persisted(f)}
 }
 
 // txn applies a transaction of one to three operations that the case

@@ -5,6 +5,7 @@ import (
 
 	"example.com/shop/plain"
 	"go.dokimi.dev/assert/history"
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/sim"
 )
 
@@ -37,12 +38,12 @@ func performPlain(
 	w *sim.World[plain.Event, plain.Effect],
 	p *sim.Process[plain.Event, plain.Effect],
 	f plain.Effect,
-) sim.Outcome[plain.Event] {
+) sim.Outcome[plain.Event, plain.Effect] {
 	switch f := f.(type) {
 	case plain.Beta:
 		return beta(w, p, f)
 	default:
-		return sim.Outcome[plain.Event]{}
+		return sim.Outcome[plain.Event, plain.Effect]{}
 	}
 }
 
@@ -51,7 +52,7 @@ func performPlain(
 func PlainSimulation() sim.Simulation[plain.Event, plain.Effect, []history.Operation] {
 	return sim.Simulation[plain.Event, plain.Effect, []history.Operation]{
 		Anatomy: plainAnatomy,
-		System:  system,
+		System:  func(*prop.Case) func(w *sim.World[plain.Event, plain.Effect]) { return system },
 		Spec:    history.SpecFrom(subject),
 		Tolerate: map[sim.Fault]int{
 			sim.FaultPause: 1,

@@ -97,22 +97,22 @@ func performMachine(
 	w *sim.World[remote.Event, remote.Effect],
 	p *sim.Process[remote.Event, remote.Effect],
 	f remote.Effect,
-) sim.Outcome[remote.Event] {
+) sim.Outcome[remote.Event, remote.Effect] {
 	switch f := f.(type) {
 	case remote.Get:
 		ev := remote.Fetched{Token: f.Token}
 		ev.Value, ev.Err = sim.Dependency[remote.Writer](w, p).Get(w.Context(), f.Key)
-		return sim.Outcome[remote.Event]{Event: ev}
+		return sim.Outcome[remote.Event, remote.Effect]{Event: ev}
 	case remote.Load:
 		ev := remote.Loaded{Token: f.Token}
 		ev.Value, ev.Err = sim.Dependency[store.Reader](w, p).Read(w.Context(), f.Key)
-		return sim.Outcome[remote.Event]{Event: ev}
+		return sim.Outcome[remote.Event, remote.Effect]{Event: ev}
 	case remote.Put:
 		ev := remote.Stored{Token: f.Token}
 		ev.Err = sim.Dependency[remote.Writer](w, p).Put(w.Context(), f.Key, f.Value)
-		return sim.Outcome[remote.Event]{Event: ev}
+		return sim.Outcome[remote.Event, remote.Effect]{Event: ev}
 	default:
-		return sim.Outcome[remote.Event]{}
+		return sim.Outcome[remote.Event, remote.Effect]{}
 	}
 }
 
@@ -121,7 +121,7 @@ func performMachine(
 func MachineSimulation() sim.Simulation[remote.Event, remote.Effect, struct{}] {
 	return sim.Simulation[remote.Event, remote.Effect, struct{}]{
 		Anatomy: machineAnatomy,
-		System:  system,
+		System:  func(*prop.Case) func(w *sim.World[remote.Event, remote.Effect]) { return system },
 		Actions: []sim.Action[remote.Event, remote.Effect]{
 			{
 				Name:  "watch",

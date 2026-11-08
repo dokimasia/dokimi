@@ -16,7 +16,7 @@ import (
 // that system spawns, with its checks.
 func SystemSimulation() sim.Simulation[sim.None, sim.None, []history.Operation] {
 	return sim.Simulation[sim.None, sim.None, []history.Operation]{
-		System: system,
+		System: func(*prop.Case) func(w *sim.World[sim.None, sim.None]) { return system },
 		Spec:   history.SpecFrom(register),
 		Tolerate: map[sim.Fault]int{
 			sim.FaultCrash:     1,
@@ -52,7 +52,7 @@ func SystemSimulation() sim.Simulation[sim.None, sim.None, []history.Operation] 
 			{
 				Statement: "Each node that runs keeps the empty value or a value that a client writes",
 				Check:     clean,
-				Defect:    junk,
+				Defect:    func(*prop.Case) func(w *sim.World[sim.None, sim.None]) { return junk },
 			},
 		},
 		Converges: []sim.Convergence[sim.None, sim.None]{
@@ -67,4 +67,4 @@ func SystemSimulation() sim.Simulation[sim.None, sim.None, []history.Operation] 
 	}
 }
 
-// dokimi:provenance sha256:5e73a39ed8b4536ff4fde47e5bbb8a115cf626d08bb4faccbf4b7092fb7c7877
+// dokimi:provenance sha256:86659f9984c602bfd5ae8e6e806fdd84f2d0be0b74885e1a83157612c1393225

@@ -145,7 +145,8 @@ func TestDefects(t *testing.T) {
 		t.Parallel()
 
 		s := replicatedsim.NodeSimulation()
-		s.System, s.Rules, s.Invariants, s.Converges, s.Scenarios = scattered, nil, nil, nil, nil
+		s.System = func(*prop.Case) func(w *world) { return scattered }
+		s.Rules, s.Invariants, s.Converges, s.Scenarios = nil, nil, nil, nil
 		got := assert.Rejects(t, "the simulation of a scattered primary fails", func(tb assert.TB) { sim.Test(tb, s) })
 		expect.Equal(t, got[0].Detail["outcome"], any(prop.Flaky),
 			"the replay of a passing case makes other steps than the case made")

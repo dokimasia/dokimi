@@ -88,7 +88,7 @@ func TestDefects(t *testing.T) {
 		t.Parallel()
 
 		s := ledgersim.LedgerSimulation()
-		s.System, s.Rules = skewed, nil
+		s.System, s.Rules = func(*prop.Case) func(w *world) { return skewed }, nil
 		got := assert.Rejects(t, "the simulation of a skewed node fails at the seed 1", func(tb assert.TB) {
 			prop.ForAll(tb, "the simulation finds no failure", func(c *prop.Case) { sim.Run(c, s) },
 				prop.Seed(1), prop.Store(""))

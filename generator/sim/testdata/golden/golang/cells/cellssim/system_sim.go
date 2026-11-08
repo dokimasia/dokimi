@@ -12,7 +12,7 @@ import (
 // that cluster spawns, with its checks.
 func ClusterSimulation() sim.Simulation[sim.None, sim.None, []history.Operation] {
 	return sim.Simulation[sim.None, sim.None, []history.Operation]{
-		System: cluster,
+		System: func(*prop.Case) func(w *sim.World[sim.None, sim.None]) { return cluster },
 		Spec:   history.SpecFrom(register),
 		Tolerate: map[sim.Fault]int{
 			sim.FaultCrash:   1,
@@ -43,7 +43,11 @@ func ClusterSimulation() sim.Simulation[sim.None, sim.None, []history.Operation]
 			},
 		},
 		Invariants: []sim.Invariant[sim.None, sim.None]{
-			{Statement: "The system has the spare", Check: spawned, Defect: lonely},
+			{
+				Statement: "The system has the spare",
+				Check:     spawned,
+				Defect:    func(*prop.Case) func(w *sim.World[sim.None, sim.None]) { return lonely },
+			},
 		},
 		Around:   conform.Bubble,
 		Mode:     spec.ModeNative,

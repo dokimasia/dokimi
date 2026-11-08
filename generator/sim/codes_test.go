@@ -57,7 +57,9 @@ func TestCodes(t *testing.T) {
 		{
 			Name: "BadPerform", Give: sim.BadPerform, WantCode: "DOKIMISIM-0009",
 			WantMeaning: "a directive perform names both a function and a call or neither, a call without a result, " +
-				"or a call whose parameters or results the effect and the event of the result do not bind",
+				"a dependency without a function or a result, a function with a result and without a dependency, a " +
+				"dependency that is no interface, or a call or a dependency that the effect and the event of the " +
+				"result do not bind",
 		},
 	}
 	for _, c := range codes {

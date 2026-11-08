@@ -24,13 +24,19 @@ type Outcome[E any] struct{ Event E }
 func system(*sim.World[partial.Event, partial.Effect]) {}
 
 // wrong performs Wrong on a world in place of a process.
-func wrong(*world, *world, partial.Wrong) sim.Outcome[partial.Event] { return sim.Outcome[partial.Event]{} }
+func wrong(*world, *world, partial.Wrong) sim.Outcome[partial.Event, partial.Effect] {
+	return sim.Outcome[partial.Event, partial.Effect]{}
+}
 
 // pair performs the effect Wrong in place of Pair.
-func pair(*world, *process, partial.Wrong) sim.Outcome[partial.Event] { return sim.Outcome[partial.Event]{} }
+func pair(*world, *process, partial.Wrong) sim.Outcome[partial.Event, partial.Effect] {
+	return sim.Outcome[partial.Event, partial.Effect]{}
+}
 
 // odd performs Odd into the outcome of the package.
 func odd(*world, *process, partial.Odd) Outcome[partial.Event] { return Outcome[partial.Event]{} }
 
-// skew performs Skew into an outcome of an effect.
-func skew(*world, *process, partial.Skew) sim.Outcome[partial.Effect] { return sim.Outcome[partial.Effect]{} }
+// skew performs Skew into an outcome whose events are the effects.
+func skew(*world, *process, partial.Skew) sim.Outcome[partial.Effect, partial.Effect] {
+	return sim.Outcome[partial.Effect, partial.Effect]{}
+}

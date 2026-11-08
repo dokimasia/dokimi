@@ -7,11 +7,11 @@ go 1.27.3
 
 require (
 	go.dokimi.dev/assert v0.19.0
-	go.dokimi.dev/conform v0.16.1
+	go.dokimi.dev/conform v0.16.2-0.20261108143425-b7033cebf090
 	go.dokimi.dev/fault v0.2.3
 	go.dokimi.dev/host v0.2.0
 	go.dokimi.dev/medium v0.2.0
-	go.dokimi.dev/sim v0.7.0
+	go.dokimi.dev/sim v0.7.1-0.20261108143425-b7033cebf090
 	go.dokimi.dev/spec v0.5.0
 	go.dokimi.dev/stub v0.3.2
 )

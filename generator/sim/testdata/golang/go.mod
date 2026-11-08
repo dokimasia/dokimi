@@ -5,7 +5,7 @@ go 1.27.3
 require (
 	go.dokimi.dev/assert v0.19.0
 	go.dokimi.dev/host v0.2.0
-	go.dokimi.dev/sim v0.8.0
+	go.dokimi.dev/sim v0.9.0
 )
 
 require (

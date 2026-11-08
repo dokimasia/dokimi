@@ -11,7 +11,7 @@ require (
 	go.dokimi.dev/fault v0.2.3
 	go.dokimi.dev/host v0.2.0
 	go.dokimi.dev/medium v0.2.0
-	go.dokimi.dev/sim v0.8.0
+	go.dokimi.dev/sim v0.9.0
 	go.dokimi.dev/spec v0.5.0
 	go.dokimi.dev/stub v0.3.2
 )

@@ -52,3 +52,5 @@ Proposals, and the argument that produced them. An RFC is written to be argued w
 | [0041](0041-the-final-phase-of-a-long-convergence.md) | The final phase of a long convergence and the timers of a performer | Accepted |
 | [0042](0042-the-outcome-at-a-loss-after-the-effect.md) | The outcome of an effect at a loss after the effect | Accepted |
 | [0043](0043-the-restarts-of-a-host-in-the-final-phase.md) | The restarts of a host in the final phase | Accepted |
+| [0044](0044-the-unknown-errors-of-a-component.md) | The errors of a component that leave the outcome of a call unknown | Accepted |
+| [0045](0045-the-checks-of-a-subject-that-only-a-host-opens.md) | The checks of a subject that only a host opens | Accepted |

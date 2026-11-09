@@ -722,11 +722,31 @@ func bases(checks []derive.Check) map[string]string {
 
 // derived records into s the derived check of each check of the derivation of
 // s, with its planted defect. A generated binding draws the inputs of its
-// calls by the rules of the call generators of s.
+// calls by the rules of the call generators of s. A check that a gate refuses
+// is a refusal of s. A claim has a generated binding only where its sample
+// binding passes sample inputs to a call, so a generated binding of a refused
+// sample binding has no check either. The derivation lists each generated
+// binding after its sample binding. derived leaves the refused and the
+// generated bindings without a check out of the checks of the derivation of
+// s and out of the entailments of each derived check, because the runtime
+// fails an application whose check entails a check that it lacks.
 func (k *caller) derived(s *Suite) {
 	base := bases(s.Derivation.Checks)
+	sampleOf := make(map[string]string, len(s.Derivation.Checks))
+	for i := range s.Derivation.Checks {
+		sampleOf[derive.GeneratedOf(s.Derivation.Checks[i].Identity)] = s.Derivation.Checks[i].Identity
+	}
+	lacked := make(map[string]bool)
+	refuse := func(c *derive.Check, gate spec.GateID) {
+		s.Derivation.Refusals = append(s.Derivation.Refusals, derive.Refuse(c, gate))
+		lacked[c.Identity] = true
+	}
 	for i := range s.Derivation.Checks {
 		c := &s.Derivation.Checks[i]
+		if lacked[sampleOf[c.Identity]] {
+			lacked[c.Identity] = true
+			continue
+		}
 		callable, method, segment := identityOf(s, c)
 		d := Derived{
 			Field: callable.Field, Type: callable.Type, Method: method, Base: base[c.Identity], Segment: segment,
@@ -773,16 +793,16 @@ func (k *caller) derived(s *Suite) {
 		default:
 		}
 		if b.refused != "" {
-			s.Derivation.Refusals = append(s.Derivation.Refusals, derive.Refuse(c, b.refused))
+			refuse(c, b.refused)
 			continue
 		}
 		defect, known := k.defect(s, c, &b)
 		if defect.Body == bodyLiveHandle && defect.Handle == nil {
-			s.Derivation.Refusals = append(s.Derivation.Refusals, derive.Refuse(c, spec.InterfaceHandle))
+			refuse(c, spec.InterfaceHandle)
 			continue
 		}
 		if !k.referableArgs(d.Args) || !k.referableDefect(defect) {
-			s.Derivation.Refusals = append(s.Derivation.Refusals, derive.Refuse(c, spec.ImportableSamples))
+			refuse(c, spec.ImportableSamples)
 			continue
 		}
 		if !known {
@@ -790,6 +810,12 @@ func (k *caller) derived(s *Suite) {
 		}
 		d.Defect, d.Door = defect.Name, defect.Door
 		s.Derived = append(s.Derived, d)
+	}
+	s.Derivation.Checks = slices.DeleteFunc(s.Derivation.Checks, func(c derive.Check) bool {
+		return lacked[c.Identity]
+	})
+	for i := range s.Derived {
+		s.Derived[i].Entails = slices.DeleteFunc(s.Derived[i].Entails, func(e Identity) bool { return lacked[e.ID] })
 	}
 }
 

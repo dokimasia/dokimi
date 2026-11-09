@@ -85,32 +85,6 @@ func ReachSuite() conform.Suite[Reach] {
 		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
 		Checks: []conform.Check[Reach]{
 			{
-				ID:          ReachChecks.Store.Smoke().Generated(),
-				Statement:   "Store returns without a panic for derived inputs",
-				Claim:       spec.Smoke,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *ReachHandle, c *prop.Case) {
-					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
-					probe.Survives(h, func(ctx context.Context) error {
-						return h.Subject().Store(ctx, drawnP)
-					})
-				},
-				Defect: reachStorePanics,
-			},
-			{
-				ID:          ReachChecks.Store.Cancel().Generated(),
-				Statement:   "Store returns an error for a cancelled context",
-				Claim:       spec.Cancel,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *ReachHandle, c *prop.Case) {
-					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
-					probe.UnderCancelled(h, func(ctx context.Context) error {
-						return h.Subject().Store(ctx, drawnP)
-					})
-				},
-				Defect: reachStoreIgnoresCancel,
-			},
-			{
 				ID:          ReachChecks.Current.Smoke(),
 				Statement:   "Current returns without a panic for derived inputs",
 				Claim:       spec.Smoke,
@@ -150,29 +124,10 @@ func ReachSuite() conform.Suite[Reach] {
 				Defect: reachCurrentValueBeside,
 			},
 			{
-				ID:          ReachChecks.Current.ReadAfterWrite().Generated(),
-				Statement:   "Current returns what Store stored before it",
-				Claim:       spec.ReadAfterWrite,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Shallow:     true,
-				Property: func(h *ReachHandle, c *prop.Case) {
-					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
-					probe.WriteThenRead(h, func(ctx context.Context) (tool.Pitch, error) {
-						return h.Subject().Current(ctx)
-					}, func(ctx context.Context) (tool.Pitch, error) {
-						w := drawnP
-						err := h.Subject().Store(ctx, w)
-						return w, err
-					})
-				},
-				Defect: reachCurrentReadsAnotherValue,
-			},
-			{
 				ID:          ReachChecks.Current.ReadsEachLastWrite(),
 				Statement:   "Current returns what Store wrote right before it, over any sequence of calls",
 				Claim:       spec.ReadsEachLastWrite,
 				Machineries: []spec.MachineryID{spec.GeneratedSequences},
-				Entails:     []conform.ID[Reach]{ReachChecks.Current.ReadAfterWrite()},
 				Property: func(h *ReachHandle, c *prop.Case) {
 					probe.ReadsReturnTheLastWrite(
 						h,
@@ -388,43 +343,6 @@ func newReachOver(_ *ReachHandle, spend func()) Reach {
 	return reachOver{spend: spend}
 }
 
-// reachStorePanicsDefect is the planted defect of a Reach whose Store
-// panics.
-type reachStorePanicsDefect struct {
-	reachOverEmbedded
-}
-
-// Store is the override of the planted defect.
-func (*reachStorePanicsDefect) Store(p0 context.Context, p1 tool.Pitch) (r0 error) {
-	panic("the planted defect of a Reach whose Store panics")
-}
-
-// reachStorePanics returns the planted defect of a Reach whose Store
-// panics over a fresh subject.
-func reachStorePanics(h *ReachHandle) Reach {
-	return &reachStorePanicsDefect{reachOverEmbedded: h.Fresh()}
-}
-
-// reachStoreIgnoresCancelDefect is the planted defect of a Reach whose
-// Store ignores the context.
-type reachStoreIgnoresCancelDefect struct {
-	reachOverEmbedded
-}
-
-// Store is the override of the planted defect.
-func (d *reachStoreIgnoresCancelDefect) Store(p0 context.Context, p1 tool.Pitch) (r0 error) {
-	if p0.Err() != nil {
-		return r0
-	}
-	return d.reachOverEmbedded.Store(p0, p1)
-}
-
-// reachStoreIgnoresCancel returns the planted defect of a Reach whose
-// Store ignores the context over a fresh subject.
-func reachStoreIgnoresCancel(h *ReachHandle) Reach {
-	return &reachStoreIgnoresCancelDefect{reachOverEmbedded: h.Fresh()}
-}
-
 // reachCurrentPanicsDefect is the planted defect of a Reach whose Current
 // panics.
 type reachCurrentPanicsDefect struct {
@@ -481,34 +399,6 @@ func (d *reachCurrentValueBesideDefect) Current(p0 context.Context) (r0 tool.Pit
 // Current returns a value beside an error over a fresh subject.
 func reachCurrentValueBeside(h *ReachHandle) Reach {
 	return &reachCurrentValueBesideDefect{reachOverEmbedded: h.Fresh()}
-}
-
-// reachCurrentReadsAnotherValueDefect is the planted defect of a Reach
-// whose Current returns a value that Store did not write.
-type reachCurrentReadsAnotherValueDefect struct {
-	reachOverEmbedded
-}
-
-// Current is the override of the planted defect.
-func (d *reachCurrentReadsAnotherValueDefect) Current(
-	p0 context.Context,
-) (r0 tool.Pitch, r1 error) {
-	if err := p0.Err(); err != nil {
-		r1 = err
-		return r0, r1
-	}
-	r0, r1 = d.reachOverEmbedded.Current(p0)
-	if r1 == nil {
-		r0 = tool.Pitch(7)
-	}
-	return r0, r1
-}
-
-// reachCurrentReadsAnotherValue returns the planted defect of a Reach
-// whose Current returns a value that Store did not write over a fresh
-// subject.
-func reachCurrentReadsAnotherValue(h *ReachHandle) Reach {
-	return &reachCurrentReadsAnotherValueDefect{reachOverEmbedded: h.Fresh()}
 }
 
 // reachCurrentReadsAStaleValueAfterThreeDefect is the planted defect of a
@@ -652,22 +542,6 @@ func TunedSuite() conform.Suite[Tuned] {
 		Declaration: "Tuned",
 		Package:     "example.com/shop/wrap",
 		Generator:   conform.Generator{Name: "dokimi", Version: "0.1.0"},
-		Checks: []conform.Check[Tuned]{
-			{
-				ID:          TunedChecks.Turn.Smoke().Generated(),
-				Statement:   "Turn returns without a panic for derived inputs",
-				Claim:       spec.Smoke,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *TunedHandle, c *prop.Case) {
-					drawnD := c.Draw(prop.Of[tool.Dial](), "d")
-					probe.Survives(h, func(ctx context.Context) error {
-						h.Subject().Turn(drawnD)
-						return nil
-					})
-				},
-				Defect: tunedTurnPanics,
-			},
-		},
 		Refusals: []conform.Refusal{
 			{
 				Claim:    spec.Smoke,
@@ -896,23 +770,6 @@ func newTunedOver(_ *TunedHandle, spend func()) Tuned {
 	return tunedOver{spend: spend}
 }
 
-// tunedTurnPanicsDefect is the planted defect of a Tuned whose Turn
-// panics.
-type tunedTurnPanicsDefect struct {
-	tunedOverEmbedded
-}
-
-// Turn is the override of the planted defect.
-func (*tunedTurnPanicsDefect) Turn(p0 tool.Dial) {
-	panic("the planted defect of a Tuned whose Turn panics")
-}
-
-// tunedTurnPanics returns the planted defect of a Tuned whose Turn panics
-// over a fresh subject.
-func tunedTurnPanics(h *TunedHandle) Tuned {
-	return &tunedTurnPanicsDefect{tunedOverEmbedded: h.Fresh()}
-}
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -1062,48 +919,6 @@ func LimitedSuite() conform.Suite[Limited] {
 					})
 				},
 				Defect: limitedLimitPanics,
-			},
-			{
-				ID:          LimitedChecks.Grip.Smoke().Generated(),
-				Statement:   "Grip returns without a panic for derived inputs",
-				Claim:       spec.Smoke,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *LimitedHandle, c *prop.Case) {
-					drawnG := c.Draw(prop.Of[tool.Grip](), "g")
-					probe.Survives(h, func(ctx context.Context) error {
-						h.Subject().Grip(drawnG)
-						return nil
-					})
-				},
-				Defect: limitedGripPanics,
-			},
-			{
-				ID:          LimitedChecks.Span.Smoke().Generated(),
-				Statement:   "Span returns without a panic for derived inputs",
-				Claim:       spec.Smoke,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *LimitedHandle, c *prop.Case) {
-					drawnS := c.Draw(prop.Of[tool.Span](), "s")
-					probe.Survives(h, func(ctx context.Context) error {
-						h.Subject().Span(drawnS)
-						return nil
-					})
-				},
-				Defect: limitedSpanPanics,
-			},
-			{
-				ID:          LimitedChecks.Pitch.Smoke().Generated(),
-				Statement:   "Pitch returns without a panic for derived inputs",
-				Claim:       spec.Smoke,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *LimitedHandle, c *prop.Case) {
-					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
-					probe.Survives(h, func(ctx context.Context) error {
-						h.Subject().Pitch(drawnP)
-						return nil
-					})
-				},
-				Defect: limitedPitchPanics,
 			},
 			{
 				ID:          LimitedChecks.Measure.Smoke(),
@@ -1677,57 +1492,6 @@ func limitedLimitPanics(h *LimitedHandle) Limited {
 	return &limitedLimitPanicsDefect{limitedOverEmbedded: h.Fresh()}
 }
 
-// limitedGripPanicsDefect is the planted defect of a Limited whose Grip
-// panics.
-type limitedGripPanicsDefect struct {
-	limitedOverEmbedded
-}
-
-// Grip is the override of the planted defect.
-func (*limitedGripPanicsDefect) Grip(p0 tool.Grip) {
-	panic("the planted defect of a Limited whose Grip panics")
-}
-
-// limitedGripPanics returns the planted defect of a Limited whose Grip
-// panics over a fresh subject.
-func limitedGripPanics(h *LimitedHandle) Limited {
-	return &limitedGripPanicsDefect{limitedOverEmbedded: h.Fresh()}
-}
-
-// limitedSpanPanicsDefect is the planted defect of a Limited whose Span
-// panics.
-type limitedSpanPanicsDefect struct {
-	limitedOverEmbedded
-}
-
-// Span is the override of the planted defect.
-func (*limitedSpanPanicsDefect) Span(p0 tool.Span) {
-	panic("the planted defect of a Limited whose Span panics")
-}
-
-// limitedSpanPanics returns the planted defect of a Limited whose Span
-// panics over a fresh subject.
-func limitedSpanPanics(h *LimitedHandle) Limited {
-	return &limitedSpanPanicsDefect{limitedOverEmbedded: h.Fresh()}
-}
-
-// limitedPitchPanicsDefect is the planted defect of a Limited whose Pitch
-// panics.
-type limitedPitchPanicsDefect struct {
-	limitedOverEmbedded
-}
-
-// Pitch is the override of the planted defect.
-func (*limitedPitchPanicsDefect) Pitch(p0 tool.Pitch) {
-	panic("the planted defect of a Limited whose Pitch panics")
-}
-
-// limitedPitchPanics returns the planted defect of a Limited whose Pitch
-// panics over a fresh subject.
-func limitedPitchPanics(h *LimitedHandle) Limited {
-	return &limitedPitchPanicsDefect{limitedOverEmbedded: h.Fresh()}
-}
-
 // limitedMeasurePanicsDefect is the planted defect of a Limited whose
 // Measure panics.
 type limitedMeasurePanicsDefect struct {
@@ -1838,47 +1602,6 @@ func PlayedSuite() conform.Suite[Played] {
 					})
 				},
 				Defect: playedPlayIgnoresCancel,
-			},
-			{
-				ID:          PlayedChecks.StateAt.Smoke().Generated(),
-				Statement:   "StateAt returns without a panic for derived inputs",
-				Claim:       spec.Smoke,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *PlayedHandle, c *prop.Case) {
-					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
-					probe.Survives(h, func(ctx context.Context) error {
-						_, err := h.Subject().StateAt(ctx, drawnP)
-						return err
-					})
-				},
-				Defect: playedStateAtPanics,
-			},
-			{
-				ID:          PlayedChecks.StateAt.Cancel().Generated(),
-				Statement:   "StateAt returns an error for a cancelled context",
-				Claim:       spec.Cancel,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *PlayedHandle, c *prop.Case) {
-					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
-					probe.UnderCancelled(h, func(ctx context.Context) error {
-						_, err := h.Subject().StateAt(ctx, drawnP)
-						return err
-					})
-				},
-				Defect: playedStateAtIgnoresCancel,
-			},
-			{
-				ID:          PlayedChecks.StateAt.ZeroOnError().Generated(),
-				Statement:   "StateAt returns the zero value beside an error",
-				Claim:       spec.ZeroOnError,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *PlayedHandle, c *prop.Case) {
-					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
-					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
-						return h.Subject().StateAt(ctx, drawnP)
-					}, string(""))
-				},
-				Defect: playedStateAtValueBeside,
 			},
 		},
 		Refusals: []conform.Refusal{
@@ -2080,70 +1803,6 @@ func playedPlayIgnoresCancel(h *PlayedHandle) Played {
 	return &playedPlayIgnoresCancelDefect{playedOverEmbedded: h.Fresh()}
 }
 
-// playedStateAtPanicsDefect is the planted defect of a Played whose
-// StateAt panics.
-type playedStateAtPanicsDefect struct {
-	playedOverEmbedded
-}
-
-// StateAt is the override of the planted defect.
-func (*playedStateAtPanicsDefect) StateAt(p0 context.Context, p1 tool.Pitch) (r0 string, r1 error) {
-	panic("the planted defect of a Played whose StateAt panics")
-}
-
-// playedStateAtPanics returns the planted defect of a Played whose StateAt
-// panics over a fresh subject.
-func playedStateAtPanics(h *PlayedHandle) Played {
-	return &playedStateAtPanicsDefect{playedOverEmbedded: h.Fresh()}
-}
-
-// playedStateAtIgnoresCancelDefect is the planted defect of a Played whose
-// StateAt ignores the context.
-type playedStateAtIgnoresCancelDefect struct {
-	playedOverEmbedded
-}
-
-// StateAt is the override of the planted defect.
-func (d *playedStateAtIgnoresCancelDefect) StateAt(
-	p0 context.Context,
-	p1 tool.Pitch,
-) (r0 string, r1 error) {
-	if p0.Err() != nil {
-		return r0, r1
-	}
-	return d.playedOverEmbedded.StateAt(p0, p1)
-}
-
-// playedStateAtIgnoresCancel returns the planted defect of a Played whose
-// StateAt ignores the context over a fresh subject.
-func playedStateAtIgnoresCancel(h *PlayedHandle) Played {
-	return &playedStateAtIgnoresCancelDefect{playedOverEmbedded: h.Fresh()}
-}
-
-// playedStateAtValueBesideDefect is the planted defect of a Played whose
-// StateAt returns a value beside an error.
-type playedStateAtValueBesideDefect struct {
-	playedOverEmbedded
-}
-
-// StateAt is the override of the planted defect.
-func (d *playedStateAtValueBesideDefect) StateAt(
-	p0 context.Context,
-	p1 tool.Pitch,
-) (r0 string, r1 error) {
-	r0, r1 = d.playedOverEmbedded.StateAt(p0, p1)
-	if r1 != nil {
-		r0 = string("sample-b")
-	}
-	return r0, r1
-}
-
-// playedStateAtValueBeside returns the planted defect of a Played whose
-// StateAt returns a value beside an error over a fresh subject.
-func playedStateAtValueBeside(h *PlayedHandle) Played {
-	return &playedStateAtValueBesideDefect{playedOverEmbedded: h.Fresh()}
-}
-
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -2220,47 +1879,6 @@ func GaugedSuite() conform.Suite[Gauged] {
 					})
 				},
 				Defect: gaugedFillIgnoresCancel,
-			},
-			{
-				ID:          GaugedChecks.LevelAt.Smoke().Generated(),
-				Statement:   "LevelAt returns without a panic for derived inputs",
-				Claim:       spec.Smoke,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *GaugedHandle, c *prop.Case) {
-					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
-					probe.Survives(h, func(ctx context.Context) error {
-						_, err := h.Subject().LevelAt(ctx, drawnP)
-						return err
-					})
-				},
-				Defect: gaugedLevelAtPanics,
-			},
-			{
-				ID:          GaugedChecks.LevelAt.Cancel().Generated(),
-				Statement:   "LevelAt returns an error for a cancelled context",
-				Claim:       spec.Cancel,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *GaugedHandle, c *prop.Case) {
-					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
-					probe.UnderCancelled(h, func(ctx context.Context) error {
-						_, err := h.Subject().LevelAt(ctx, drawnP)
-						return err
-					})
-				},
-				Defect: gaugedLevelAtIgnoresCancel,
-			},
-			{
-				ID:          GaugedChecks.LevelAt.ZeroOnError().Generated(),
-				Statement:   "LevelAt returns the zero value beside an error",
-				Claim:       spec.ZeroOnError,
-				Machineries: []spec.MachineryID{spec.GeneratedInputs, spec.NothingBeyondACaller},
-				Property: func(h *GaugedHandle, c *prop.Case) {
-					drawnP := c.Draw(prop.Of[tool.Pitch](), "p")
-					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
-						return h.Subject().LevelAt(ctx, drawnP)
-					}, int(0))
-				},
-				Defect: gaugedLevelAtValueBeside,
 			},
 		},
 		Refusals: []conform.Refusal{
@@ -2460,70 +2078,6 @@ func (d *gaugedFillIgnoresCancelDefect) Fill(p0 context.Context) (r0 error) {
 // Fill ignores the context over a fresh subject.
 func gaugedFillIgnoresCancel(h *GaugedHandle) Gauged {
 	return &gaugedFillIgnoresCancelDefect{gaugedOverEmbedded: h.Fresh()}
-}
-
-// gaugedLevelAtPanicsDefect is the planted defect of a Gauged whose
-// LevelAt panics.
-type gaugedLevelAtPanicsDefect struct {
-	gaugedOverEmbedded
-}
-
-// LevelAt is the override of the planted defect.
-func (*gaugedLevelAtPanicsDefect) LevelAt(p0 context.Context, p1 tool.Pitch) (r0 int, r1 error) {
-	panic("the planted defect of a Gauged whose LevelAt panics")
-}
-
-// gaugedLevelAtPanics returns the planted defect of a Gauged whose LevelAt
-// panics over a fresh subject.
-func gaugedLevelAtPanics(h *GaugedHandle) Gauged {
-	return &gaugedLevelAtPanicsDefect{gaugedOverEmbedded: h.Fresh()}
-}
-
-// gaugedLevelAtIgnoresCancelDefect is the planted defect of a Gauged whose
-// LevelAt ignores the context.
-type gaugedLevelAtIgnoresCancelDefect struct {
-	gaugedOverEmbedded
-}
-
-// LevelAt is the override of the planted defect.
-func (d *gaugedLevelAtIgnoresCancelDefect) LevelAt(
-	p0 context.Context,
-	p1 tool.Pitch,
-) (r0 int, r1 error) {
-	if p0.Err() != nil {
-		return r0, r1
-	}
-	return d.gaugedOverEmbedded.LevelAt(p0, p1)
-}
-
-// gaugedLevelAtIgnoresCancel returns the planted defect of a Gauged whose
-// LevelAt ignores the context over a fresh subject.
-func gaugedLevelAtIgnoresCancel(h *GaugedHandle) Gauged {
-	return &gaugedLevelAtIgnoresCancelDefect{gaugedOverEmbedded: h.Fresh()}
-}
-
-// gaugedLevelAtValueBesideDefect is the planted defect of a Gauged whose
-// LevelAt returns a value beside an error.
-type gaugedLevelAtValueBesideDefect struct {
-	gaugedOverEmbedded
-}
-
-// LevelAt is the override of the planted defect.
-func (d *gaugedLevelAtValueBesideDefect) LevelAt(
-	p0 context.Context,
-	p1 tool.Pitch,
-) (r0 int, r1 error) {
-	r0, r1 = d.gaugedOverEmbedded.LevelAt(p0, p1)
-	if r1 != nil {
-		r0 = int(7)
-	}
-	return r0, r1
-}
-
-// gaugedLevelAtValueBeside returns the planted defect of a Gauged whose
-// LevelAt returns a value beside an error over a fresh subject.
-func gaugedLevelAtValueBeside(h *GaugedHandle) Gauged {
-	return &gaugedLevelAtValueBesideDefect{gaugedOverEmbedded: h.Fresh()}
 }
 
 // The suite refers to the compatibility witness of its runtime.

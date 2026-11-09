@@ -355,13 +355,6 @@ func RecordsSuite() conform.Suite[Records] {
 				Why:      "the classification of Peek sets no param {param}",
 				Remedy:   "set the param {param} in the directive of Peek",
 			},
-			{
-				Claim:    spec.ReturnsOnError,
-				Callable: "Records.Peek",
-				Gate:     spec.ClassificationParams,
-				Why:      "the classification of Peek sets no param {param}",
-				Remedy:   "set the param {param} in the directive of Peek",
-			},
 		},
 		Calls: []conform.Call[Records]{
 			{

@@ -499,5 +499,25 @@ func TestDerived(t *testing.T) {
 				expect.False(t, derived, "the suite derives no check of the refused claim")
 			})
 		}
+
+		t.Run("leaves out the entailment of a check that a gate refuses", func(t *testing.T) {
+			t.Parallel()
+
+			expect.Empty(t, derivedNamed(t, &reach, "Current", "reads-each-last-write").Entails,
+				"a check of the suite entails no check that the suite refuses")
+		})
+
+		t.Run("leaves out the generated binding of a sample binding that a gate refuses", func(t *testing.T) {
+			t.Parallel()
+
+			derived := slices.ContainsFunc(reach.Derived, func(d suite.Derived) bool {
+				return d.Field == "Store" && d.Segment == "smoke#generated"
+			})
+			expect.False(t, derived, "the suite derives no generated binding of a refused sample binding")
+			listed := slices.ContainsFunc(reach.Derivation.Checks, func(c derive.Check) bool {
+				return c.Identity == "Reach.Store/smoke#generated"
+			})
+			expect.False(t, listed, "the derivation lists no generated binding of a refused sample binding")
+		})
 	})
 }

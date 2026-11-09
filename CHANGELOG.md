@@ -1,5 +1,19 @@
 # go.dokimi.dev/dokimi
 
+## 0.11.0
+
+### Minor Changes
+
+- 8c423be: Add `//dokimi:action final` for a change of the consumer that the run takes once after the faults end.
+- 154c04f: Add the param `unknown` to `//dokimi:system` for the errors of a call of a component that leave the outcome of the call unknown.
+
+### Patch Changes
+
+- 363d72a: Import the package of each name of the length of an array in a generated Go suite.
+- a0bb7c2: Leave out each entailment of a check that a gate refuses from a generated Go suite.
+- a0bb7c2: Leave out the generated binding of a sample binding that a gate refuses from a generated Go suite.
+- 363d72a: Require `go.dokimi.dev/eidos/core` v0.16.0 and the releases of the other eidos modules that depend on it.
+
 ## 0.10.0
 
 ### Minor Changes

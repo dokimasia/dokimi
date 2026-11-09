@@ -54,3 +54,4 @@ Proposals, and the argument that produced them. An RFC is written to be argued w
 | [0043](0043-the-restarts-of-a-host-in-the-final-phase.md) | The restarts of a host in the final phase | Accepted |
 | [0044](0044-the-unknown-errors-of-a-component.md) | The errors of a component that leave the outcome of a call unknown | Accepted |
 | [0045](0045-the-checks-of-a-subject-that-only-a-host-opens.md) | The checks of a subject that only a host opens | Accepted |
+| [0046](0046-a-change-of-the-consumer-in-the-final-phase.md) | A change of the consumer in the final phase | Accepted |

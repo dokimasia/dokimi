@@ -5,6 +5,7 @@ package cells
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -16,6 +17,10 @@ import (
 
 // valueFile is the file of the value of a cell.
 const valueFile = "value"
+
+// ErrAmbiguous is the error of a Set whose value a crash can keep or lose:
+// the sync of the directory failed after the rename of the file of the value.
+var ErrAmbiguous = errors.New("cells: the outcome of the set is ambiguous")
 
 // Cell keeps one value in a file of the disk of its host. Each Set writes a
 // file of its own and renames it to the file of the value, so concurrent Sets
@@ -33,7 +38,9 @@ func Open(env *host.Env) *Cell {
 	return &Cell{env: env}
 }
 
-// Set makes v the value of the cell, and returns once v is durable.
+// Set makes v the value of the cell, and returns once v is durable. It returns
+// an error that wraps ErrAmbiguous where the sync of the directory fails after
+// the rename, and the error of the step that failed otherwise.
 func (c *Cell) Set(_ context.Context, v string) error {
 	disk := c.env.Disk()
 	name := valueFile + "." + strconv.FormatInt(c.sets.Add(1), 10)
@@ -51,7 +58,10 @@ func (c *Cell) Set(_ context.Context, v string) error {
 	if err := disk.Rename(name, valueFile); err != nil {
 		return err
 	}
-	return disk.SyncDir(".")
+	if err := disk.SyncDir("."); err != nil {
+		return fmt.Errorf("%w: %v", ErrAmbiguous, err)
+	}
+	return nil
 }
 
 // Get returns the value of the cell, and the empty value for a cell without

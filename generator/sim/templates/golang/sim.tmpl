@@ -177,8 +177,14 @@
 	return {{$sim}}.Simulation[{{$E}}, {{$F}}, {{$S}}]{
 {{- if not $c.Components}}
 		Anatomy: {{$c.Names.Anatomy}},
+{{- else if $c.Unknown}}
+		Anatomy: {{$sim}}.Anatomy[{{$E}}, {{$F}}]{
+			Unknown: func(err error) bool {
+				return {{range $i, $u := $c.Unknown}}{{if $i}} || {{end}}{{import "errors"}}.Is(err, {{spell $u}}){{end}}
+			},
+		},
 {{- end}}
-		System: {{if $c.Inputs}}{{$c.System}}{{else}}func(*{{import "go.dokimi.dev/assert/prop"}}.Case) func(w {{$W}}) { return {{$c.System}} }{{end}},
+		System:{{if $c.Inputs}}{{$c.System}}{{else}}func(*{{import "go.dokimi.dev/assert/prop"}}.Case) func(w {{$W}}) { return {{$c.System}} }{{end}},
 {{- with $c.Spec}}
 {{- if .From}}
 		Spec: {{$history := import "go.dokimi.dev/assert/history"}}{{$history}}.SpecFrom({{.Func}}),

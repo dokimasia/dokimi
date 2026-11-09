@@ -2,7 +2,14 @@
 // refuses, and systems whose worlds are no worlds of components.
 package valuedsim
 
-import "go.dokimi.dev/sim"
+import (
+	"errors"
+
+	"go.dokimi.dev/sim"
+)
+
+// errUnknown is an error that leaves the outcome of a call unknown.
+var errUnknown = errors.New("valuedsim: the outcome of the call is unknown")
 
 // pair is a generic type of two type parameters that is no world.
 type pair[E, F any] struct{}
@@ -32,3 +39,10 @@ func twin(*sim.World[sim.None, int]) {}
 //
 //dokimi:system
 func paired(*pair[sim.None, sim.None]) {}
+
+// uncertain is a system whose world has events of another type than sim.None.
+// Its directive states the errors of an unknown outcome, which the directive
+// reply of a machine states.
+//
+//dokimi:system unknown=[errUnknown]
+func uncertain(*sim.World[int, sim.None]) {}

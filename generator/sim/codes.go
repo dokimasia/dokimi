@@ -32,15 +32,17 @@ var BadLifecycle = diag.MustRegister(CodePrefix, diag.CodeSpec{
 // max-steps of the directive sim or of the directive system of a system of
 // components with a value that is not a fault, a mode or a strategy, or with
 // a count or a share out of its range. A mean-steps greater than the most
-// steps of a case is out of its range. It also reports a param of a simulation on the
-// directive system of a machine interface, because the directive sim of the
-// interface has the params of its simulation. The finding is an Error at the
+// steps of a case is out of its range. It also reports a param of a
+// simulation on the directive system of a machine interface, because the
+// directive sim of the interface has the params of its simulation. It reports
+// the param unknown there too, because the directive reply of the machine
+// states the errors of an unknown outcome. The finding is an Error at the
 // interface or at the function, and sim writes nothing for its simulation.
 var BadParam = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number: 3,
 	Meaning: "a param tolerate, require, strategy, mean-steps or max-steps of the directive sim or system has a " +
-		"value that is not a fault, a mode, a strategy or a count in its range, or is on the directive system of a " +
-		"machine interface",
+		"value that is not a fault, a mode, a strategy or a count in its range, or such a param or the param " +
+		"unknown is on the directive system of a machine interface",
 })
 
 // NoPerform reports an effect type of a machine interface under the directive

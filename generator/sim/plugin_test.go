@@ -11,6 +11,7 @@ import (
 
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
+	golang "go.dokimi.dev/eidos/lang/go"
 	"go.dokimi.dev/eidos/sdk/diag"
 	"go.dokimi.dev/eidos/sdk/meta"
 	"go.dokimi.dev/eidos/sdk/node"
@@ -491,6 +492,10 @@ func TestNew(t *testing.T) {
 		expect.Equal(t, m.Strategy, "uniform", "the param strategy is uniform")
 		expect.Equal(t, []int{m.MeanSteps, m.MaxSteps}, []int{60, 60},
 			"the params mean-steps and max-steps set the steps of a case, a mean of the most included")
+		assert.Length(t, m.Unknown, 1, "the param unknown names one error of an unknown outcome")
+		expect.Equal(t, m.Unknown[0].Target, symbol.Identity{
+			Lang: golang.Lang, Package: cellsPackage, Name: "ErrAmbiguous", Kind: symbol.KindVariable,
+		}, "the error of an unknown outcome is the error of an ambiguous set of the package cells")
 	})
 
 	t.Run("records a system of components in Tasks mode", func(t *testing.T) {
@@ -997,6 +1002,13 @@ func TestNew(t *testing.T) {
 			wantCode: sim.BadParam,
 			wantMsg: "again is the system of a machine interface, so its directive system takes no param strategy. " +
 				"State it on the directive sim of the interface",
+		},
+		{
+			name:     "refuses the errors of an unknown outcome on the system of a machine interface",
+			giveDecl: "valuedsim.uncertain",
+			wantCode: sim.BadParam,
+			wantMsg: "uncertain is the system of a machine interface, so its directive system takes no param unknown. " +
+				"State it on the directive reply of the machine",
 		},
 	}
 	fixtures := map[string][]string{

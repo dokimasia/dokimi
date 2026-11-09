@@ -208,7 +208,9 @@ const defaultMaxSteps = 100
 // generic reply for each type of its union, and Performs the effects with
 // their performers, each in the order of their identities. Unknown are the
 // errors of the replies that leave the outcome of their call unknown, in the
-// order of the replies and of their directives.
+// order of the replies and of their directives. For a system of components
+// they are the errors of the param unknown of its directive system, in their
+// order.
 //
 // System is the function of the system, and Inputs reports a system that
 // takes its inputs from the case. Spec is the spec of the calls of the
@@ -516,6 +518,12 @@ var systemSchema = directive.Schema{
 				"components, such as [crash:1, tasks]",
 		},
 		requireSpec, strategySpec, isolationSpec, meanStepsSpec, maxStepsSpec,
+		{
+			Key: UnknownParam, Type: directive.TypeList, ListOf: directive.TypeReference,
+			Resolution: directive.ResolvePackageVar,
+			Doc: "the errors of a call of a component that leave the outcome of the call unknown, such as " +
+				"[volume.ErrAmbiguous]",
+		},
 	},
 	Doc: "marks the function that builds the processes of the system",
 }
@@ -676,8 +684,10 @@ type generator struct {
 // under [SystemDirective], and a [Checks] into the family [Word] under the tag
 // [TestTag]. The template of the family writes the anatomy of the machine,
 // the function that performs its effects and the function that returns its
-// simulation. A system of components has no anatomy and no performer. The template of the tests writes
-// TestSimulation, TestSimulationFalsify and FuzzSimulation. sim serves Go,
+// simulation. A system of components has no performer. Its anatomy has the
+// field Unknown alone, and only where its directive system states the param
+// unknown. The template of the tests writes TestSimulation,
+// TestSimulationFalsify and FuzzSimulation. sim serves Go,
 // the language of its part, and leaves a declaration of another language
 // alone. It reports the findings of the package documentation and records
 // nothing for a machine interface that it reports. Each call returns a new
@@ -1006,7 +1016,9 @@ func worldOf(fn *node.Function) *node.TypeRef {
 
 // machineSystem reports [BadParam] at the system fn of a machine interface
 // for each param of a simulation that its directive states, because the
-// directive sim of the interface states the simulation.
+// directive sim of the interface states the simulation. It also reports the
+// param unknown, because the directive reply of the machine states the errors
+// of an unknown outcome.
 func (in *invocation) machineSystem(fn *node.Function) {
 	d := in.m.Directive()
 	for _, key := range []directive.ParamKey{
@@ -1016,6 +1028,10 @@ func (in *invocation) machineSystem(fn *node.Function) {
 			in.refuse(BadParam, fn.Pos, "%s is the system of a machine interface, so its directive system takes no "+
 				"param %s. State it on the directive sim of the interface", fn.Name, key)
 		}
+	}
+	if _, stated := d.Param(UnknownParam); stated {
+		in.refuse(BadParam, fn.Pos, "%s is the system of a machine interface, so its directive system takes no "+
+			"param %s. State it on the directive reply of the machine", fn.Name, UnknownParam)
 	}
 }
 
@@ -1160,12 +1176,19 @@ func (in *invocation) members(ref *node.TypeRef) []*node.Struct {
 }
 
 // params reads the params tolerate, require, strategy, isolation, mean-steps
-// and max-steps of the directive into the model, and the modes tasks and
-// blocking of a system of components. It reports [BadParam] at each value that
-// is not a fault, a mode, a strategy or a count in its range. A share that
-// does not parse is 0, infinite or NaN, so its range refuses it.
+// and max-steps of the directive into the model. For a system of components
+// it also reads the modes tasks and blocking and the errors of the param
+// unknown. It reports [BadParam] at each value that is not a fault, a mode, a
+// strategy or a count in its range. A share that does not parse is 0, infinite
+// or NaN, so its range refuses it.
 func (in *invocation) params(model *Model) {
 	d := in.m.Directive()
+	if unknown, stated := d.Param(UnknownParam); stated {
+		for i := range unknown.List {
+			id := unknown.List[i].Target
+			model.Unknown = append(model.Unknown, &emit.TypeRef{Spelling: id.Name, Target: id})
+		}
+	}
 	if tolerate, stated := d.Param(TolerateParam); stated {
 		for at := range tolerate.List {
 			entry := tolerate.List[at].Str

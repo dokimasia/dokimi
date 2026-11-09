@@ -1,6 +1,9 @@
 package cellssim
 
 import (
+	"errors"
+
+	"example.com/shop/cells"
 	"go.dokimi.dev/assert/history"
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
@@ -12,6 +15,11 @@ import (
 // that cluster spawns, with its checks.
 func ClusterSimulation() sim.Simulation[sim.None, sim.None, []history.Operation] {
 	return sim.Simulation[sim.None, sim.None, []history.Operation]{
+		Anatomy: sim.Anatomy[sim.None, sim.None]{
+			Unknown: func(err error) bool {
+				return errors.Is(err, cells.ErrAmbiguous)
+			},
+		},
 		System: func(*prop.Case) func(w *sim.World[sim.None, sim.None]) { return cluster },
 		Spec:   history.SpecFrom(register),
 		Tolerate: map[sim.Fault]int{

@@ -784,6 +784,29 @@ go.dokimi.dev/dokimi/corpus/go/iface/door/signer	signer.sign/smoke	smoke	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/door/signer	signer.sign/smoke#generated	smoke	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/door/signer	signer.sign/zero-on-error	zero-on-error	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/door/signer	signer.sign/zero-on-error#generated	zero-on-error	check	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.header	shape:writer	silent	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.header/cancel	cancel	check	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.header/cancel#generated	cancel	check	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.header/smoke	smoke	check	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.header/smoke#generated	smoke	check	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.key	shape:writer	silent	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.key/cancel	cancel	refused	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.key/smoke	smoke	refused	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.pad	shape:writer	silent	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.pad/cancel	cancel	check	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.pad/cancel#generated	cancel	check	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.pad/smoke	smoke	check	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.pad/smoke#generated	smoke	check	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.seal	shape:writer	silent	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.seal/cancel	cancel	check	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.seal/cancel#generated	cancel	check	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.seal/smoke	smoke	check	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.seal/smoke#generated	smoke	check	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.stage	shape:writer	silent	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.stage/cancel	cancel	check	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.stage/cancel#generated	cancel	check	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.stage/smoke	smoke	check	-
+go.dokimi.dev/dokimi/corpus/go/iface/lang/arraylength	stager.stage/smoke#generated	smoke	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/lang/crosspackage	fitter.fit	shape:writer	silent	-
 go.dokimi.dev/dokimi/corpus/go/iface/lang/crosspackage	fitter.fit/cancel	cancel	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/lang/crosspackage	fitter.fit/cancel#generated	cancel	check	-
@@ -1846,4 +1869,4 @@ go.dokimi.dev/dokimi/corpus/go/iface/mutation/deadcheck	store.put/cancel#generat
 go.dokimi.dev/dokimi/corpus/go/iface/mutation/deadcheck	store.put/smoke	smoke	check	-
 go.dokimi.dev/dokimi/corpus/go/iface/mutation/deadcheck	store.put/smoke#generated	smoke	check	-
 
-# dokimi:provenance sha256:73a4d22b7aed2fe5bae4586ceae54b6754357e18588be42c0fb0a04e6f56d763
+# dokimi:provenance sha256:c8290324e877a7b162c6852519dbd4b5d088d898c1d3ed2c1ba68c876b47549c

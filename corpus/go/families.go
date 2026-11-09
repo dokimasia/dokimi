@@ -278,6 +278,7 @@ var Families = []Family{
 		Representation: "one integer",
 		Subjects: []string{
 			"iface/door/rooted/app.Tally",
+			"iface/lang/arraylength/arraylengthtest.InMemory",
 			"iface/lang/crosspackage/crosspackagetest.InMemory",
 			"iface/lang/nested/nestedtest.InMemory",
 			"iface/lang/nocontext/nocontexttest.InMemory",

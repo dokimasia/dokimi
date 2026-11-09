@@ -1,0 +1,96 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+fixture: iface/lang/arraylength
+level: 1
+subjects:
+  - type: iface/lang/arraylength/arraylengthtest.InMemory
+controls: []
+declarations:
+  stager:
+    checks:
+      stager.header/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      stager.header/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      stager.header/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      stager.header/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      stager.pad/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      stager.pad/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      stager.pad/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      stager.pad/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      stager.seal/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      stager.seal/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      stager.seal/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      stager.seal/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      stager.stage/cancel:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      stager.stage/cancel#generated:
+        claim: cancel
+        law: cancelled-context-is-reported
+        reason: ignored-cancel
+      stager.stage/smoke:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+      stager.stage/smoke#generated:
+        claim: smoke
+        law: no-panic-on-any-input
+        reason: panicked
+    authored: []
+    ceilings: []
+    refusals:
+      stager.key/cancel: importable-samples
+      stager.key/smoke: importable-samples
+    unclaimed:
+      - classification: shape:writer
+        callable: stager.header
+        stance: silent
+      - classification: shape:writer
+        callable: stager.key
+        stance: silent
+      - classification: shape:writer
+        callable: stager.pad
+        stance: silent
+      - classification: shape:writer
+        callable: stager.seal
+        stance: silent
+      - classification: shape:writer
+        callable: stager.stage
+        stance: silent

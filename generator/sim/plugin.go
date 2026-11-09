@@ -606,12 +606,13 @@ var functionals = []functional{
 			Name: ActionDirective,
 			Positional: []directive.ParamSpec{
 				{
-					Key: CallParam, Type: directive.TypeString, Choices: []string{callWord},
-					Doc: "call for a call of a client",
+					Key: CallParam, Type: directive.TypeString, Choices: []string{callWord, finalWord},
+					Doc: "call for a call of a client, or final for a change that the run takes once after the " +
+						"faults end",
 				},
 				{
 					Key: FinalParam, Type: directive.TypeString, Choices: []string{finalWord},
-					Doc: "final for a call that the run makes once after the faults end",
+					Doc: "final after call for a call that the run makes once after the faults end",
 				},
 			},
 			Doc: "marks the function that takes the inputs of an action from the case and returns its run",
@@ -876,9 +877,14 @@ func (g *generator) concludePerform(m *sdk.StructMatch, _ part, st *sdk.Stamper)
 }
 
 // concludeFunction stamps the facts of the params of the directive of a
-// function of the consumer.
+// function of the consumer. It reports [BadParam] at a final change whose
+// directive action has a word after final, and stamps nothing for it.
 func (g *generator) concludeFunction(m *sdk.FunctionMatch, _ part, st *sdk.Stamper) error {
 	d := m.Directive()
+	if len(d.Args) > 1 && d.Args[0].Str == finalWord {
+		m.Errorf(BadParam, "%s is a final change, so its directive action takes no word after final", m.Function.Name)
+		return nil
+	}
 	if defect, stated := d.Param(DefectParam); stated {
 		sdk.Stamp(st, g.defect, defect.Target)
 	}

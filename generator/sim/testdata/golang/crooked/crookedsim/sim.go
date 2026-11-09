@@ -115,6 +115,11 @@ func anonymous(*prop.Case) func(*sim.World[crooked.Event, crooked.Effect]) {
 //dokimi:action call
 func misclient(*prop.Case) func(*world, string) { return func(*world, string) {} }
 
+// refinal is a final change whose directive states final twice.
+//
+//dokimi:action final final
+func refinal(*prop.Case) func(*world) { return func(*world) {} }
+
 // The world is not empty.
 //
 //dokimi:invariant defect=system

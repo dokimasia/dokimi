@@ -104,6 +104,7 @@ func TestNew(t *testing.T) {
 		expect.Equal(t, m.State.Spelling, "string", "the state of the spec is the type argument of its spec")
 		expect.Equal(t, m.Actions, []sim.Action{
 			{Func: "pause"},
+			{Func: "rest", Final: true},
 			{Func: "settle", Call: true, Final: true},
 			{Func: "watch", Call: true},
 			{Func: "write", Call: true},
@@ -1075,6 +1076,16 @@ func TestNew(t *testing.T) {
 		expect.Equal(t, got.Code, sim.BadToken, "the finding has the code of a bad token")
 		expect.Equal(t, got.Msg, "Name is not an unsigned integer type, so it is no token",
 			"the finding names the type")
+	})
+
+	t.Run("refuses a final change whose directive has a word after final", func(t *testing.T) {
+		t.Parallel()
+
+		r := generate(t, "example.com/shop/crooked", "example.com/shop/crooked/crookedsim")
+		got := gentest.Finding(t, r.stamps, declOf(t, r, "crookedsim.refinal"))
+		expect.Equal(t, got.Code, sim.BadParam, "the finding has the code of a bad param")
+		expect.Equal(t, got.Msg, "refinal is a final change, so its directive action takes no word after final",
+			"the finding names the function")
 	})
 
 	t.Run("records a reply for each type of the union of a generic reply", func(t *testing.T) {

@@ -76,6 +76,13 @@ func pause(*prop.Case) func(w *sim.World[register.Event, register.Effect]) {
 	return func(w *sim.World[register.Event, register.Effect]) { w.Advance(time.Second) }
 }
 
+// rest advances the time of the run by a second once the faults end.
+//
+//dokimi:action final
+func rest(*prop.Case) func(w *sim.World[register.Event, register.Effect]) {
+	return func(w *sim.World[register.Event, register.Effect]) { w.Advance(time.Second) }
+}
+
 // spec is the spec of a register whose write returns the value that it
 // writes, and whose watch changes nothing.
 //

@@ -104,6 +104,15 @@ func MachineSimulation() sim.Simulation[register.Event, register.Effect, string]
 				},
 			},
 			{
+				Name:  "rest",
+				Drain: true,
+				Input: func(c *prop.Case) any { return rest(c) },
+				Run: func(w *sim.World[register.Event, register.Effect], _ int, in any) {
+					run, _ := in.(func(*sim.World[register.Event, register.Effect]))
+					run(w)
+				},
+			},
+			{
 				Name:  "settle",
 				Call:  true,
 				Drain: true,

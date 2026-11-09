@@ -28,8 +28,9 @@ func TestCodes(t *testing.T) {
 		{
 			Name: "BadParam", Give: sim.BadParam, WantCode: "DOKIMISIM-0003",
 			WantMeaning: "a param tolerate, require, strategy, mean-steps or max-steps of the directive sim or " +
-				"system has a value that is not a fault, a mode, a strategy or a count in its range, or such a " +
-				"param or the param unknown is on the directive system of a machine interface",
+				"system has a value that is not a fault, a mode, a strategy or a count in its range, such a param " +
+				"or the param unknown is on the directive system of a machine interface, or the directive action " +
+				"has a word after final",
 		},
 		{
 			Name: "NoPerform", Give: sim.NoPerform, WantCode: "DOKIMISIM-0004",

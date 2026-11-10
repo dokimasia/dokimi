@@ -7,7 +7,7 @@ created: 2026-10-28
 updated: 2026-11-02
 discussion: https://github.com/dokimasia/dokimi/issues/43
 supersedes: none
-superseded-by: RFC-0036, RFC-0037, RFC-0039, RFC-0040, RFC-0046, RFC-0047 and RFC-0048 in part
+superseded-by: RFC-0036, RFC-0037, RFC-0039, RFC-0040, RFC-0046, RFC-0047, RFC-0048 and RFC-0049 in part
 produces-adr: tbd
 ---
 

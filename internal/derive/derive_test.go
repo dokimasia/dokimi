@@ -603,6 +603,19 @@ func TestDerive(t *testing.T) {
 				"the edge joins the bound shallower claim")
 		})
 
+		t.Run("adds the edge to an entailed claim that the table lists first", func(t *testing.T) {
+			t.Parallel()
+			deeper := claimOn("deeper", rules.Licence{Callable: true})
+			deeper.Entails = []spec.ClaimID{"shallower"}
+			shallower := claimOn("shallower", rules.Licence{Callable: true})
+
+			got, err := derive.Derive([]derive.Facts{reader()}, []rules.Claim{shallower, deeper}, nil, runtime, nil)
+
+			assert.NoError(t, err, "the declaration derives")
+			assert.Equal(t, got.Edges, []derive.Edge{{Deeper: "Store.Read/deeper", Shallower: "Store.Read/shallower"}},
+				"the edge joins the shallower claim, which is the first check of the callable")
+		})
+
 		t.Run("binds a generated binding after each check that draws an input", func(t *testing.T) {
 			t.Parallel()
 			decl := []derive.Facts{withShape(reader(), "reader")}

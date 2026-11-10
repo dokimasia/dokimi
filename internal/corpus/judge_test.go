@@ -638,6 +638,40 @@ func TestJudge(t *testing.T) {
 				},
 			},
 			{
+				name: "reports the checks without a record on the subject in the order of their keys",
+				give: func(e *corpus.Expectation, o *corpus.Outcome, _ *corpus.Overlay) {
+					mixed := e.Declarations["mixed"]
+					mixed.Authored = append(mixed.Authored, "mixed.read/drops-the-item")
+					e.Declarations["mixed"] = mixed
+					o.Lock = slices.Insert(o.Lock, lineCancel+1,
+						ttl+"\tmixed.read/drops-the-item\tdrops-the-item\tauthored\t-")
+					o.Records[onSubject].Ended = "the check Mixed.Read/cancel has no statement"
+					o.Records[onSubject].Checks = nil
+				},
+				want: []corpus.Finding{
+					{
+						Fixture: ttl, Phase: corpus.PhaseSubject, Key: "mixed", Want: "every check",
+						Got: "ended in TestMixedSuite: the check Mixed.Read/cancel has no statement",
+					},
+					{
+						Fixture: ttl, Phase: corpus.PhaseSubject, Key: "mixed.read/cancel",
+						Want: "pass", Got: "no record on " + subject,
+					},
+					{
+						Fixture: ttl, Phase: corpus.PhaseSubject, Key: "mixed.read/drops-the-item",
+						Want: "pass", Got: "no record on " + subject,
+					},
+					{
+						Fixture: ttl, Phase: corpus.PhaseSubject, Key: "mixed.read/expires",
+						Want: "pass", Got: "no record on " + subject,
+					},
+					{
+						Fixture: ttl, Phase: corpus.PhaseSubject, Key: "mixed.read/keeps-the-item",
+						Want: "pass", Got: "no record on " + subject,
+					},
+				},
+			},
+			{
 				name: "reports a control without a record",
 				give: func(_ *corpus.Expectation, o *corpus.Outcome, _ *corpus.Overlay) {
 					o.Records = o.Records[:onControl]

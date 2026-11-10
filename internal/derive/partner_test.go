@@ -943,6 +943,12 @@ func TestPartner(t *testing.T) {
 				want:     spec.PartnerFound,
 			},
 			{
+				name:     "refuses with partner-found for a role that only the callable itself plays",
+				give:     rules.Partner{Name: "read", Mode: rules.ModeRole, Role: "reader"},
+				giveDecl: []derive.Facts{withRole(getter(), "persister", "reader"), putter()},
+				want:     spec.PartnerFound,
+			},
+			{
 				name: "refuses with one-partner for two establishing writes",
 				give: rules.Partner{
 					Name:  "put",

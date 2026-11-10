@@ -1,5 +1,16 @@
 # go.dokimi.dev/dokimi
 
+## 0.12.0
+
+### Minor Changes
+
+- 777a24a: Add `//dokimi:around` to run each case of a simulation inside a function of the consumer, such as one that seeds `crypto/rand`, with serial tests.
+- ba748e1: **Breaking:** Require the param `defect` of `//dokimi:converges`, the system of the planted defect of the convergence.
+
+### Patch Changes
+
+- ba748e1: Fix the generator sim to leave out an invariant or a convergence whose directive the validation refuses, in place of a panic.
+
 ## 0.11.0
 
 ### Minor Changes

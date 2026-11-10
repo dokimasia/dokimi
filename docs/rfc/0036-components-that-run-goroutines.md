@@ -7,7 +7,7 @@ created: 2026-11-05
 updated: 2026-11-07
 discussion: https://github.com/dokimasia/dokimi/issues/58
 supersedes: RFC-0025 in part
-superseded-by: ADR-0023, RFC-0044 and RFC-0045 in part
+superseded-by: ADR-0023, RFC-0044, RFC-0045 and RFC-0048 in part
 produces-adr: tbd
 ---
 

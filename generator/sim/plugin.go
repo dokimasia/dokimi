@@ -71,7 +71,8 @@ const (
 // action with the positional params CallParam and FinalParam, SpecDirective
 // the spec of the calls, InvariantDirective an invariant with the param
 // DefectParam, ConvergesDirective a convergence with the param WithinParam,
-// FingerprintDirective the fingerprint and ScenarioDirective a scenario.
+// FingerprintDirective the fingerprint, ScenarioDirective a scenario and
+// AroundDirective the function that runs each case of the simulation.
 const (
 	SimDirective         directive.Name     = "sim"
 	TokenDirective       directive.Name     = "token"
@@ -84,6 +85,7 @@ const (
 	ConvergesDirective   directive.Name     = "converges"
 	FingerprintDirective directive.Name     = "fingerprint"
 	ScenarioDirective    directive.Name     = "scenario"
+	AroundDirective      directive.Name     = "around"
 	StartParam           directive.ParamKey = "start"
 	StopParam            directive.ParamKey = "stop"
 	CancelParam          directive.ParamKey = "cancel"
@@ -216,10 +218,10 @@ const defaultMaxSteps = 100
 // System is the function of the system, and Inputs reports a system that
 // takes its inputs from the case. Spec is the spec of the calls of the
 // clients, and nil without one. State is the state of the spec. Fingerprint
-// is the function of the fingerprint, and empty without one. Rules are the
-// checks of the claims of the spec whose generator is sim. Actions,
-// Invariants, Converges and Scenarios are the functions of the consumer, in
-// the order of their identities.
+// is the function of the fingerprint, and Around the function that runs each
+// case, each empty without one. Rules are the checks of the claims of the
+// spec whose generator is sim. Actions, Invariants, Converges and Scenarios
+// are the functions of the consumer, in the order of their identities.
 //
 // Tolerate and Require are the faults of the params tolerate and require, in
 // their order. Strategy is uniform, pct or empty for the default, and Depth
@@ -245,6 +247,7 @@ type Model struct {
 	Machine     string
 	System      string
 	Fingerprint string
+	Around      string
 	Strategy    string
 	Isolation   string
 	Calls       []Field
@@ -442,11 +445,13 @@ type Share struct {
 // machine interface, and the template of the family of the tests reads it:
 // the name of the interface and the name of the function of its simulation.
 // Components reports a system of components, whose Machine is the name of
-// its function under the directive system.
+// its function under the directive system. Serial reports a simulation with
+// an around, whose tests run without t.Parallel.
 type Checks struct {
 	Machine    string
 	Simulation string
 	Components bool
+	Serial     bool
 }
 
 // part is the part of sim for one language.
@@ -666,6 +671,13 @@ var functionals = []functional{
 	{
 		bind:   (*invocation).bindScenario,
 		schema: directive.Schema{Name: ScenarioDirective, Doc: "marks a fixed run whose events the crash points cover"},
+	},
+	{
+		bind: (*invocation).bindAround,
+		schema: directive.Schema{
+			Name: AroundDirective,
+			Doc:  "marks the function that runs each case of the simulation inside an environment of the consumer",
+		},
 	},
 }
 
@@ -985,8 +997,10 @@ func (g *generator) systemOf(m *sdk.FunctionMatch, p part, e *sdk.Emitter) error
 }
 
 // record records the model of the simulation of the declaration origin into
-// the family of the simulations, and checks into the family of the tests.
+// the family of the simulations, and checks into the family of the tests. The
+// tests of a simulation with an around are serial.
 func record(e *sdk.Emitter, origin *symbol.Identity, model *Model, checks Checks) {
+	checks.Serial = model.Around != ""
 	simulation := &emit.Function{Origin: *origin, Name: model.Names.Simulation, Visibility: symbol.VisibilityPublic}
 	e.File().Record(*model, simulation)
 	test := &emit.Struct{Origin: *origin, Name: model.Names.Simulation, Visibility: symbol.VisibilityPublic}
@@ -1722,6 +1736,7 @@ const (
 	propPackage    = "go.dokimi.dev/assert/prop"
 	historyPackage = "go.dokimi.dev/assert/history"
 	timePackage    = "time"
+	testingPackage = "testing"
 )
 
 // The forms of the signatures of the functions of the consumer, in the words
@@ -1738,6 +1753,7 @@ const (
 	specForm        = "func() history.Spec[S] or func() history.Subject"
 	withinForm      = "func() time.Duration"
 	fingerprintForm = "func(w *sim.World[E, F]) uint64"
+	aroundForm      = "func(t *testing.T, run func(*testing.T))"
 	performForm     = "func(w *sim.World[E, F], p *sim.Process[E, F], f T) sim.Outcome[E, F] or " +
 		"func(w *sim.World[E, F], p *sim.Process[E, F], f *T) sim.Outcome[E, F]"
 )
@@ -1808,6 +1824,18 @@ func (in *invocation) bindFingerprint(model *Model, fn *node.Function) {
 		in.twice(fn, FingerprintDirective, model.Fingerprint)
 	default:
 		model.Fingerprint = fn.Name
+	}
+}
+
+// bindAround sets the around of the model to the function fn.
+func (in *invocation) bindAround(model *Model, fn *node.Function) {
+	switch {
+	case !fits(paramTypes(fn.Params), isTest, isRun) || !fits(returnTypes(fn.Returns)):
+		in.refuseForm(fn, AroundDirective, aroundForm)
+	case model.Around != "":
+		in.twice(fn, AroundDirective, model.Around)
+	default:
+		model.Around = fn.Name
 	}
 }
 
@@ -2035,6 +2063,18 @@ func isCheck(ref *node.TypeRef) bool {
 // isCase reports whether the type ref is *prop.Case.
 func isCase(ref *node.TypeRef) bool {
 	return named(pointed(ref), propPackage, "Case")
+}
+
+// isTest reports whether the type ref is *testing.T.
+func isTest(ref *node.TypeRef) bool {
+	return named(pointed(ref), testingPackage, "T")
+}
+
+// isRun reports whether the type ref is the function type func(*testing.T),
+// the run of a case that an around calls. Only a function type splits its
+// elements into parameters and results.
+func isRun(ref *node.TypeRef) bool {
+	return ref.Split == len(ref.Elems) && fits(ref.Elems, isTest)
 }
 
 // isDuration reports whether the type ref is time.Duration.

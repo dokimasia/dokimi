@@ -1,6 +1,8 @@
 package taskssim
 
 import (
+	"testing"
+
 	"go.dokimi.dev/assert/history"
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
@@ -38,7 +40,10 @@ func ScheduledSimulation() sim.Simulation[sim.None, sim.None, []history.Operatio
 				},
 			},
 		},
-		Around: conform.Bubble,
+		Around: func(t *testing.T, run func(*testing.T)) {
+			around(t, func(t *testing.T) { conform.Bubble(t, run) })
+		},
 		Mode:   spec.ModeTasks,
+		Serial: true,
 	}
 }

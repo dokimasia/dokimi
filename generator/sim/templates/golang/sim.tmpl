@@ -272,8 +272,16 @@
 		},
 {{- end}}
 {{- if $c.Components}}
+{{- if $c.Around}}
+		Around: func(t *{{import "testing"}}.T, run func(*{{import "testing"}}.T)) {
+			{{$c.Around}}(t, func(t *{{import "testing"}}.T) { {{import "go.dokimi.dev/conform"}}.Bubble(t, run) })
+		},
+{{- else}}
 		Around: {{import "go.dokimi.dev/conform"}}.Bubble,
+{{- end}}
 		Mode:   {{import "go.dokimi.dev/spec"}}.{{if $c.Tasks}}ModeTasks{{else}}ModeNative{{end}},
+{{- else if $c.Around}}
+		Around: {{$c.Around}},
 {{- end}}
 {{- with $c.MeanSteps}}
 		MeanSteps: {{.}},
@@ -293,6 +301,9 @@
 {{- end}}
 {{- if $c.Blocking}}
 		Blocking: true,
+{{- end}}
+{{- if $c.Around}}
+		Serial: true,
 {{- end}}
 	}
 }

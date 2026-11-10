@@ -4,6 +4,8 @@ package taskssim
 
 import (
 	"context"
+	"testing"
+	"testing/cryptotest"
 
 	"go.dokimi.dev/assert/history"
 	"go.dokimi.dev/assert/prop"
@@ -51,6 +53,16 @@ func get(*prop.Case) func(w *sim.World[sim.None, sim.None], client int) {
 			return cell.Value().Get(ctx)
 		})
 	}
+}
+
+// around seeds the global random source for each case, outside the bubble of
+// the case.
+//
+//dokimi:around
+func around(t *testing.T, run func(*testing.T)) {
+	t.Helper()
+	cryptotest.SetGlobalRandom(t, 1)
+	run(t)
 }
 
 // register is the spec of the cell, a register of one value.

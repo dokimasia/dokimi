@@ -3,6 +3,7 @@
 package crookedsim
 
 import (
+	"testing"
 	"time"
 
 	"go.dokimi.dev/assert/history"
@@ -160,6 +161,39 @@ func uncheckedConvergence(*sim.World[crooked.Event, crooked.Effect]) {}
 //
 //dokimi:converges defect=counted
 func misplantedConvergence(*sim.Check, *sim.World[crooked.Event, crooked.Effect]) {}
+
+// around runs each case inside the environment of the consumer.
+//
+//dokimi:around
+func around(t *testing.T, run func(*testing.T)) { run(t) }
+
+// unwrapped is an around that takes no run of a case.
+//
+//dokimi:around
+func unwrapped(*testing.T) {}
+
+// returning is an around that returns an error.
+//
+//dokimi:around
+func returning(t *testing.T, run func(*testing.T)) error {
+	run(t)
+	return nil
+}
+
+// untested is an around whose run takes no test.
+//
+//dokimi:around
+func untested(_ *testing.T, run func(int)) { run(0) }
+
+// listed is an around that takes a slice of tests in place of a run.
+//
+//dokimi:around
+func listed(*testing.T, []*testing.T) {}
+
+// wrapped is a second around.
+//
+//dokimi:around
+func wrapped(t *testing.T, run func(*testing.T)) { run(t) }
 
 // twice is a scenario that takes the world twice.
 //

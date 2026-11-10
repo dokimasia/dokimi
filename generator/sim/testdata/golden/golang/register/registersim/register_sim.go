@@ -201,6 +201,8 @@ func MachineSimulation() sim.Simulation[register.Event, register.Effect, string]
 		Scenarios: []sim.Scenario[register.Event, register.Effect]{
 			{Name: "writeOnA", Run: writeOnA},
 		},
+		Around:   around,
 		Strategy: sim.PCT(2),
+		Serial:   true,
 	}
 }

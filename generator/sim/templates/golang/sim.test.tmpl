@@ -7,8 +7,9 @@
 
 {{docs (wrapdocs (printf `TestSimulation runs the simulation of %s over random runs and the crash points of each scenario.` $of))}}
 {{- ""}}func TestSimulation(t *{{$testing}}.T) {
+{{- if not $c.Serial}}
 	t.Parallel()
-
+{{end}}
 	{{$sim}}.Test(t, {{$simulation}}())
 }
 {{- if $c.Components}}
@@ -19,8 +20,9 @@
 {{docs (wrapdocs (printf `TestSimulationFalsify proves each rule of a runtime and each invariant of the simulation of %s on its planted defect.` $of))}}
 {{- end}}
 {{- ""}}func TestSimulationFalsify(t *{{$testing}}.T) {
+{{- if not $c.Serial}}
 	t.Parallel()
-
+{{end}}
 	{{$sim}}.Falsify(t, {{$simulation}}())
 }
 

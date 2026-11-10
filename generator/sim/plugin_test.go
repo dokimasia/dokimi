@@ -99,8 +99,8 @@ func TestNew(t *testing.T) {
 		t.Parallel()
 
 		m := generate(t, registerPackage, registerSimPackage).models(t)["Machine"]
-		expect.Equal(t, []string{m.System, m.Fingerprint}, []string{"system", "fingerprint"},
-			"the simulation has the system and the fingerprint of the consumer")
+		expect.Equal(t, []string{m.System, m.Fingerprint, m.Around}, []string{"system", "fingerprint", "around"},
+			"the simulation has the system, the fingerprint and the around of the consumer")
 		expect.False(t, m.Inputs, "the system takes no inputs from the case")
 		expect.Equal(t, *m.Spec, sim.Spec{Func: "spec"}, "the spec returns a history.Spec")
 		expect.Equal(t, m.State.Spelling, "string", "the state of the spec is the type argument of its spec")
@@ -454,8 +454,8 @@ func TestNew(t *testing.T) {
 		t.Parallel()
 
 		got := generate(t, registerPackage, registerSimPackage).checks(t)["Machine"]
-		expect.Equal(t, got.Data, sim.Checks{Machine: "Machine", Simulation: "MachineSimulation"},
-			"the tests call the function of the simulation")
+		expect.Equal(t, got.Data, sim.Checks{Machine: "Machine", Simulation: "MachineSimulation", Serial: true},
+			"the tests call the function of the simulation, one at a time for a simulation with an around")
 		expect.Equal(t, gentest.Referents(got.Decl), []string{"MachineSimulation"},
 			"the record of the tests refers to the function of the simulation")
 	})
@@ -508,6 +508,7 @@ func TestNew(t *testing.T) {
 		m := generate(t, cellsPackage, tasksSimPackage).models(t)["scheduled"]
 		expect.Equal(t, []bool{m.Tasks, m.Blocking}, []bool{true, false},
 			"the value tasks runs the hosts under a task scheduler")
+		expect.Equal(t, m.Around, "around", "the system of components has the around of the consumer")
 		expect.True(t, m.Inputs, "the system takes the spare cell from the case")
 		expect.Equal(t, m.Tolerate, []sim.Bound{{Fault: "FaultCrash", N: 1}, {Fault: "FaultRestart", N: 1}},
 			"the mode is no bound of a fault")
@@ -694,6 +695,34 @@ func TestNew(t *testing.T) {
 			wantCode: sim.BadFunction,
 			wantMsg: "uncheckedConvergence is under the directive converges, so it needs the signature " +
 				"func(h *sim.Check, w *sim.World[E, F]), with E and F the event and the effect interfaces of Crooked",
+		},
+		{
+			name: "refuses an around without the run of a case", giveDecl: "crookedsim.unwrapped",
+			wantCode: sim.BadFunction,
+			wantMsg: "unwrapped is under the directive around, so it needs the signature func(t *testing.T, " +
+				"run func(*testing.T)), with E and F the event and the effect interfaces of Crooked",
+		},
+		{
+			name: "refuses an around that returns an error", giveDecl: "crookedsim.returning",
+			wantCode: sim.BadFunction,
+			wantMsg: "returning is under the directive around, so it needs the signature func(t *testing.T, " +
+				"run func(*testing.T)), with E and F the event and the effect interfaces of Crooked",
+		},
+		{
+			name: "refuses an around whose run takes no test", giveDecl: "crookedsim.untested",
+			wantCode: sim.BadFunction,
+			wantMsg: "untested is under the directive around, so it needs the signature func(t *testing.T, " +
+				"run func(*testing.T)), with E and F the event and the effect interfaces of Crooked",
+		},
+		{
+			name: "refuses an around that takes a slice of tests in place of a run", giveDecl: "crookedsim.listed",
+			wantCode: sim.BadFunction,
+			wantMsg: "listed is under the directive around, so it needs the signature func(t *testing.T, " +
+				"run func(*testing.T)), with E and F the event and the effect interfaces of Crooked",
+		},
+		{
+			name: "refuses a second around", giveDecl: "crookedsim.wrapped", wantCode: sim.BadFunction,
+			wantMsg: "wrapped is a second function under the directive around of Crooked, after around",
 		},
 		{
 			name: "refuses a scenario that takes two worlds", giveDecl: "crookedsim.twice", wantCode: sim.BadFunction,

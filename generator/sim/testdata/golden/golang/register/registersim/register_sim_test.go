@@ -10,16 +10,12 @@ import (
 // TestSimulation runs the simulation of Machine over random runs and the
 // crash points of each scenario.
 func TestSimulation(t *testing.T) {
-	t.Parallel()
-
 	sim.Test(t, registersim.MachineSimulation())
 }
 
 // TestSimulationFalsify proves each rule of a runtime and each invariant
 // of the simulation of Machine on its planted defect.
 func TestSimulationFalsify(t *testing.T) {
-	t.Parallel()
-
 	sim.Falsify(t, registersim.MachineSimulation())
 }
 

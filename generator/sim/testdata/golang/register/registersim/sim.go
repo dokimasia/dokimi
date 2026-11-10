@@ -2,6 +2,8 @@
 package registersim
 
 import (
+	"testing"
+	"testing/cryptotest"
 	"time"
 
 	"go.dokimi.dev/assert/expect"
@@ -119,6 +121,16 @@ func recovered(h *sim.Check, w *sim.World[register.Event, register.Effect]) {
 
 // bound returns the bound of the convergence recovered.
 func bound() time.Duration { return time.Minute }
+
+// around seeds the global random source for each case, so a replay takes the
+// random values of its case.
+//
+//dokimi:around
+func around(t *testing.T, run func(*testing.T)) {
+	t.Helper()
+	cryptotest.SetGlobalRandom(t, 1)
+	run(t)
+}
 
 // fingerprint returns the number of the steps of the log.
 //

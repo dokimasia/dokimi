@@ -10,16 +10,12 @@ import (
 // TestSimulation runs the simulation of the system scheduled over random
 // runs and the crash points of each scenario.
 func TestSimulation(t *testing.T) {
-	t.Parallel()
-
 	sim.Test(t, taskssim.ScheduledSimulation())
 }
 
 // TestSimulationFalsify proves each invariant of the simulation of the
 // system scheduled on its planted defect.
 func TestSimulationFalsify(t *testing.T) {
-	t.Parallel()
-
 	sim.Falsify(t, taskssim.ScheduledSimulation())
 }
 

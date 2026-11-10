@@ -260,7 +260,7 @@
 {{- if $c.Converges}}
 		Converges: []{{$sim}}.Convergence[{{$E}}, {{$F}}]{
 {{- range $c.Converges}}
-			{Statement: {{simQuote .Statement}}, Check: {{.Func}}{{with .Within}}, Within: {{.}}(){{end}}},
+			{Statement: {{simQuote .Statement}}, Check: {{.Func}}, Defect: {{if .Inputs}}{{.Defect}}{{else}}func(*{{import "go.dokimi.dev/assert/prop"}}.Case) func(w {{$W}}) { return {{.Defect}} }{{end}}{{with .Within}}, Within: {{.}}(){{end}}},
 {{- end}}
 		},
 {{- end}}

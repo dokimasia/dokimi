@@ -46,6 +46,13 @@ func junk(w *world) {
 	sim.SpawnComponent(w, backupName, mirrored.Backup)
 }
 
+// stale spawns the register with a primary that mirrors to a host that does
+// not exist and starts with the value 1, so the convergence converged fails.
+func stale(w *world) {
+	sim.SpawnComponent(w, primaryName, mirrored.Seeded("1", "nowhere"))
+	sim.SpawnComponent(w, backupName, mirrored.Backup)
+}
+
 // set writes a value that the case chooses on the primary.
 //
 //dokimi:action call
@@ -103,7 +110,7 @@ func clean(h *sim.Check, w *world) {
 
 // Once the faults end, the backup has the value of the primary.
 //
-//dokimi:converges within=settled
+//dokimi:converges within=settled defect=stale
 func converged(h *sim.Check, w *world) {
 	primary, err := sim.ComponentOf[*mirrored.Node](w, primaryName).Value().Get(w.Context())
 	expect.NoError(h, err, "the primary reads its value")

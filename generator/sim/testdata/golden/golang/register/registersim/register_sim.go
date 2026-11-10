@@ -192,8 +192,9 @@ func MachineSimulation() sim.Simulation[register.Event, register.Effect, string]
 		},
 		Converges: []sim.Convergence[register.Event, register.Effect]{
 			{
-				Statement: "The log of the run has a step once the faults have ended",
-				Check:     replied,
+				Statement: "The system has the node b once the faults have ended",
+				Check:     recovered,
+				Defect:    func(*prop.Case) func(w *sim.World[register.Event, register.Effect]) { return lonely },
 				Within:    bound(),
 			},
 		},

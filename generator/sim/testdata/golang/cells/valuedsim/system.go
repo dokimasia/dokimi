@@ -5,6 +5,7 @@ package valuedsim
 import (
 	"errors"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/sim"
 )
 
@@ -24,6 +25,12 @@ func valued(*sim.World[sim.None, sim.None]) int { return 0 }
 //
 //dokimi:system
 func idle() {}
+
+// casual is a system that takes a case and returns no run of a world, which
+// the simulation of a machine interface binds.
+//
+//dokimi:system
+func casual(*prop.Case) {}
 
 // half is a system whose world has events of another type than sim.None.
 //

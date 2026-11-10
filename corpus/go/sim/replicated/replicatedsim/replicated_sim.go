@@ -196,7 +196,12 @@ func NodeSimulation() sim.Simulation[replicated.Event, replicated.Effect, map[st
 			},
 		},
 		Converges: []sim.Convergence[replicated.Event, replicated.Effect]{
-			{Statement: "Each write ends once the faults have ended", Check: ended, Within: settled()},
+			{
+				Statement: "Each write ends once the faults have ended",
+				Check:     ended,
+				Defect:    func(*prop.Case) func(w *sim.World[replicated.Event, replicated.Effect]) { return forgetful },
+				Within:    settled(),
+			},
 		},
 		Scenarios: []sim.Scenario[replicated.Event, replicated.Effect]{
 			{Name: "putThenGet", Run: putThenGet},
@@ -204,4 +209,4 @@ func NodeSimulation() sim.Simulation[replicated.Event, replicated.Effect, map[st
 	}
 }
 
-// dokimi:provenance sha256:25ac1a4a48a49e235b98fcfb3f79de24453e4be9e8dd5bfa211e41ab94b4f6ef
+// dokimi:provenance sha256:bc3734cf5b4364ac82ad5edfdeb08e19e2bcedcec70dc569a3dd5d4f6b3716f0

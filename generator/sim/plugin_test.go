@@ -4,6 +4,7 @@
 package sim_test
 
 import (
+	"fmt"
 	"path"
 	"slices"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"go.dokimi.dev/assert/expect"
 	golang "go.dokimi.dev/eidos/lang/go"
 	"go.dokimi.dev/eidos/sdk/diag"
+	"go.dokimi.dev/eidos/sdk/directive"
 	"go.dokimi.dev/eidos/sdk/meta"
 	"go.dokimi.dev/eidos/sdk/node"
 	"go.dokimi.dev/eidos/sdk/plugin"
@@ -113,8 +115,9 @@ func TestNew(t *testing.T) {
 			Statement: "The system has the node b", Func: "spawned", Defect: "lonely",
 		}}, "an invariant has the first sentence of its doc comment and its defect")
 		expect.Equal(t, m.Converges, []sim.Convergence{{
-			Statement: "The log of the run has a step once the faults have ended", Func: "replied", Within: "bound",
-		}}, "a convergence has the first sentence of its doc comment and its bound")
+			Statement: "The system has the node b once the faults have ended", Func: "recovered", Within: "bound",
+			Defect: "lonely",
+		}}, "a convergence has the first sentence of its doc comment, its bound and its defect")
 		expect.Equal(t, m.Scenarios, []sim.Scenario{{Func: "writeOnA"}}, "a scenario has the name of its function")
 	})
 
@@ -401,8 +404,8 @@ func TestNew(t *testing.T) {
 
 		m := generate(t, plainPackage, plainSimPackage).models(t)["Plain"]
 		expect.Equal(t, m.Converges, []sim.Convergence{{
-			Statement: "The world settles once the faults end", Func: "settles",
-		}}, "the convergence has no bound")
+			Statement: "The world settles once the faults end", Func: "settles", Defect: "unsettled", Inputs: true,
+		}}, "the convergence has no bound, and its defect takes its inputs from the case")
 	})
 
 	t.Run("returns from Keys the error of a namespace that another registrant claimed", func(t *testing.T) {
@@ -679,6 +682,12 @@ func TestNew(t *testing.T) {
 			name: "refuses a convergence whose bound is no duration", giveDecl: "crookedsim.unbounded",
 			wantCode: sim.BadFunction,
 			wantMsg:  "the bound late of the convergence unbounded needs the signature func() time.Duration",
+		},
+		{
+			name: "refuses a convergence whose defect is no system", giveDecl: "crookedsim.misplantedConvergence",
+			wantCode: sim.BadFunction,
+			wantMsg: "the defect counted of the convergence misplantedConvergence needs the signature " +
+				"func(w *sim.World[E, F]) or func(c *prop.Case) func(w *sim.World[E, F])",
 		},
 		{
 			name: "refuses a convergence without the handle of a check", giveDecl: "crookedsim.uncheckedConvergence",
@@ -1041,6 +1050,10 @@ func TestNew(t *testing.T) {
 		giveDecl string
 	}{
 		{name: "leaves a system without a world to the simulation of a machine interface", giveDecl: "idle"},
+		{
+			name:     "leaves a system that takes a case and returns no run to a machine interface",
+			giveDecl: "casual",
+		},
 		{name: "leaves a system whose events are no sim.None to a machine interface", giveDecl: "half"},
 		{name: "leaves a system whose effects are no sim.None to a machine interface", giveDecl: "twin"},
 		{name: "leaves a system over another generic type of sim.None to a machine interface", giveDecl: "paired"},
@@ -1086,6 +1099,27 @@ func TestNew(t *testing.T) {
 		expect.Equal(t, got.Code, sim.BadParam, "the finding has the code of a bad param")
 		expect.Equal(t, got.Msg, "refinal is a final change, so its directive action takes no word after final",
 			"the finding names the function")
+	})
+
+	t.Run("leaves out an invariant and a convergence whose directive the validation refuses", func(t *testing.T) {
+		t.Parallel()
+
+		got := assert.Rejects(t, "the validation refuses each directive without a defect", func(tb assert.TB) {
+			p := sim.New()
+			f := fixture(tb, p, "example.com/shop/defectless", "example.com/shop/defectless/defectlesssim")
+			f.Annotate(tb, p)
+			f.Generate(tb, p)
+		})
+		contracts := make([]string, 0, len(got))
+		for _, failure := range got {
+			contracts = append(contracts, failure.Contract)
+		}
+		refused := "the validation of the directives reports no Error, and reports %s at " +
+			"defectless/defectlesssim/sim.go:%d:1: %s omits defect, which its schema requires"
+		expect.Equal(t, contracts, []string{
+			fmt.Sprintf(refused, directive.MissingParam, 18, "sim:invariant"),
+			fmt.Sprintf(refused, directive.MissingParam, 23, "sim:converges"),
+		}, "the generate half binds neither function, so the run fails with the findings of the validation alone")
 	})
 
 	t.Run("records a reply for each type of the union of a generic reply", func(t *testing.T) {

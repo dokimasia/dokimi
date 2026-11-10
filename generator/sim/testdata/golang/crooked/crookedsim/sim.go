@@ -137,7 +137,7 @@ func misplanted(*sim.Check, *sim.World[crooked.Event, crooked.Effect]) {}
 
 // The world settles.
 //
-//dokimi:converges within=late
+//dokimi:converges within=late defect=system
 func unbounded(*sim.Check, *sim.World[crooked.Event, crooked.Effect]) {}
 
 // late returns a bound that is no duration.
@@ -145,7 +145,7 @@ func late() int { return int(time.Second) }
 
 // The world settles in time.
 //
-//dokimi:converges within=lateBy
+//dokimi:converges within=lateBy defect=system
 func drifting(*sim.Check, *world) {}
 
 // lateBy returns a bound that takes a parameter.
@@ -153,8 +153,13 @@ func lateBy(int) time.Duration { return time.Second }
 
 // The world settles soon.
 //
-//dokimi:converges
+//dokimi:converges defect=system
 func uncheckedConvergence(*sim.World[crooked.Event, crooked.Effect]) {}
+
+// The world settles at last.
+//
+//dokimi:converges defect=counted
+func misplantedConvergence(*sim.Check, *sim.World[crooked.Event, crooked.Effect]) {}
 
 // twice is a scenario that takes the world twice.
 //

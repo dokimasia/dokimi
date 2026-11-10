@@ -20,7 +20,7 @@ func system(w *sim.World[register.Event, register.Effect]) {
 	w.Spawn("b", newNode)
 }
 
-// lonely spawns the node a alone, so a write to b fails the run.
+// lonely spawns the node a alone, so the system has no node b.
 func lonely(w *sim.World[register.Event, register.Effect]) {
 	w.Spawn("a", newNode)
 }
@@ -110,14 +110,14 @@ func spawned(h *sim.Check, w *sim.World[register.Event, register.Effect]) {
 	expect.NotNil(h, w.Process("b"), h.Statement())
 }
 
-// The log of the run has a step once the faults have ended.
+// The system has the node b once the faults have ended.
 //
-//dokimi:converges within=bound
-func replied(h *sim.Check, w *sim.World[register.Event, register.Effect]) {
-	expect.NotEmpty(h, w.Log(), h.Statement())
+//dokimi:converges within=bound defect=lonely
+func recovered(h *sim.Check, w *sim.World[register.Event, register.Effect]) {
+	expect.NotNil(h, w.Process("b"), h.Statement())
 }
 
-// bound returns the bound of the convergence replied.
+// bound returns the bound of the convergence recovered.
 func bound() time.Duration { return time.Minute }
 
 // fingerprint returns the number of the steps of the log.

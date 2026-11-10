@@ -85,6 +85,31 @@ func (h *hastyPrimary) Step(ev replicated.Event, out []replicated.Effect) []repl
 // Err returns nil, because the primary never stops itself.
 func (*hastyPrimary) Err() error { return nil }
 
+// forgetful spawns a primary that drops the result of each copy, so its
+// writes never end, and the backup.
+func forgetful(w *world) {
+	primary, backup := replicated.Disk{}, replicated.Disk{}
+	w.Spawn("primary", func(*sim.Clock) sim.Machine[replicated.Event, replicated.Effect] {
+		return forgetfulPrimary{replicated.NewPrimary(primary)}
+	})
+	w.Spawn("backup", func(*sim.Clock) sim.Machine[replicated.Event, replicated.Effect] {
+		return replicated.NewBackup(backup)
+	})
+}
+
+// forgetfulPrimary is a primary that drops the result of each copy, so it
+// never replies to a write.
+type forgetfulPrimary struct{ *replicated.Primary }
+
+// Step applies ev and appends its effects to out. It drops the result of a
+// copy.
+func (f forgetfulPrimary) Step(ev replicated.Event, out []replicated.Effect) []replicated.Effect {
+	if _, copied := ev.(replicated.Copied); copied {
+		return out
+	}
+	return f.Primary.Step(ev, out)
+}
+
 // send copies the value of the effect f to the backup, as a call whose reply
 // is the result of f.
 func send(
@@ -203,7 +228,7 @@ func durable(h *sim.Check, w *world) {
 
 // Each write ends once the faults have ended.
 //
-//dokimi:converges within=settled
+//dokimi:converges within=settled defect=forgetful
 func ended(h *sim.Check, w *world) {
 	open := map[int]bool{}
 	events := w.History().Events()

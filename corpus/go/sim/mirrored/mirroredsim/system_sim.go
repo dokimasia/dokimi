@@ -59,6 +59,7 @@ func SystemSimulation() sim.Simulation[sim.None, sim.None, []history.Operation] 
 			{
 				Statement: "Once the faults end, the backup has the value of the primary",
 				Check:     converged,
+				Defect:    func(*prop.Case) func(w *sim.World[sim.None, sim.None]) { return stale },
 				Within:    settled(),
 			},
 		},
@@ -67,4 +68,4 @@ func SystemSimulation() sim.Simulation[sim.None, sim.None, []history.Operation] 
 	}
 }
 
-// dokimi:provenance sha256:86659f9984c602bfd5ae8e6e806fdd84f2d0be0b74885e1a83157612c1393225
+// dokimi:provenance sha256:6c5012500e5d78366561ef5c38e1dc7fb986b2dcf7394186ce670e435b86cd60

@@ -74,8 +74,9 @@
 //
 // The directives system, action, spec, invariant, converges, fingerprint and
 // scenario mark the functions of the consumer that build the system and
-// check it. A system and the defect of an invariant that take inputs from the
-// case have the form of an action, func(c *prop.Case) func(w *sim.World[E, F]).
+// check it. A system and the defect of an invariant or a convergence that take
+// inputs from the case have the form of an action,
+// func(c *prop.Case) func(w *sim.World[E, F]).
 //
 // The plugin is dual. Its annotate half stamps the facts of each directive on
 // a type or a function. Its generate half records the model of the

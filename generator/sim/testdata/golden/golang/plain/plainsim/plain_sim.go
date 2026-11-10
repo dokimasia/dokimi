@@ -103,7 +103,7 @@ func PlainSimulation() sim.Simulation[plain.Event, plain.Effect, []history.Opera
 			},
 		},
 		Converges: []sim.Convergence[plain.Event, plain.Effect]{
-			{Statement: "The world settles once the faults end", Check: settles},
+			{Statement: "The world settles once the faults end", Check: settles, Defect: unsettled},
 		},
 		Strategy:  sim.Uniform(),
 		Isolation: sim.Serializable,

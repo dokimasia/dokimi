@@ -110,21 +110,22 @@ const (
 	WithinParam          directive.ParamKey = "within"
 )
 
-// KeyDefect and KeyWithin are the keys of the facts that the annotate half
-// stamps on an invariant and on a convergence, and contain the identities of
-// the functions of the params defect and within. KeyCall and KeyFinal report
-// an action call and a final action. KeyToken contains token for a type under
-// the directive token, and reply for a reply token. KeyReply contains the
-// fields of the value, the error and the token of a reply, and KeyUnknown the
-// identities of the errors of the reply that leave the outcome of its call
-// unknown. KeyPerform contains the name of the function that performs an
-// effect, and KeyTimeout the field of the effect that bounds its call.
-// KeyCallee contains the identity of the method of a dependency that performs
-// an effect, KeyDependency the identity of the interface of the dependency
-// that the function of an effect calls, and KeyResult the identity of the
-// event of the result of the call or of the failure of the effect. KeyEnd
-// contains the identity of the event that ends the wait of an effect, and
-// KeyEnds the identities of the effects whose waits an effect ends.
+// KeyDefect is the key of the fact that the annotate half stamps on an
+// invariant and on a convergence, and contains the identity of the function of
+// the param defect. KeyWithin is the key of the fact on a convergence, and
+// contains the identity of the function of the param within. KeyCall and
+// KeyFinal report an action call and a final action. KeyToken contains token
+// for a type under the directive token, and reply for a reply token. KeyReply
+// contains the fields of the value, the error and the token of a reply, and
+// KeyUnknown the identities of the errors of the reply that leave the outcome
+// of its call unknown. KeyPerform contains the name of the function that
+// performs an effect, and KeyTimeout the field of the effect that bounds its
+// call. KeyCallee contains the identity of the method of a dependency that
+// performs an effect, KeyDependency the identity of the interface of the
+// dependency that the function of an effect calls, and KeyResult the identity
+// of the event of the result of the call or of the failure of the effect.
+// KeyEnd contains the identity of the event that ends the wait of an effect,
+// and KeyEnds the identities of the effects whose waits an effect ends.
 const (
 	KeyDefect     meta.KeyName = "sim.defect"
 	KeyWithin     meta.KeyName = "sim.within"
@@ -399,11 +400,15 @@ type Invariant struct {
 }
 
 // Convergence is one convergence of the consumer: its statement, the name of
-// its function and the name of the function of its bound, empty for none.
+// its function, the name of the function of its bound, empty for none, and the
+// name of the function of its defect system. Inputs reports a defect system
+// that takes its inputs from the case.
 type Convergence struct {
 	Statement string
 	Func      string
 	Within    string
+	Defect    string
+	Inputs    bool
 }
 
 // Scenario is one scenario of the consumer: the name of its function, which is
@@ -639,10 +644,16 @@ var functionals = []functional{
 		bind: (*invocation).bindConvergence,
 		schema: directive.Schema{
 			Name: ConvergesDirective,
-			Params: []directive.ParamSpec{{
-				Key: WithinParam, Type: directive.TypeReference, Resolution: directive.ResolveCallableInScope,
-				Doc: "the function that returns the bound of virtual time within which the property becomes true",
-			}},
+			Params: []directive.ParamSpec{
+				{
+					Key: WithinParam, Type: directive.TypeReference, Resolution: directive.ResolveCallableInScope,
+					Doc: "the function that returns the bound of virtual time within which the property becomes true",
+				},
+				{
+					Key: DefectParam, Type: directive.TypeReference, Resolution: directive.ResolveCallableInScope,
+					Required: true, Doc: "the function that builds the system with a planted defect of the convergence",
+				},
+			},
 			Doc: "marks a liveness property that the run checks once the faults end",
 		},
 	},
@@ -732,7 +743,8 @@ func (g *generator) register(r *meta.Registry) error {
 	var errs [15]error
 	errs[0] = r.ClaimNamespace(KeyDefect.Namespace())
 	g.defect, errs[1] = meta.Register[symbol.Identity](r, on(symbol.KindFunction, KeyDefect,
-		"contains the identity of the function that builds the system with the planted defect of the invariant"))
+		"contains the identity of the function that builds the system with the planted defect of the invariant or "+
+			"the convergence"))
 	g.within, errs[2] = meta.Register[symbol.Identity](r, on(symbol.KindFunction, KeyWithin,
 		"contains the identity of the function that returns the bound of the convergence"))
 	g.call, errs[3] = meta.Register[bool](r, on(symbol.KindFunction, KeyCall,
@@ -1715,8 +1727,8 @@ const (
 // The forms of the signatures of the functions of the consumer, in the words
 // of a finding. E and F are the event and the effect interfaces of the
 // machine, S is the state of a spec, and T is the type of an effect. A system
-// and the defect of an invariant have the form of a scenario, or the form of
-// an action when they take inputs from the case.
+// and the defect of an invariant or a convergence have the form of a scenario,
+// or the form of an action when they take inputs from the case.
 const (
 	scenarioForm    = "func(w *sim.World[E, F])"
 	checkForm       = "func(h *sim.Check, w *sim.World[E, F])"
@@ -1831,17 +1843,18 @@ func (in *invocation) bindAction(model *Model, fn *node.Function) {
 }
 
 // bindInvariant adds the invariant fn with the defect of its directive to the
-// model. It reports [BadFunction] at fn where the defect is no system.
+// model. It reports [BadFunction] at fn where the defect is no system, and
+// leaves out an invariant whose directive the validation refused.
 func (in *invocation) bindInvariant(model *Model, fn *node.Function) {
-	defect, _ := sdk.FactOf(in.m, fn.ID, in.g.defect)
-	d, _ := in.b.View().Lookup(defect)
-	// The validation of the directive resolves the defect to a function alone.
-	planted, _ := d.(*node.Function)
-	inputs := in.action(planted, false)
+	defect, planted := in.defectOf(fn)
+	if planted == nil {
+		return
+	}
+	inputs, system := in.systemOf(planted)
 	switch {
 	case !in.check(fn):
 		in.refuseForm(fn, InvariantDirective, checkForm)
-	case !inputs && !in.scenario(planted):
+	case !system:
 		in.refuse(BadFunction, fn.Pos, "the defect %s of the invariant %s needs the signature %s", defect.Name,
 			fn.Name, in.form(systemForm))
 	default:
@@ -1851,9 +1864,16 @@ func (in *invocation) bindInvariant(model *Model, fn *node.Function) {
 	}
 }
 
-// bindConvergence adds the convergence fn with the bound of its directive to
-// the model. It reports [BadFunction] at fn where the bound is no duration.
+// bindConvergence adds the convergence fn with the bound and the defect of its
+// directive to the model. It reports [BadFunction] at fn where the bound is no
+// duration or the defect is no system, and leaves out a convergence whose
+// directive the validation refused.
 func (in *invocation) bindConvergence(model *Model, fn *node.Function) {
+	defect, planted := in.defectOf(fn)
+	if planted == nil {
+		return
+	}
+	inputs, system := in.systemOf(planted)
 	within, bounded := sdk.FactOf(in.m, fn.ID, in.g.within)
 	w, _ := in.b.View().Lookup(within)
 	// The validation of the directive resolves the bound to a function alone.
@@ -1864,11 +1884,32 @@ func (in *invocation) bindConvergence(model *Model, fn *node.Function) {
 	case bounded && !bound(limit):
 		in.refuse(BadFunction, fn.Pos, "the bound %s of the convergence %s needs the signature %s", within.Name,
 			fn.Name, withinForm)
+	case !system:
+		in.refuse(BadFunction, fn.Pos, "the defect %s of the convergence %s needs the signature %s", defect.Name,
+			fn.Name, in.form(systemForm))
 	default:
 		model.Converges = append(model.Converges, Convergence{
-			Statement: statementOf(fn), Func: fn.Name, Within: within.Name,
+			Statement: statementOf(fn), Func: fn.Name, Within: within.Name, Defect: defect.Name, Inputs: inputs,
 		})
 	}
+}
+
+// defectOf returns the identity and the function of the param defect of the
+// directive of the invariant or the convergence fn. The function is nil where
+// the validation refused the directive, because the annotate half then stamps
+// no defect. The validation resolves a defect to a function alone.
+func (in *invocation) defectOf(fn *node.Function) (symbol.Identity, *node.Function) {
+	defect, _ := sdk.FactOf(in.m, fn.ID, in.g.defect)
+	d, _ := in.b.View().Lookup(defect)
+	planted, _ := d.(*node.Function)
+	return defect, planted
+}
+
+// systemOf reports whether the function fn takes its inputs from the case in
+// the form of an action, and whether it has the form of a system.
+func (in *invocation) systemOf(fn *node.Function) (inputs, system bool) {
+	inputs = in.action(fn, false)
+	return inputs, inputs || in.scenario(fn)
 }
 
 // scenario reports whether the function fn has the signature of a scenario,

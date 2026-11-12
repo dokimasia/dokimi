@@ -58,3 +58,5 @@ Proposals, and the argument that produced them. An RFC is written to be argued w
 | [0047](0047-the-planted-defect-of-a-convergence.md) | The planted defect of a convergence | Accepted |
 | [0048](0048-the-steps-of-a-scenario-of-components.md) | The steps of a scenario of a world of components | Accepted |
 | [0049](0049-an-environment-around-each-case-of-a-simulation.md) | An environment of the consumer around each case of a simulation | Accepted |
+| [0050](0050-the-typescript-runtime-at-spec-2-1-0.md) | The TypeScript runtime at spec 2.1.0 | Accepted |
+| [0051](0051-the-dependency-of-each-host-and-the-restarts-of-the-active-phase.md) | The dependency of each host and the restarts of the active phase | Accepted |

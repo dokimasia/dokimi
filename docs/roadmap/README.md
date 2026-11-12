@@ -28,6 +28,11 @@ flowchart LR
     M0017[0017 Every classification has a claim]
     M0018[0018 Deliveries, iterations, totals and faults]
     M0019[0019 Isolation levels of transactions]
+    M0020[0020 TypeScript runtime at spec 2.1.0]
+    M0021[0021 TypeScript mixins and detectors]
+    M0022[0022 TypeScript contracts, enumerations and errors]
+    M0023[0023 TypeScript simulation]
+    M0024[0024 TypeScript composites, doors and integrations]
     M0002 --> M0003
     M0003 --> M0004
     M0003 --> M0005
@@ -52,6 +57,12 @@ flowchart LR
     M0009 --> M0011
     M0010 --> M0018
     M0011 --> M0019
+    M0008 --> M0020
+    M0020 --> M0021
+    M0021 --> M0022
+    M0020 --> M0023
+    M0022 --> M0024
+    M0023 --> M0024
 ```
 
 | Order | Milestone | Status | Depends on | Released in |
@@ -74,7 +85,12 @@ flowchart LR
 | 16 | [0012](0012-verified-fakes.md) A downstream team uses a verified fake | Done | 0003, 0004 | unscheduled |
 | 17 | [0013](0013-a-breakable-medium.md) A durable subject survives a breakable medium | Done | 0003, 0015 | unscheduled |
 | 18 | [0014](0014-dead-and-subsumed-checks.md) A report names dead and subsumed checks | Done | 0005 | unscheduled |
-| 19 | [0008](0008-typescript-declarations-get-proven-suites.md) A TypeScript declaration gets a proven suite | Planned | 0007 | unscheduled |
+| 19 | [0008](0008-typescript-declarations-get-proven-suites.md) A TypeScript declaration gets a proven suite | In progress | 0007 | unscheduled |
+| 20 | [0020](0020-the-typescript-runtime-implements-spec-2-1-0.md) The TypeScript runtime implements spec 2.1.0 | In progress | 0008 | unscheduled |
+| 21 | [0021](0021-typescript-mixins-and-detectors.md) A TypeScript declaration gets the checks of its mixins and detected shapes | Planned | 0020 | unscheduled |
+| 22 | [0022](0022-typescript-contracts-enumerations-and-errors.md) A TypeScript declaration gets the checks of its contracts, enumerations and errors | Planned | 0021 | unscheduled |
+| 23 | [0023](0023-a-typescript-system-runs-in-a-simulation.md) A TypeScript system runs in a deterministic simulation | Planned | 0020 | unscheduled |
+| 24 | [0024](0024-typescript-composites-doors-and-integrations.md) A TypeScript declaration gets the checks of its composites, doors and integrations | Planned | 0022, 0023 | unscheduled |
 
 ## Capabilities without a milestone
 

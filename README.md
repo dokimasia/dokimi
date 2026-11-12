@@ -302,7 +302,7 @@ directives.
 | `dokimi doctor` | Checks the config, the sealed state and the directives |
 | `dokimi prune` | Removes the generated files that no plan produces |
 | `dokimi plan` | Prints the composition of each workspace without running it |
-| `dokimi report FILES...` | Prints what each suite of a run of `go test -json` claimed, proved, refused and found vacuous |
+| `dokimi report FILES...` | Prints what each suite of a run of `go test -json` or Vitest claimed, proved, refused and found vacuous |
 | `dokimi schema` | Prints the JSON Schema of `.dokimi.yaml` |
 | `dokimi version` | Prints the versions of the binary, of eidos and of the plugins |
 | `dokimi completion SHELL` | Writes the completion script of bash, zsh, fish or PowerShell |

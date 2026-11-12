@@ -7,7 +7,7 @@ created: 2026-10-19
 updated: 2026-10-22
 discussion: none
 supersedes: none
-superseded-by: ADR-0003, ADR-0004, ADR-0005, ADR-0013, ADR-0014, ADR-0016, ADR-0020, ADR-0022 and RFC-0035 in part
+superseded-by: ADR-0003, ADR-0004, ADR-0005, ADR-0013, ADR-0014, ADR-0016, ADR-0020, ADR-0022, RFC-0035 and RFC-0050 in part
 produces-adr: tbd
 ---
 

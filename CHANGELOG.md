@@ -1,5 +1,27 @@
 # go.dokimi.dev/dokimi
 
+## 0.13.0
+
+### Minor Changes
+
+- b953e45: Accept an entry of an overlay with the actual outcome `absent` and the stance `blocked` as the declaration of a missing key.
+- a6c51e4: Add the param `scope` to `//dokimi:perform`, whose value `host` gives each host of a world an instance of the dependency of the effect.
+- 922f75d: **Breaking:** Remove `newDelayed` and `newFailing` from the TypeScript doubles, whose tests pass the options `withClock`, `withLatency` and `failing` instead.
+- f965e06: Draw the inputs of a write that a read of the generated sequences selects by from the pools of the keys of the read, also where no claim pairs the two.
+- b953e45: Judge the TypeScript corpus in `dokimi conform --lang typescript` through Vitest and its JSON report.
+- b953e45: Read the suite records and the failures of the JSON report of Vitest in `dokimi report` beside the events of `go test -json`.
+- 922f75d: Run the 13 checks of `behaviour` and the two checks of `resetBehaviour` in the generated test of each method of a TypeScript double.
+- f965e06: Warn at a budget of a TypeScript callable with a ceiling of allocations or of bytes, and stamp neither ceiling.
+- f965e06: Write the actions, the steps and the checks of generated sequences in the TypeScript suites.
+- f965e06: Write the suites and the conformance tests of the TypeScript declarations under `//dokimi:suite`, with the lock `dokimi.typescript.lock`.
+
+### Patch Changes
+
+- f965e06: Fix the facts of a TypeScript interface to list its properties as the fields of its values.
+- f965e06: Fix the message of `BadCheck` at a TypeScript check to name the case `prop.Case`.
+- f965e06: Fix the names of the draws, pools, builds and generated functions of a TypeScript suite to write an initialism as a word, as drawnId.
+- f965e06: Fix the names of the shape definitions of a TypeScript suite to open with the name of its declaration, so two suites of one module declare distinct names.
+
 ## 0.12.0
 
 ### Minor Changes

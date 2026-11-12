@@ -2,20 +2,66 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/leakfree/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { MixedStub } from "./iface.stub";
+import { type MixedAcquireCall, type MixedOutstandingCall, type MixedReleaseCall, MixedStub } from "./iface.stub";
 
 /** Calls acquire of double with the samples of its arguments. */
 function mixedStubAcquire(double: MixedStub): Promise<void> {
   return double.acquire();
 }
 
+/** Returns the subject of behaviour and resetBehaviour for acquire, on a new double that reports to seat. */
+function mixedStubAcquireSubject(seat: Seat): Subject<MixedAcquireCall, undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onAcquire,
+    call: () => mixedStubAcquire(double),
+    reset: () => double.resetCalls(),
+    override: (seen) => {
+      double.onAcquire.func(() => {
+        seen({} as MixedAcquireCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubAcquire(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Calls release of double with the samples of its arguments. */
 function mixedStubRelease(double: MixedStub): Promise<void> {
   return double.release();
+}
+
+/** Returns the subject of behaviour and resetBehaviour for release, on a new double that reports to seat. */
+function mixedStubReleaseSubject(seat: Seat): Subject<MixedReleaseCall, undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onRelease,
+    call: () => mixedStubRelease(double),
+    reset: () => double.resetCalls(),
+    override: (seen) => {
+      double.onRelease.func(() => {
+        seen({} as MixedReleaseCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubRelease(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /** Calls outstanding of double with the samples of its arguments. */
@@ -30,179 +76,82 @@ function mixedStubOutstandingPin(): number {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for outstanding, on a new double that reports to seat. */
+function mixedStubOutstandingSubject(seat: Seat): Subject<MixedOutstandingCall, number | undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onOutstanding,
+    call: () => mixedStubOutstanding(double),
+    reset: () => double.resetCalls(),
+    result: async () => await mixedStubOutstanding(double),
+    returns: () => {
+      const want = mixedStubOutstandingPin();
+      double.onOutstanding.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onOutstanding.func(() => {
+        seen({} as MixedOutstandingCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubOutstanding(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * acquire alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call acquire alone.
  */
 function mixedStubInstance(double: MixedStub) {
   return {
     stub: double.onAcquire,
     call: () => mixedStubAcquire(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("MixedStub", () => {
   describe("acquire", () => {
-    const checks = behaviour("Mixed.acquire", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onAcquire,
-        call: () => mixedStubAcquire(double),
-        override: (mark) => {
-          double.onAcquire.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.acquire", mixedStubAcquireSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onAcquire.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubAcquire(double);
-      await mixedStubAcquire(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of acquire");
-    });
   });
 
   describe("release", () => {
-    const checks = behaviour("Mixed.release", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onRelease,
-        call: () => mixedStubRelease(double),
-        override: (mark) => {
-          double.onRelease.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.release", mixedStubReleaseSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onRelease.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubRelease(double);
-      await mixedStubRelease(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of release");
-    });
   });
 
   describe("outstanding", () => {
-    const checks = behaviour("Mixed.outstanding", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onOutstanding,
-        call: () => mixedStubOutstanding(double),
-        override: (mark) => {
-          double.onOutstanding.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.outstanding", mixedStubOutstandingSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onOutstanding.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubOutstanding(double);
-      await mixedStubOutstanding(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of outstanding");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of acquire", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubAcquire(double);
-      double.resetCalls();
-      expect(double.onAcquire.callCount).isEqualTo(0, "resetCalls clears the calls of acquire");
+    describe("acquire", () => {
+      for (const c of resetBehaviour("Mixed.acquire", mixedStubAcquireSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of release", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubRelease(double);
-      double.resetCalls();
-      expect(double.onRelease.callCount).isEqualTo(0, "resetCalls clears the calls of release");
+    describe("release", () => {
+      for (const c of resetBehaviour("Mixed.release", mixedStubReleaseSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of outstanding", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubOutstanding(double);
-      double.resetCalls();
-      expect(double.onOutstanding.callCount).isEqualTo(0, "resetCalls clears the calls of outstanding");
-    });
-
-    it("keeps the result of returns of outstanding", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubOutstandingPin();
-      double.onOutstanding.returns(want);
-      double.resetCalls();
-      expect(await mixedStubOutstanding(double)).isEqualTo(want, "resetCalls keeps the result of outstanding");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails acquire with its error", async () => {
-      const want = new Error("acquire-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubAcquire(double));
-      const message = "acquire fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails release with its error", async () => {
-      const want = new Error("release-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubRelease(double));
-      const message = "release fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails outstanding with its error", async () => {
-      const want = new Error("outstanding-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubOutstanding(double));
-      const message = "outstanding fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("outstanding", () => {
+      for (const c of resetBehaviour("Mixed.outstanding", mixedStubOutstandingSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -363,24 +312,4 @@ describe("MixedStub", () => {
   });
 });
 
-describe("MixedOutstandingStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of outstanding", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubOutstandingPin();
-      double.onOutstanding.returns(want);
-      expect(await mixedStubOutstanding(double)).isEqualTo(want, "outstanding returns the result that returns sets");
-    });
-
-    it("configures outstanding for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new MixedStub(failures);
-      double.onOutstanding.strict();
-      double.onOutstanding.returns(undefined as never);
-      await settle(() => mixedStubOutstanding(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of outstanding");
-    });
-  });
-});
-
-// dokimi:provenance sha256:d27413232c163ecd1a10994a9c1ae08adee1fd964418dc96d0dfad33b013f9f1
+// dokimi:provenance sha256:9d41a99fa1c565ca40c5097fb08696bbb05162426441169f34dcce1cc8ac1f96

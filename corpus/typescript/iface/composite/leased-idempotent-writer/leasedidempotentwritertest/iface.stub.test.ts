@@ -2,11 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/composite/leased-idempotent-writer/iface.ts
 
-import { Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { LeasedWriterStub } from "./iface.stub";
+import { type LeasedWriterAcquireCall, type LeasedWriterReleaseCall, LeasedWriterStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of acquire. An argument without a sample is undefined. */
 function leasedWriterStubAcquireArgs(): [string] {
@@ -19,6 +19,33 @@ function leasedWriterStubAcquireArgs(): [string] {
 function leasedWriterStubAcquire(double: LeasedWriterStub): Promise<void> {
   const args = leasedWriterStubAcquireArgs();
   return double.acquire(args[0]);
+}
+
+/** Returns the subject of behaviour and resetBehaviour for acquire, on a new double that reports to seat. */
+function leasedWriterStubAcquireSubject(seat: Seat): Subject<LeasedWriterAcquireCall, undefined> {
+  const double = new LeasedWriterStub(seat);
+  return {
+    stub: double.onAcquire,
+    call: () => leasedWriterStubAcquire(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = leasedWriterStubAcquireArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    override: (seen) => {
+      double.onAcquire.func((...received: unknown[]) => {
+        seen({ key: received[0] } as LeasedWriterAcquireCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => leasedWriterStubAcquire(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /** Returns the samples of the arguments of release. An argument without a sample is undefined. */
@@ -34,144 +61,68 @@ function leasedWriterStubRelease(double: LeasedWriterStub): Promise<void> {
   return double.release(args[0]);
 }
 
+/** Returns the subject of behaviour and resetBehaviour for release, on a new double that reports to seat. */
+function leasedWriterStubReleaseSubject(seat: Seat): Subject<LeasedWriterReleaseCall, undefined> {
+  const double = new LeasedWriterStub(seat);
+  return {
+    stub: double.onRelease,
+    call: () => leasedWriterStubRelease(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = leasedWriterStubReleaseArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    override: (seen) => {
+      double.onRelease.func((...received: unknown[]) => {
+        seen({ key: received[0] } as LeasedWriterReleaseCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => leasedWriterStubRelease(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * acquire alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call acquire alone.
  */
 function leasedWriterStubInstance(double: LeasedWriterStub) {
   return {
     stub: double.onAcquire,
     call: () => leasedWriterStubAcquire(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("LeasedWriterStub", () => {
   describe("acquire", () => {
-    const checks = behaviour("LeasedWriter.acquire", (seat) => {
-      const double = new LeasedWriterStub(seat);
-      return {
-        stub: double.onAcquire,
-        call: () => leasedWriterStubAcquire(double),
-        override: (mark) => {
-          double.onAcquire.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("LeasedWriter.acquire", leasedWriterStubAcquireSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new LeasedWriterStub(undefined);
-      await leasedWriterStubAcquire(double);
-      expect(double.onAcquire.callCount).isEqualTo(1, "acquire records the call");
-      const got = double.onAcquire.calls[0];
-      const args = leasedWriterStubAcquireArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new LeasedWriterStub(undefined);
-      let seen = 0;
-      double.onAcquire.onRecord(() => {
-        seen += 1;
-      });
-      await leasedWriterStubAcquire(double);
-      await leasedWriterStubAcquire(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of acquire");
-    });
   });
 
   describe("release", () => {
-    const checks = behaviour("LeasedWriter.release", (seat) => {
-      const double = new LeasedWriterStub(seat);
-      return {
-        stub: double.onRelease,
-        call: () => leasedWriterStubRelease(double),
-        override: (mark) => {
-          double.onRelease.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("LeasedWriter.release", leasedWriterStubReleaseSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new LeasedWriterStub(undefined);
-      await leasedWriterStubRelease(double);
-      expect(double.onRelease.callCount).isEqualTo(1, "release records the call");
-      const got = double.onRelease.calls[0];
-      const args = leasedWriterStubReleaseArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new LeasedWriterStub(undefined);
-      let seen = 0;
-      double.onRelease.onRecord(() => {
-        seen += 1;
-      });
-      await leasedWriterStubRelease(double);
-      await leasedWriterStubRelease(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of release");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => leasedWriterStubInstance(new LeasedWriterStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of acquire", async () => {
-      const double = new LeasedWriterStub(undefined);
-      await leasedWriterStubAcquire(double);
-      double.resetCalls();
-      expect(double.onAcquire.callCount).isEqualTo(0, "resetCalls clears the calls of acquire");
+    describe("acquire", () => {
+      for (const c of resetBehaviour("LeasedWriter.acquire", leasedWriterStubAcquireSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of release", async () => {
-      const double = new LeasedWriterStub(undefined);
-      await leasedWriterStubRelease(double);
-      double.resetCalls();
-      expect(double.onRelease.callCount).isEqualTo(0, "resetCalls clears the calls of release");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => leasedWriterStubInstance(LeasedWriterStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails acquire with its error", async () => {
-      const want = new Error("acquire-failing");
-      const double = LeasedWriterStub.newFailing(undefined, want);
-      const outcome = await settle(() => leasedWriterStubAcquire(double));
-      const message = "acquire fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails release with its error", async () => {
-      const want = new Error("release-failing");
-      const double = LeasedWriterStub.newFailing(undefined, want);
-      const outcome = await settle(() => leasedWriterStubRelease(double));
-      const message = "release fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("release", () => {
+      for (const c of resetBehaviour("LeasedWriter.release", leasedWriterStubReleaseSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -296,36 +247,4 @@ describe("LeasedWriterStub", () => {
   });
 });
 
-describe("LeasedWriterAcquireStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of acquire to the function", async () => {
-      const double = new LeasedWriterStub(undefined);
-      let got: unknown[] = [];
-      double.onAcquire.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await leasedWriterStubAcquire(double);
-      const args = leasedWriterStubAcquireArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("LeasedWriterReleaseStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of release to the function", async () => {
-      const double = new LeasedWriterStub(undefined);
-      let got: unknown[] = [];
-      double.onRelease.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await leasedWriterStubRelease(double);
-      const args = leasedWriterStubReleaseArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:2b4abd8793baab1c0f6d61bf4f0b56d1514e4dd92f8d02eabeba79c574948742
+// dokimi:provenance sha256:fd1fadc2b4b498e91c781d4a8f9eccf6655d2eb6b19c1c17556d9268fbca18c5

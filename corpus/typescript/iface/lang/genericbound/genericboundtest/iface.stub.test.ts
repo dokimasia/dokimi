@@ -2,159 +2,129 @@
 // dokimi:plugin stub
 // dokimi:source iface/lang/genericbound/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
 import type { Ordered, Score } from "../iface";
-import { RankedStub } from "./iface.stub";
+import { type RankedRankCall, type RankedResetCall, RankedStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of rank. An argument without a sample is undefined. */
-function rankedStubRankArgs<K extends Ordered>(): [K] {
+function rankedStubRankArgs<K extends Ordered>(): [K, AbortSignal] {
   let a0 = undefined as unknown as K;
-  return [a0];
+  let a1 = undefined as unknown as AbortSignal;
+  return [a0, a1];
 }
 
 /** Calls rank of double with the samples of its arguments. */
 function rankedStubRank<K extends Ordered, V>(double: RankedStub<K, V>): Promise<V> {
   const args = rankedStubRankArgs<K>();
-  return double.rank(args[0]);
+  return double.rank(args[0], args[1]);
+}
+
+/** Returns the subject of behaviour and resetBehaviour for rank, on a new double that reports to seat. */
+function rankedStubRankSubject<K extends Ordered, V>(seat: Seat): Subject<RankedRankCall<K, V>, V | undefined> {
+  const double = new RankedStub<K, V>(seat);
+  return {
+    stub: double.onRank,
+    call: () => rankedStubRank(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = rankedStubRankArgs<K>();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+      check.isEqualTo(s, c.signal, args[1], "the call records signal");
+    },
+    result: async () => await rankedStubRank(double),
+    override: (seen) => {
+      double.onRank.func((...received: unknown[]) => {
+        seen({ key: received[0], signal: received[1] } as RankedRankCall<K, V>);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => rankedStubRank(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
+/** Returns the samples of the arguments of reset. An argument without a sample is undefined. */
+function rankedStubResetArgs(): [AbortSignal] {
+  let a0 = undefined as unknown as AbortSignal;
+  return [a0];
 }
 
 /** Calls reset of double with the samples of its arguments. */
 function rankedStubReset<K extends Ordered, V>(double: RankedStub<K, V>): Promise<void> {
-  return double.reset();
+  const args = rankedStubResetArgs();
+  return double.reset(args[0]);
+}
+
+/** Returns the subject of behaviour and resetBehaviour for reset, on a new double that reports to seat. */
+function rankedStubResetSubject<K extends Ordered, V>(seat: Seat): Subject<RankedResetCall, undefined> {
+  const double = new RankedStub<K, V>(seat);
+  return {
+    stub: double.onReset,
+    call: () => rankedStubReset(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = rankedStubResetArgs();
+      check.isEqualTo(s, c.signal, args[0], "the call records signal");
+    },
+    override: (seen) => {
+      double.onReset.func((...received: unknown[]) => {
+        seen({ signal: received[0] } as RankedResetCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => rankedStubReset(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * rank alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call rank alone.
  */
 function rankedStubInstance(double: RankedStub<number, Score>) {
   return {
     stub: double.onRank,
     call: () => rankedStubRank(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("RankedStub", () => {
   describe("rank", () => {
-    const checks = behaviour("Ranked.rank", (seat) => {
-      const double = new RankedStub<number, Score>(seat);
-      return {
-        stub: double.onRank,
-        call: () => rankedStubRank(double),
-        override: (mark) => {
-          double.onRank.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Ranked.rank", rankedStubRankSubject<number, Score>)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new RankedStub<number, Score>(undefined);
-      await rankedStubRank(double);
-      expect(double.onRank.callCount).isEqualTo(1, "rank records the call");
-      const got = double.onRank.calls[0];
-      const args = rankedStubRankArgs<number>();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new RankedStub<number, Score>(undefined);
-      let seen = 0;
-      double.onRank.onRecord(() => {
-        seen += 1;
-      });
-      await rankedStubRank(double);
-      await rankedStubRank(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of rank");
-    });
   });
 
   describe("reset", () => {
-    const checks = behaviour("Ranked.reset", (seat) => {
-      const double = new RankedStub<number, Score>(seat);
-      return {
-        stub: double.onReset,
-        call: () => rankedStubReset(double),
-        override: (mark) => {
-          double.onReset.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Ranked.reset", rankedStubResetSubject<number, Score>)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new RankedStub<number, Score>(undefined);
-      let seen = 0;
-      double.onReset.onRecord(() => {
-        seen += 1;
-      });
-      await rankedStubReset(double);
-      await rankedStubReset(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of reset");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => rankedStubInstance(new RankedStub<number, Score>(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of rank", async () => {
-      const double = new RankedStub<number, Score>(undefined);
-      await rankedStubRank(double);
-      double.resetCalls();
-      expect(double.onRank.callCount).isEqualTo(0, "resetCalls clears the calls of rank");
+    describe("rank", () => {
+      for (const c of resetBehaviour("Ranked.rank", rankedStubRankSubject<number, Score>)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of reset", async () => {
-      const double = new RankedStub<number, Score>(undefined);
-      await rankedStubReset(double);
-      double.resetCalls();
-      expect(double.onReset.callCount).isEqualTo(0, "resetCalls clears the calls of reset");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => rankedStubInstance(RankedStub.newDelayed<number, Score>(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails rank with its error", async () => {
-      const want = new Error("rank-failing");
-      const double = RankedStub.newFailing<number, Score>(undefined, want);
-      const outcome = await settle(() => rankedStubRank(double));
-      const message = "rank fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails reset with its error", async () => {
-      const want = new Error("reset-failing");
-      const double = RankedStub.newFailing<number, Score>(undefined, want);
-      const outcome = await settle(() => rankedStubReset(double));
-      const message = "reset fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("reset", () => {
+      for (const c of resetBehaviour("Ranked.reset", rankedStubResetSubject<number, Score>)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -279,31 +249,4 @@ describe("RankedStub", () => {
   });
 });
 
-describe("RankedRankStub", () => {
-  describe("returns", () => {
-    it("configures rank for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new RankedStub<number, Score>(failures);
-      double.onRank.strict();
-      double.onRank.returns(undefined as never);
-      await settle(() => rankedStubRank(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of rank");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of rank to the function", async () => {
-      const double = new RankedStub<number, Score>(undefined);
-      let got: unknown[] = [];
-      double.onRank.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await rankedStubRank(double);
-      const args = rankedStubRankArgs<number>();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:bd585ba6ed435de3fc19d7e343a5deaf82e23934933b24a00477348f678da6f0
+// dokimi:provenance sha256:7b5b899237a2178206955c4ef2ed416c17a244e0f6e53ed00f23721d27e8687f

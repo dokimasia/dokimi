@@ -1726,11 +1726,13 @@ func storeActions(c *prop.Case, subject func() partnernaming.Store) []stateful.A
 			Name: "Put",
 			Input: func(c *prop.Case, _ struct{}) any {
 				r := c.Draw(prop.Of[partnernaming.Rec](), "put.r")
+				r.Key = c.Draw(prop.SampledFrom(keysString...), "put.r.key")
 				return []any{r}
 			},
 			Run: func(c *prop.Case, client int, input any) {
 				args, _ := input.([]any)
-				call := c.History().Invoke(client, "Put", args)
+				key0, _ := args[0].(partnernaming.Rec)
+				call := c.History().Invoke(client, "Put", args, key0.Key)
 				values, err := storePutCall(c.Context(), subject(), args)
 				conform.Complete(c.Context(), call, err, values...)
 			},
@@ -1739,11 +1741,13 @@ func storeActions(c *prop.Case, subject func() partnernaming.Store) []stateful.A
 			Name: "Replace",
 			Input: func(c *prop.Case, _ struct{}) any {
 				r := c.Draw(prop.Of[partnernaming.Rec](), "replace.r")
+				r.Key = c.Draw(prop.SampledFrom(keysString...), "replace.r.key")
 				return []any{r}
 			},
 			Run: func(c *prop.Case, client int, input any) {
 				args, _ := input.([]any)
-				call := c.History().Invoke(client, "Replace", args)
+				key0, _ := args[0].(partnernaming.Rec)
+				call := c.History().Invoke(client, "Replace", args, key0.Key)
 				values, err := storeReplaceCall(c.Context(), subject(), args)
 				conform.Complete(c.Context(), call, err, values...)
 			},
@@ -1820,4 +1824,4 @@ func storeReplaceCall(ctx context.Context, subject partnernaming.Store, args []a
 	return nil, subject.Replace(ctx, a0)
 }
 
-// dokimi:provenance sha256:aefb49c10515516a61b02ded121878836d71dedfd404c8bcf8f6d3694d2b4194
+// dokimi:provenance sha256:9250b42ecc1b3ea2f95803be26aa55cb1238f60fc63c84cbbf69b7c681015080

@@ -274,47 +274,6 @@ export class StreamReaderStub implements StreamReader {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: StreamReaderStubOption[]
-  ): StreamReaderStub {
-    return new StreamReaderStub(
-      seat,
-      StreamReaderStub.withClock(clock),
-      StreamReaderStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: StreamReaderStubOption[]
-  ): StreamReaderStub {
-    return new StreamReaderStub(seat, StreamReaderStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -341,4 +300,4 @@ export class StreamReaderStub implements StreamReader {
 
 void compatV1;
 
-// dokimi:provenance sha256:948d5671f9063df4d2f6e02e9ff43e88974d710983a1ca47026691d3593e8afc
+// dokimi:provenance sha256:5511d5a8598a21f582fb5456d204784081aeb57d6583614a9bb94b3f5c80582d

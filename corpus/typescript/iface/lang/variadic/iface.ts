@@ -24,7 +24,7 @@
 //dokimi:out path=variadictest/
 export interface Finder {
   /** Returns the keys that the finder knows among the keys. */
-  find(...keys: string[]): Promise<string[]>;
+  find(signal: AbortSignal, ...keys: string[]): Promise<string[]>;
   /** Returns at most limit of the keys that the finder knows among the keys. */
-  findWithLimit(limit: number, ...keys: string[]): Promise<string[]>;
+  findWithLimit(limit: number, signal: AbortSignal, ...keys: string[]): Promise<string[]>;
 }

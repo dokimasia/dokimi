@@ -14,6 +14,8 @@ import type { Store } from "../iface";
 export interface StoreGetCall<K, V> {
   /** The argument key. */
   key: K;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The result of the call, where it returned one. */
   result?: V | undefined;
   /** The error that failed the call, where one did. */
@@ -26,6 +28,8 @@ export interface StorePutCall<K, V> {
   key: K;
   /** The argument value. */
   value: V;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -35,7 +39,7 @@ export interface StorePutCall<K, V> {
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreGetStub<K, V> extends MethodStub<StoreGetCall<K, V>> {
-  #fn: ((key: K) => V | PromiseLike<V>) | undefined;
+  #fn: ((key: K, signal: AbortSignal) => V | PromiseLike<V>) | undefined;
   #fallback: { readonly value: V } | undefined;
 
   /**
@@ -57,7 +61,7 @@ export class StoreGetStub<K, V> extends MethodStub<StoreGetCall<K, V>> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (key: K) => V | PromiseLike<V>): this {
+  func(fn: (key: K, signal: AbortSignal) => V | PromiseLike<V>): this {
     this.#fn = fn;
     return this;
   }
@@ -65,10 +69,10 @@ export class StoreGetStub<K, V> extends MethodStub<StoreGetCall<K, V>> {
   /**
    * Returns the arms of a call of get with its arguments.
    */
-  arms(key: K): Arms<StoreGetCall<K, V>, V, V | PromiseLike<V>> {
+  arms(key: K, signal: AbortSignal): Arms<StoreGetCall<K, V>, V, V | PromiseLike<V>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn(key)),
+      invoke: fn && (() => fn(key, signal)),
       fallback: this.#fallback,
       stamp: (call, result) => {
         call.result = result;
@@ -85,7 +89,7 @@ export class StoreGetStub<K, V> extends MethodStub<StoreGetCall<K, V>> {
  * through it takes precedence over the function and the fixed result.
  */
 export class StorePutStub<K, V> extends MethodStub<StorePutCall<K, V>> {
-  #fn: ((key: K, value: V) => void | PromiseLike<void>) | undefined;
+  #fn: ((key: K, value: V, signal: AbortSignal) => void | PromiseLike<void>) | undefined;
 
   /**
    * Sets the function that computes the result of put from its
@@ -94,7 +98,7 @@ export class StorePutStub<K, V> extends MethodStub<StorePutCall<K, V>> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (key: K, value: V) => void | PromiseLike<void>): this {
+  func(fn: (key: K, value: V, signal: AbortSignal) => void | PromiseLike<void>): this {
     this.#fn = fn;
     return this;
   }
@@ -102,10 +106,10 @@ export class StorePutStub<K, V> extends MethodStub<StorePutCall<K, V>> {
   /**
    * Returns the arms of a call of put with its arguments.
    */
-  arms(key: K, value: V): Arms<StorePutCall<K, V>, void, void | PromiseLike<void>> {
+  arms(key: K, value: V, signal: AbortSignal): Arms<StorePutCall<K, V>, void, void | PromiseLike<void>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn(key, value)),
+      invoke: fn && (() => fn(key, value, signal)),
       fail: (call, error) => {
         call.error = error;
       },
@@ -247,7 +251,7 @@ export class StoreStub<K, V> implements Store<K, V> {
    * @param fn - The function.
    * @returns The option.
    */
-  static withStoreGet<K, V>(fn: (key: K) => V | PromiseLike<V>): StoreStubOption<K, V> {
+  static withStoreGet<K, V>(fn: (key: K, signal: AbortSignal) => V | PromiseLike<V>): StoreStubOption<K, V> {
     return (double) => {
       double.onGet.func(fn);
     };
@@ -259,51 +263,10 @@ export class StoreStub<K, V> implements Store<K, V> {
    * @param fn - The function.
    * @returns The option.
    */
-  static withStorePut<K, V>(fn: (key: K, value: V) => void | PromiseLike<void>): StoreStubOption<K, V> {
+  static withStorePut<K, V>(fn: (key: K, value: V, signal: AbortSignal) => void | PromiseLike<void>): StoreStubOption<K, V> {
     return (double) => {
       double.onPut.func(fn);
     };
-  }
-
-  /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed<K, V>(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: StoreStubOption<K, V>[]
-  ): StoreStub<K, V> {
-    return new StoreStub<K, V>(
-      seat,
-      StoreStub.withClock<K, V>(clock),
-      StoreStub.withLatency<K, V>(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing<K, V>(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: StoreStubOption<K, V>[]
-  ): StoreStub<K, V> {
-    return new StoreStub<K, V>(seat, StoreStub.failing<K, V>(error), ...options);
   }
 
   /**
@@ -317,20 +280,20 @@ export class StoreStub<K, V> implements Store<K, V> {
   /**
    * Records the call of get and returns its result.
    */
-  get(key: K): Promise<V> {
-    const call: StoreGetCall<K, V> = { key };
-    return answerAsync(this.onGet, call, this.onGet.arms(key));
+  get(key: K, signal: AbortSignal): Promise<V> {
+    const call: StoreGetCall<K, V> = { key, signal };
+    return answerAsync(this.onGet, call, this.onGet.arms(key, signal));
   }
 
   /**
    * Records the call of put and returns its result.
    */
-  put(key: K, value: V): Promise<void> {
-    const call: StorePutCall<K, V> = { key, value };
-    return answerAsync(this.onPut, call, this.onPut.arms(key, value));
+  put(key: K, value: V, signal: AbortSignal): Promise<void> {
+    const call: StorePutCall<K, V> = { key, value, signal };
+    return answerAsync(this.onPut, call, this.onPut.arms(key, value, signal));
   }
 }
 
 void compatV1;
 
-// dokimi:provenance sha256:a9cadfc94aa4ab791239455da48d42071c59ff4621675e503dd375a5a6680260
+// dokimi:provenance sha256:dd3381286039d61416bb70d391a07d561bcd2e9c6a20fc8b5d0edda8e7072d15

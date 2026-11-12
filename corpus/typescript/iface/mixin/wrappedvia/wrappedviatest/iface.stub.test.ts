@@ -2,11 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/wrappedvia/iface.ts
 
-import { Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { MixedStub } from "./iface.stub";
+import { type MixedCauseCall, type MixedOpenCall, MixedStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of open. An argument without a sample is undefined. */
 function mixedStubOpenArgs(): [string] {
@@ -21,140 +21,96 @@ function mixedStubOpen(double: MixedStub): Promise<void> {
   return double.open(args[0]);
 }
 
+/** Returns the subject of behaviour and resetBehaviour for open, on a new double that reports to seat. */
+function mixedStubOpenSubject(seat: Seat): Subject<MixedOpenCall, undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onOpen,
+    call: () => mixedStubOpen(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = mixedStubOpenArgs();
+      check.isEqualTo(s, c.name, args[0], "the call records name");
+    },
+    override: (seen) => {
+      double.onOpen.func((...received: unknown[]) => {
+        seen({ name: received[0] } as MixedOpenCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubOpen(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Calls cause of double with the samples of its arguments. */
 function mixedStubCause(double: MixedStub): Promise<void> {
   return double.cause();
 }
 
+/** Returns the subject of behaviour and resetBehaviour for cause, on a new double that reports to seat. */
+function mixedStubCauseSubject(seat: Seat): Subject<MixedCauseCall, undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onCause,
+    call: () => mixedStubCause(double),
+    reset: () => double.resetCalls(),
+    override: (seen) => {
+      double.onCause.func(() => {
+        seen({} as MixedCauseCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubCause(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * open alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call open alone.
  */
 function mixedStubInstance(double: MixedStub) {
   return {
     stub: double.onOpen,
     call: () => mixedStubOpen(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("MixedStub", () => {
   describe("open", () => {
-    const checks = behaviour("Mixed.open", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onOpen,
-        call: () => mixedStubOpen(double),
-        override: (mark) => {
-          double.onOpen.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.open", mixedStubOpenSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubOpen(double);
-      expect(double.onOpen.callCount).isEqualTo(1, "open records the call");
-      const got = double.onOpen.calls[0];
-      const args = mixedStubOpenArgs();
-      expect(got?.name).isEqualTo(args[0], "the call records name");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onOpen.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubOpen(double);
-      await mixedStubOpen(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of open");
-    });
   });
 
   describe("cause", () => {
-    const checks = behaviour("Mixed.cause", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onCause,
-        call: () => mixedStubCause(double),
-        override: (mark) => {
-          double.onCause.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.cause", mixedStubCauseSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onCause.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubCause(double);
-      await mixedStubCause(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of cause");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of open", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubOpen(double);
-      double.resetCalls();
-      expect(double.onOpen.callCount).isEqualTo(0, "resetCalls clears the calls of open");
+    describe("open", () => {
+      for (const c of resetBehaviour("Mixed.open", mixedStubOpenSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of cause", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubCause(double);
-      double.resetCalls();
-      expect(double.onCause.callCount).isEqualTo(0, "resetCalls clears the calls of cause");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails open with its error", async () => {
-      const want = new Error("open-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubOpen(double));
-      const message = "open fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails cause with its error", async () => {
-      const want = new Error("cause-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubCause(double));
-      const message = "cause fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("cause", () => {
+      for (const c of resetBehaviour("Mixed.cause", mixedStubCauseSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -279,20 +235,4 @@ describe("MixedStub", () => {
   });
 });
 
-describe("MixedOpenStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of open to the function", async () => {
-      const double = new MixedStub(undefined);
-      let got: unknown[] = [];
-      double.onOpen.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await mixedStubOpen(double);
-      const args = mixedStubOpenArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:179defb27e93f12207d6110f1d1e7824121f095d11fd007b58aa9f0a80a600a0
+// dokimi:provenance sha256:8b9717ec14a3940deb3ed9048349b5f428d51341a59033d07c0890ed433f7353

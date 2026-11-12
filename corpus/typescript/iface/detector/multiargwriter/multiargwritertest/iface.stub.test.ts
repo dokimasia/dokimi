@@ -2,11 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/multiargwriter/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { MultiArgWriterStub } from "./iface.stub";
+import { type MultiArgWriterGetCall, type MultiArgWriterSetCall, MultiArgWriterStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of set. An argument without a sample is undefined. */
 function multiArgWriterStubSetArgs(): [string, string, string] {
@@ -23,6 +23,35 @@ function multiArgWriterStubSetArgs(): [string, string, string] {
 function multiArgWriterStubSet(double: MultiArgWriterStub): Promise<void> {
   const args = multiArgWriterStubSetArgs();
   return double.set(args[0], args[1], args[2]);
+}
+
+/** Returns the subject of behaviour and resetBehaviour for set, on a new double that reports to seat. */
+function multiArgWriterStubSetSubject(seat: Seat): Subject<MultiArgWriterSetCall, undefined> {
+  const double = new MultiArgWriterStub(seat);
+  return {
+    stub: double.onSet,
+    call: () => multiArgWriterStubSet(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = multiArgWriterStubSetArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+      check.isEqualTo(s, c.body, args[1], "the call records body");
+      check.isEqualTo(s, c.mime, args[2], "the call records mime");
+    },
+    override: (seen) => {
+      double.onSet.func((...received: unknown[]) => {
+        seen({ key: received[0], body: received[1], mime: received[2] } as MultiArgWriterSetCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => multiArgWriterStubSet(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /** Returns the samples of the arguments of get. An argument without a sample is undefined. */
@@ -45,154 +74,74 @@ function multiArgWriterStubGetPin(): string {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for get, on a new double that reports to seat. */
+function multiArgWriterStubGetSubject(seat: Seat): Subject<MultiArgWriterGetCall, string | undefined> {
+  const double = new MultiArgWriterStub(seat);
+  return {
+    stub: double.onGet,
+    call: () => multiArgWriterStubGet(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = multiArgWriterStubGetArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    result: async () => await multiArgWriterStubGet(double),
+    returns: () => {
+      const want = multiArgWriterStubGetPin();
+      double.onGet.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onGet.func((...received: unknown[]) => {
+        seen({ key: received[0] } as MultiArgWriterGetCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => multiArgWriterStubGet(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * set alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call set alone.
  */
 function multiArgWriterStubInstance(double: MultiArgWriterStub) {
   return {
     stub: double.onSet,
     call: () => multiArgWriterStubSet(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("MultiArgWriterStub", () => {
   describe("set", () => {
-    const checks = behaviour("MultiArgWriter.set", (seat) => {
-      const double = new MultiArgWriterStub(seat);
-      return {
-        stub: double.onSet,
-        call: () => multiArgWriterStubSet(double),
-        override: (mark) => {
-          double.onSet.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("MultiArgWriter.set", multiArgWriterStubSetSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MultiArgWriterStub(undefined);
-      await multiArgWriterStubSet(double);
-      expect(double.onSet.callCount).isEqualTo(1, "set records the call");
-      const got = double.onSet.calls[0];
-      const args = multiArgWriterStubSetArgs();
-      expect.soft(got?.key).isEqualTo(args[0], "the call records key");
-      expect.soft(got?.body).isEqualTo(args[1], "the call records body");
-      expect.soft(got?.mime).isEqualTo(args[2], "the call records mime");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MultiArgWriterStub(undefined);
-      let seen = 0;
-      double.onSet.onRecord(() => {
-        seen += 1;
-      });
-      await multiArgWriterStubSet(double);
-      await multiArgWriterStubSet(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of set");
-    });
   });
 
   describe("get", () => {
-    const checks = behaviour("MultiArgWriter.get", (seat) => {
-      const double = new MultiArgWriterStub(seat);
-      return {
-        stub: double.onGet,
-        call: () => multiArgWriterStubGet(double),
-        override: (mark) => {
-          double.onGet.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("MultiArgWriter.get", multiArgWriterStubGetSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MultiArgWriterStub(undefined);
-      await multiArgWriterStubGet(double);
-      expect(double.onGet.callCount).isEqualTo(1, "get records the call");
-      const got = double.onGet.calls[0];
-      const args = multiArgWriterStubGetArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MultiArgWriterStub(undefined);
-      let seen = 0;
-      double.onGet.onRecord(() => {
-        seen += 1;
-      });
-      await multiArgWriterStubGet(double);
-      await multiArgWriterStubGet(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of get");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => multiArgWriterStubInstance(new MultiArgWriterStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of set", async () => {
-      const double = new MultiArgWriterStub(undefined);
-      await multiArgWriterStubSet(double);
-      double.resetCalls();
-      expect(double.onSet.callCount).isEqualTo(0, "resetCalls clears the calls of set");
+    describe("set", () => {
+      for (const c of resetBehaviour("MultiArgWriter.set", multiArgWriterStubSetSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of get", async () => {
-      const double = new MultiArgWriterStub(undefined);
-      await multiArgWriterStubGet(double);
-      double.resetCalls();
-      expect(double.onGet.callCount).isEqualTo(0, "resetCalls clears the calls of get");
-    });
-
-    it("keeps the result of returns of get", async () => {
-      const double = new MultiArgWriterStub(undefined);
-      const want = multiArgWriterStubGetPin();
-      double.onGet.returns(want);
-      double.resetCalls();
-      expect(await multiArgWriterStubGet(double)).isEqualTo(want, "resetCalls keeps the result of get");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => multiArgWriterStubInstance(MultiArgWriterStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails set with its error", async () => {
-      const want = new Error("set-failing");
-      const double = MultiArgWriterStub.newFailing(undefined, want);
-      const outcome = await settle(() => multiArgWriterStubSet(double));
-      const message = "set fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails get with its error", async () => {
-      const want = new Error("get-failing");
-      const double = MultiArgWriterStub.newFailing(undefined, want);
-      const outcome = await settle(() => multiArgWriterStubGet(double));
-      const message = "get fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("get", () => {
+      for (const c of resetBehaviour("MultiArgWriter.get", multiArgWriterStubGetSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -317,54 +266,4 @@ describe("MultiArgWriterStub", () => {
   });
 });
 
-describe("MultiArgWriterSetStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of set to the function", async () => {
-      const double = new MultiArgWriterStub(undefined);
-      let got: unknown[] = [];
-      double.onSet.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await multiArgWriterStubSet(double);
-      const args = multiArgWriterStubSetArgs();
-      expect(got).isEqualTo([args[0], args[1], args[2]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("MultiArgWriterGetStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of get", async () => {
-      const double = new MultiArgWriterStub(undefined);
-      const want = multiArgWriterStubGetPin();
-      double.onGet.returns(want);
-      expect(await multiArgWriterStubGet(double)).isEqualTo(want, "get returns the result that returns sets");
-    });
-
-    it("configures get for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new MultiArgWriterStub(failures);
-      double.onGet.strict();
-      double.onGet.returns(undefined as never);
-      await settle(() => multiArgWriterStubGet(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of get");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of get to the function", async () => {
-      const double = new MultiArgWriterStub(undefined);
-      let got: unknown[] = [];
-      double.onGet.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await multiArgWriterStubGet(double);
-      const args = multiArgWriterStubGetArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:a684540beab0bee66f075f7c7c852630f7134b0ee7e49e7f67522ec294e6352a
+// dokimi:provenance sha256:725792d981cf4790f0e2ebab37f04e3d5b94b80c55d9d48319dd165647a4b83a

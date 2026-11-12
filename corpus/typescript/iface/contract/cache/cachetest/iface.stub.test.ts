@@ -2,12 +2,12 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/cache/iface.ts
 
-import { Controlled, Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { Controlled, type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
 import type { Value } from "../iface";
-import { ContractStub, ValueStub } from "./iface.stub";
+import { type ContractFetchCall, type ContractLookupCall, type ContractStoreCall, ContractStub, ValueStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of store. An argument without a sample is undefined. */
 function contractStubStoreArgs(): [string, Value] {
@@ -22,6 +22,34 @@ function contractStubStoreArgs(): [string, Value] {
 function contractStubStore(double: ContractStub): Promise<void> {
   const args = contractStubStoreArgs();
   return double.store(args[0], args[1]);
+}
+
+/** Returns the subject of behaviour and resetBehaviour for store, on a new double that reports to seat. */
+function contractStubStoreSubject(seat: Seat): Subject<ContractStoreCall, undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onStore,
+    call: () => contractStubStore(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = contractStubStoreArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+      check.isEqualTo(s, c.v, args[1], "the call records v");
+    },
+    override: (seen) => {
+      double.onStore.func((...received: unknown[]) => {
+        seen({ key: received[0], v: received[1] } as ContractStoreCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubStore(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /** Returns the samples of the arguments of lookup. An argument without a sample is undefined. */
@@ -44,6 +72,39 @@ function contractStubLookupPin(): Value {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for lookup, on a new double that reports to seat. */
+function contractStubLookupSubject(seat: Seat): Subject<ContractLookupCall, Value | undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onLookup,
+    call: () => contractStubLookup(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = contractStubLookupArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    result: async () => await contractStubLookup(double),
+    returns: () => {
+      const want = contractStubLookupPin();
+      double.onLookup.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onLookup.func((...received: unknown[]) => {
+        seen({ key: received[0] } as ContractLookupCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubLookup(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Returns the samples of the arguments of fetch. An argument without a sample is undefined. */
 function contractStubFetchArgs(): [string] {
   let a0 = undefined as unknown as string;
@@ -64,215 +125,86 @@ function contractStubFetchPin(): Value {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for fetch, on a new double that reports to seat. */
+function contractStubFetchSubject(seat: Seat): Subject<ContractFetchCall, Value | undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onFetch,
+    call: () => contractStubFetch(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = contractStubFetchArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    result: async () => await contractStubFetch(double),
+    returns: () => {
+      const want = contractStubFetchPin();
+      double.onFetch.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onFetch.func((...received: unknown[]) => {
+        seen({ key: received[0] } as ContractFetchCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubFetch(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * store alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call store alone.
  */
 function contractStubInstance(double: ContractStub) {
   return {
     stub: double.onStore,
     call: () => contractStubStore(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("ContractStub", () => {
   describe("store", () => {
-    const checks = behaviour("Contract.store", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onStore,
-        call: () => contractStubStore(double),
-        override: (mark) => {
-          double.onStore.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.store", contractStubStoreSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubStore(double);
-      expect(double.onStore.callCount).isEqualTo(1, "store records the call");
-      const got = double.onStore.calls[0];
-      const args = contractStubStoreArgs();
-      expect.soft(got?.key).isEqualTo(args[0], "the call records key");
-      expect.soft(got?.v).isEqualTo(args[1], "the call records v");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onStore.onRecord(() => {
-        seen += 1;
-      });
-      await contractStubStore(double);
-      await contractStubStore(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of store");
-    });
   });
 
   describe("lookup", () => {
-    const checks = behaviour("Contract.lookup", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onLookup,
-        call: () => contractStubLookup(double),
-        override: (mark) => {
-          double.onLookup.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.lookup", contractStubLookupSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubLookup(double);
-      expect(double.onLookup.callCount).isEqualTo(1, "lookup records the call");
-      const got = double.onLookup.calls[0];
-      const args = contractStubLookupArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onLookup.onRecord(() => {
-        seen += 1;
-      });
-      await contractStubLookup(double);
-      await contractStubLookup(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of lookup");
-    });
   });
 
   describe("fetch", () => {
-    const checks = behaviour("Contract.fetch", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onFetch,
-        call: () => contractStubFetch(double),
-        override: (mark) => {
-          double.onFetch.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.fetch", contractStubFetchSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubFetch(double);
-      expect(double.onFetch.callCount).isEqualTo(1, "fetch records the call");
-      const got = double.onFetch.calls[0];
-      const args = contractStubFetchArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onFetch.onRecord(() => {
-        seen += 1;
-      });
-      await contractStubFetch(double);
-      await contractStubFetch(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of fetch");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => contractStubInstance(new ContractStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of store", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubStore(double);
-      double.resetCalls();
-      expect(double.onStore.callCount).isEqualTo(0, "resetCalls clears the calls of store");
+    describe("store", () => {
+      for (const c of resetBehaviour("Contract.store", contractStubStoreSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of lookup", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubLookup(double);
-      double.resetCalls();
-      expect(double.onLookup.callCount).isEqualTo(0, "resetCalls clears the calls of lookup");
+    describe("lookup", () => {
+      for (const c of resetBehaviour("Contract.lookup", contractStubLookupSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("keeps the result of returns of lookup", async () => {
-      const double = new ContractStub(undefined);
-      const want = contractStubLookupPin();
-      double.onLookup.returns(want);
-      double.resetCalls();
-      expect(await contractStubLookup(double)).isEqualTo(want, "resetCalls keeps the result of lookup");
-    });
-
-    it("clears the recorded calls of fetch", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubFetch(double);
-      double.resetCalls();
-      expect(double.onFetch.callCount).isEqualTo(0, "resetCalls clears the calls of fetch");
-    });
-
-    it("keeps the result of returns of fetch", async () => {
-      const double = new ContractStub(undefined);
-      const want = contractStubFetchPin();
-      double.onFetch.returns(want);
-      double.resetCalls();
-      expect(await contractStubFetch(double)).isEqualTo(want, "resetCalls keeps the result of fetch");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => contractStubInstance(ContractStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails store with its error", async () => {
-      const want = new Error("store-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubStore(double));
-      const message = "store fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails lookup with its error", async () => {
-      const want = new Error("lookup-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubLookup(double));
-      const message = "lookup fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails fetch with its error", async () => {
-      const want = new Error("fetch-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubFetch(double));
-      const message = "fetch fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("fetch", () => {
+      for (const c of resetBehaviour("Contract.fetch", contractStubFetchSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -433,90 +365,6 @@ describe("ContractStub", () => {
   });
 });
 
-describe("ContractStoreStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of store to the function", async () => {
-      const double = new ContractStub(undefined);
-      let got: unknown[] = [];
-      double.onStore.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await contractStubStore(double);
-      const args = contractStubStoreArgs();
-      expect(got).isEqualTo([args[0], args[1]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("ContractLookupStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of lookup", async () => {
-      const double = new ContractStub(undefined);
-      const want = contractStubLookupPin();
-      double.onLookup.returns(want);
-      expect(await contractStubLookup(double)).isEqualTo(want, "lookup returns the result that returns sets");
-    });
-
-    it("configures lookup for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new ContractStub(failures);
-      double.onLookup.strict();
-      double.onLookup.returns(undefined as never);
-      await settle(() => contractStubLookup(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of lookup");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of lookup to the function", async () => {
-      const double = new ContractStub(undefined);
-      let got: unknown[] = [];
-      double.onLookup.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await contractStubLookup(double);
-      const args = contractStubLookupArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("ContractFetchStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of fetch", async () => {
-      const double = new ContractStub(undefined);
-      const want = contractStubFetchPin();
-      double.onFetch.returns(want);
-      expect(await contractStubFetch(double)).isEqualTo(want, "fetch returns the result that returns sets");
-    });
-
-    it("configures fetch for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new ContractStub(failures);
-      double.onFetch.strict();
-      double.onFetch.returns(undefined as never);
-      await settle(() => contractStubFetch(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of fetch");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of fetch to the function", async () => {
-      const double = new ContractStub(undefined);
-      let got: unknown[] = [];
-      double.onFetch.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await contractStubFetch(double);
-      const args = contractStubFetchArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
 /** Assigns the sample of each property of ValueStub to double. */
 function valueStubProps(double: ValueStub): void {
   double.key = "key-a";
@@ -550,10 +398,6 @@ describe("ValueStub", () => {
         name: "keeps each property of a double with a latency",
         giveDouble: () => new ValueStub(undefined, ValueStub.withLatency(1)),
       },
-      {
-        name: "keeps each property of a delayed double",
-        giveDouble: () => ValueStub.newDelayed(undefined, 1, new Controlled()),
-      },
     ];
     for (const tt of tests) {
       it(tt.name, () => {
@@ -569,4 +413,4 @@ describe("ValueStub", () => {
   });
 });
 
-// dokimi:provenance sha256:1fb5f3f0c16ca0de43f40fc80b115639ac5e19cef84b04a6ef07a71e5fd2f5f2
+// dokimi:provenance sha256:701f1ebe5ecef7c93808b750e406c37a2c06b08c9ed2aa33c14e515ecce1ec43

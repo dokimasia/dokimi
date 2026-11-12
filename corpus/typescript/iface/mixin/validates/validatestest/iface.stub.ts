@@ -322,47 +322,6 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: MixedStubOption[]
-  ): MixedStub {
-    return new MixedStub(
-      seat,
-      MixedStub.withClock(clock),
-      MixedStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: MixedStubOption[]
-  ): MixedStub {
-    return new MixedStub(seat, MixedStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -496,30 +455,6 @@ export class PayloadStub implements Payload {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: PayloadStubOption[]
-  ): PayloadStub {
-    return new PayloadStub(
-      seat,
-      PayloadStub.withClock(clock),
-      PayloadStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -530,4 +465,4 @@ export class PayloadStub implements Payload {
 
 void compatV1;
 
-// dokimi:provenance sha256:190fd5b4ac8b9cf45fa67a700a0b9693c485be7870c3e593e0a19e996ebdcf4d
+// dokimi:provenance sha256:50d54f3bf6431660e1f52fa7d391a0bc945efd5a3e9535995f1c3d4de68c4e5a

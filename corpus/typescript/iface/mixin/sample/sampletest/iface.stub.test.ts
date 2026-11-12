@@ -2,11 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/sample/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { MixedStub } from "./iface.stub";
+import { type MixedNewInputCall, type MixedProcessCall, MixedStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of process. An argument without a sample is undefined. */
 function mixedStubProcessArgs(): [string] {
@@ -28,6 +28,39 @@ function mixedStubProcessPin(): string {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for process, on a new double that reports to seat. */
+function mixedStubProcessSubject(seat: Seat): Subject<MixedProcessCall, string | undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onProcess,
+    call: () => mixedStubProcess(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = mixedStubProcessArgs();
+      check.isEqualTo(s, c.input, args[0], "the call records input");
+    },
+    result: async () => await mixedStubProcess(double),
+    returns: () => {
+      const want = mixedStubProcessPin();
+      double.onProcess.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onProcess.func((...received: unknown[]) => {
+        seen({ input: received[0] } as MixedProcessCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubProcess(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Calls newInput of double with the samples of its arguments. */
 function mixedStubNewInput(double: MixedStub): Promise<string> {
   return double.newInput();
@@ -40,151 +73,70 @@ function mixedStubNewInputPin(): string {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for newInput, on a new double that reports to seat. */
+function mixedStubNewInputSubject(seat: Seat): Subject<MixedNewInputCall, string | undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onNewInput,
+    call: () => mixedStubNewInput(double),
+    reset: () => double.resetCalls(),
+    result: async () => await mixedStubNewInput(double),
+    returns: () => {
+      const want = mixedStubNewInputPin();
+      double.onNewInput.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onNewInput.func(() => {
+        seen({} as MixedNewInputCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubNewInput(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * process alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call process alone.
  */
 function mixedStubInstance(double: MixedStub) {
   return {
     stub: double.onProcess,
     call: () => mixedStubProcess(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("MixedStub", () => {
   describe("process", () => {
-    const checks = behaviour("Mixed.process", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onProcess,
-        call: () => mixedStubProcess(double),
-        override: (mark) => {
-          double.onProcess.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.process", mixedStubProcessSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubProcess(double);
-      expect(double.onProcess.callCount).isEqualTo(1, "process records the call");
-      const got = double.onProcess.calls[0];
-      const args = mixedStubProcessArgs();
-      expect(got?.input).isEqualTo(args[0], "the call records input");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onProcess.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubProcess(double);
-      await mixedStubProcess(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of process");
-    });
   });
 
   describe("newInput", () => {
-    const checks = behaviour("Mixed.newInput", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onNewInput,
-        call: () => mixedStubNewInput(double),
-        override: (mark) => {
-          double.onNewInput.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.newInput", mixedStubNewInputSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onNewInput.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubNewInput(double);
-      await mixedStubNewInput(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of newInput");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of process", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubProcess(double);
-      double.resetCalls();
-      expect(double.onProcess.callCount).isEqualTo(0, "resetCalls clears the calls of process");
+    describe("process", () => {
+      for (const c of resetBehaviour("Mixed.process", mixedStubProcessSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("keeps the result of returns of process", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubProcessPin();
-      double.onProcess.returns(want);
-      double.resetCalls();
-      expect(await mixedStubProcess(double)).isEqualTo(want, "resetCalls keeps the result of process");
-    });
-
-    it("clears the recorded calls of newInput", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubNewInput(double);
-      double.resetCalls();
-      expect(double.onNewInput.callCount).isEqualTo(0, "resetCalls clears the calls of newInput");
-    });
-
-    it("keeps the result of returns of newInput", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubNewInputPin();
-      double.onNewInput.returns(want);
-      double.resetCalls();
-      expect(await mixedStubNewInput(double)).isEqualTo(want, "resetCalls keeps the result of newInput");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails process with its error", async () => {
-      const want = new Error("process-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubProcess(double));
-      const message = "process fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails newInput with its error", async () => {
-      const want = new Error("newInput-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubNewInput(double));
-      const message = "newInput fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("newInput", () => {
+      for (const c of resetBehaviour("Mixed.newInput", mixedStubNewInputSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -309,58 +261,4 @@ describe("MixedStub", () => {
   });
 });
 
-describe("MixedProcessStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of process", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubProcessPin();
-      double.onProcess.returns(want);
-      expect(await mixedStubProcess(double)).isEqualTo(want, "process returns the result that returns sets");
-    });
-
-    it("configures process for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new MixedStub(failures);
-      double.onProcess.strict();
-      double.onProcess.returns(undefined as never);
-      await settle(() => mixedStubProcess(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of process");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of process to the function", async () => {
-      const double = new MixedStub(undefined);
-      let got: unknown[] = [];
-      double.onProcess.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await mixedStubProcess(double);
-      const args = mixedStubProcessArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("MixedNewInputStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of newInput", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubNewInputPin();
-      double.onNewInput.returns(want);
-      expect(await mixedStubNewInput(double)).isEqualTo(want, "newInput returns the result that returns sets");
-    });
-
-    it("configures newInput for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new MixedStub(failures);
-      double.onNewInput.strict();
-      double.onNewInput.returns(undefined as never);
-      await settle(() => mixedStubNewInput(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of newInput");
-    });
-  });
-});
-
-// dokimi:provenance sha256:f95e590a0b5a8ba06c96a5b48a2435c3ea004ac79b20db0193107e660384ccfb
+// dokimi:provenance sha256:c33b09aacc6d30e29e8ba8fac80c08fa66524aba991c61e6f7f8664492a75ba9

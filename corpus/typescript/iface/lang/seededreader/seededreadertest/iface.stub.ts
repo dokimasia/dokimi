@@ -14,6 +14,8 @@ import type { Body, Catalog, Key } from "../iface";
 export interface CatalogLookupCall {
   /** The argument key. */
   key: Key;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The result of the call, where it returned one. */
   result?: Body | undefined;
   /** The error that failed the call, where one did. */
@@ -22,6 +24,8 @@ export interface CatalogLookupCall {
 
 /** CatalogLenCall records one call of Catalog.len. */
 export interface CatalogLenCall {
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The result of the call, where it returned one. */
   result?: number | undefined;
   /** The error that failed the call, where one did. */
@@ -33,7 +37,7 @@ export interface CatalogLenCall {
  * through it takes precedence over the function and the fixed result.
  */
 export class CatalogLookupStub extends MethodStub<CatalogLookupCall> {
-  #fn: ((key: Key) => Body | PromiseLike<Body>) | undefined;
+  #fn: ((key: Key, signal: AbortSignal) => Body | PromiseLike<Body>) | undefined;
   #fallback: { readonly value: Body } | undefined;
 
   /**
@@ -55,7 +59,7 @@ export class CatalogLookupStub extends MethodStub<CatalogLookupCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (key: Key) => Body | PromiseLike<Body>): this {
+  func(fn: (key: Key, signal: AbortSignal) => Body | PromiseLike<Body>): this {
     this.#fn = fn;
     return this;
   }
@@ -63,10 +67,10 @@ export class CatalogLookupStub extends MethodStub<CatalogLookupCall> {
   /**
    * Returns the arms of a call of lookup with its arguments.
    */
-  arms(key: Key): Arms<CatalogLookupCall, Body, Body | PromiseLike<Body>> {
+  arms(key: Key, signal: AbortSignal): Arms<CatalogLookupCall, Body, Body | PromiseLike<Body>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn(key)),
+      invoke: fn && (() => fn(key, signal)),
       fallback: this.#fallback,
       stamp: (call, result) => {
         call.result = result;
@@ -83,7 +87,7 @@ export class CatalogLookupStub extends MethodStub<CatalogLookupCall> {
  * through it takes precedence over the function and the fixed result.
  */
 export class CatalogLenStub extends MethodStub<CatalogLenCall> {
-  #fn: (() => number | PromiseLike<number>) | undefined;
+  #fn: ((signal: AbortSignal) => number | PromiseLike<number>) | undefined;
   #fallback: { readonly value: number } | undefined;
 
   /**
@@ -105,7 +109,7 @@ export class CatalogLenStub extends MethodStub<CatalogLenCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: () => number | PromiseLike<number>): this {
+  func(fn: (signal: AbortSignal) => number | PromiseLike<number>): this {
     this.#fn = fn;
     return this;
   }
@@ -113,10 +117,10 @@ export class CatalogLenStub extends MethodStub<CatalogLenCall> {
   /**
    * Returns the arms of a call of len with its arguments.
    */
-  arms(): Arms<CatalogLenCall, number, number | PromiseLike<number>> {
+  arms(signal: AbortSignal): Arms<CatalogLenCall, number, number | PromiseLike<number>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn()),
+      invoke: fn && (() => fn(signal)),
       fallback: this.#fallback,
       stamp: (call, result) => {
         call.result = result;
@@ -262,7 +266,7 @@ export class CatalogStub implements Catalog {
    * @param fn - The function.
    * @returns The option.
    */
-  static withCatalogLookup(fn: (key: Key) => Body | PromiseLike<Body>): CatalogStubOption {
+  static withCatalogLookup(fn: (key: Key, signal: AbortSignal) => Body | PromiseLike<Body>): CatalogStubOption {
     return (double) => {
       double.onLookup.func(fn);
     };
@@ -274,51 +278,10 @@ export class CatalogStub implements Catalog {
    * @param fn - The function.
    * @returns The option.
    */
-  static withCatalogLen(fn: () => number | PromiseLike<number>): CatalogStubOption {
+  static withCatalogLen(fn: (signal: AbortSignal) => number | PromiseLike<number>): CatalogStubOption {
     return (double) => {
       double.onLen.func(fn);
     };
-  }
-
-  /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: CatalogStubOption[]
-  ): CatalogStub {
-    return new CatalogStub(
-      seat,
-      CatalogStub.withClock(clock),
-      CatalogStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: CatalogStubOption[]
-  ): CatalogStub {
-    return new CatalogStub(seat, CatalogStub.failing(error), ...options);
   }
 
   /**
@@ -332,20 +295,20 @@ export class CatalogStub implements Catalog {
   /**
    * Records the call of lookup and returns its result.
    */
-  lookup(key: Key): Promise<Body> {
-    const call: CatalogLookupCall = { key };
-    return answerAsync(this.onLookup, call, this.onLookup.arms(key));
+  lookup(key: Key, signal: AbortSignal): Promise<Body> {
+    const call: CatalogLookupCall = { key, signal };
+    return answerAsync(this.onLookup, call, this.onLookup.arms(key, signal));
   }
 
   /**
    * Records the call of len and returns its result.
    */
-  len(): Promise<number> {
-    const call: CatalogLenCall = {};
-    return answerAsync(this.onLen, call, this.onLen.arms());
+  len(signal: AbortSignal): Promise<number> {
+    const call: CatalogLenCall = { signal };
+    return answerAsync(this.onLen, call, this.onLen.arms(signal));
   }
 }
 
 void compatV1;
 
-// dokimi:provenance sha256:2209568af92102017376b29715e7e817de750545fb275e95f53a974dd25323cf
+// dokimi:provenance sha256:99b3ec3ee798b3c322607bea2e4439e6a7d89b1871a1b96a5838bf4067fc78d8

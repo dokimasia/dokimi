@@ -2,11 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/timeout/iface.ts
 
-import { Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { MixedStub } from "./iface.stub";
+import { type MixedSlowCall, MixedStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of slow. An argument without a sample is undefined. */
 function mixedStubSlowArgs(): [string] {
@@ -21,90 +21,56 @@ function mixedStubSlow(double: MixedStub): Promise<void> {
   return double.slow(args[0]);
 }
 
+/** Returns the subject of behaviour and resetBehaviour for slow, on a new double that reports to seat. */
+function mixedStubSlowSubject(seat: Seat): Subject<MixedSlowCall, undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onSlow,
+    call: () => mixedStubSlow(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = mixedStubSlowArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    override: (seen) => {
+      double.onSlow.func((...received: unknown[]) => {
+        seen({ key: received[0] } as MixedSlowCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubSlow(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * slow alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call slow alone.
  */
 function mixedStubInstance(double: MixedStub) {
   return {
     stub: double.onSlow,
     call: () => mixedStubSlow(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("MixedStub", () => {
   describe("slow", () => {
-    const checks = behaviour("Mixed.slow", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onSlow,
-        call: () => mixedStubSlow(double),
-        override: (mark) => {
-          double.onSlow.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.slow", mixedStubSlowSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubSlow(double);
-      expect(double.onSlow.callCount).isEqualTo(1, "slow records the call");
-      const got = double.onSlow.calls[0];
-      const args = mixedStubSlowArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onSlow.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubSlow(double);
-      await mixedStubSlow(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of slow");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of slow", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubSlow(double);
-      double.resetCalls();
-      expect(double.onSlow.callCount).isEqualTo(0, "resetCalls clears the calls of slow");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails slow with its error", async () => {
-      const want = new Error("slow-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubSlow(double));
-      const message = "slow fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("slow", () => {
+      for (const c of resetBehaviour("Mixed.slow", mixedStubSlowSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -193,20 +159,4 @@ describe("MixedStub", () => {
   });
 });
 
-describe("MixedSlowStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of slow to the function", async () => {
-      const double = new MixedStub(undefined);
-      let got: unknown[] = [];
-      double.onSlow.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await mixedStubSlow(double);
-      const args = mixedStubSlowArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:90d0413d5a73387157b6987a0e9fb7431e7afdcb42d7ec9b85da1bd841d78b70
+// dokimi:provenance sha256:f72ba3d73ccf5fb2586b7f292aceffd8d72ba614810a4632295b1d7e2041fbd5

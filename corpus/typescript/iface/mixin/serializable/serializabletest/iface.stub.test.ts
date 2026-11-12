@@ -2,12 +2,12 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/serializable/iface.ts
 
-import { Controlled, Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { Controlled, type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
 import type { Entry } from "../iface";
-import { EntryStub, MixedStub } from "./iface.stub";
+import { EntryStub, type MixedGetCall, type MixedHistoryCall, type MixedRecordCall, MixedStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of record. An argument without a sample is undefined. */
 function mixedStubRecordArgs(): [Entry] {
@@ -22,6 +22,33 @@ function mixedStubRecord(double: MixedStub): Promise<void> {
   return double.record(args[0]);
 }
 
+/** Returns the subject of behaviour and resetBehaviour for record, on a new double that reports to seat. */
+function mixedStubRecordSubject(seat: Seat): Subject<MixedRecordCall, undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onRecord,
+    call: () => mixedStubRecord(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = mixedStubRecordArgs();
+      check.isEqualTo(s, c.e, args[0], "the call records e");
+    },
+    override: (seen) => {
+      double.onRecord.func((...received: unknown[]) => {
+        seen({ e: received[0] } as MixedRecordCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubRecord(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Calls history of double with the samples of its arguments. */
 function mixedStubHistory(double: MixedStub): Promise<Entry[]> {
   return double.history();
@@ -32,6 +59,35 @@ function mixedStubHistoryPin(): Entry[] {
   let want0: Entry[];
   want0 = [{ txn: 1.5, key: "key-a", version: 1.5, write: true }];
   return want0;
+}
+
+/** Returns the subject of behaviour and resetBehaviour for history, on a new double that reports to seat. */
+function mixedStubHistorySubject(seat: Seat): Subject<MixedHistoryCall, Entry[] | undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onHistory,
+    call: () => mixedStubHistory(double),
+    reset: () => double.resetCalls(),
+    result: async () => await mixedStubHistory(double),
+    returns: () => {
+      const want = mixedStubHistoryPin();
+      double.onHistory.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onHistory.func(() => {
+        seen({} as MixedHistoryCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubHistory(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /** Returns the samples of the arguments of get. An argument without a sample is undefined. */
@@ -54,205 +110,86 @@ function mixedStubGetPin(): Entry {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for get, on a new double that reports to seat. */
+function mixedStubGetSubject(seat: Seat): Subject<MixedGetCall, Entry | undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onGet,
+    call: () => mixedStubGet(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = mixedStubGetArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    result: async () => await mixedStubGet(double),
+    returns: () => {
+      const want = mixedStubGetPin();
+      double.onGet.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onGet.func((...received: unknown[]) => {
+        seen({ key: received[0] } as MixedGetCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubGet(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * record alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call record alone.
  */
 function mixedStubInstance(double: MixedStub) {
   return {
     stub: double.onRecord,
     call: () => mixedStubRecord(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("MixedStub", () => {
   describe("record", () => {
-    const checks = behaviour("Mixed.record", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onRecord,
-        call: () => mixedStubRecord(double),
-        override: (mark) => {
-          double.onRecord.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.record", mixedStubRecordSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubRecord(double);
-      expect(double.onRecord.callCount).isEqualTo(1, "record records the call");
-      const got = double.onRecord.calls[0];
-      const args = mixedStubRecordArgs();
-      expect(got?.e).isEqualTo(args[0], "the call records e");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onRecord.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubRecord(double);
-      await mixedStubRecord(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of record");
-    });
   });
 
   describe("history", () => {
-    const checks = behaviour("Mixed.history", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onHistory,
-        call: () => mixedStubHistory(double),
-        override: (mark) => {
-          double.onHistory.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.history", mixedStubHistorySubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onHistory.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubHistory(double);
-      await mixedStubHistory(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of history");
-    });
   });
 
   describe("get", () => {
-    const checks = behaviour("Mixed.get", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onGet,
-        call: () => mixedStubGet(double),
-        override: (mark) => {
-          double.onGet.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.get", mixedStubGetSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubGet(double);
-      expect(double.onGet.callCount).isEqualTo(1, "get records the call");
-      const got = double.onGet.calls[0];
-      const args = mixedStubGetArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onGet.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubGet(double);
-      await mixedStubGet(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of get");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of record", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubRecord(double);
-      double.resetCalls();
-      expect(double.onRecord.callCount).isEqualTo(0, "resetCalls clears the calls of record");
+    describe("record", () => {
+      for (const c of resetBehaviour("Mixed.record", mixedStubRecordSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of history", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubHistory(double);
-      double.resetCalls();
-      expect(double.onHistory.callCount).isEqualTo(0, "resetCalls clears the calls of history");
+    describe("history", () => {
+      for (const c of resetBehaviour("Mixed.history", mixedStubHistorySubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("keeps the result of returns of history", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubHistoryPin();
-      double.onHistory.returns(want);
-      double.resetCalls();
-      expect(await mixedStubHistory(double)).isEqualTo(want, "resetCalls keeps the result of history");
-    });
-
-    it("clears the recorded calls of get", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubGet(double);
-      double.resetCalls();
-      expect(double.onGet.callCount).isEqualTo(0, "resetCalls clears the calls of get");
-    });
-
-    it("keeps the result of returns of get", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubGetPin();
-      double.onGet.returns(want);
-      double.resetCalls();
-      expect(await mixedStubGet(double)).isEqualTo(want, "resetCalls keeps the result of get");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails record with its error", async () => {
-      const want = new Error("record-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubRecord(double));
-      const message = "record fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails history with its error", async () => {
-      const want = new Error("history-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubHistory(double));
-      const message = "history fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails get with its error", async () => {
-      const want = new Error("get-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubGet(double));
-      const message = "get fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("get", () => {
+      for (const c of resetBehaviour("Mixed.get", mixedStubGetSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -413,76 +350,6 @@ describe("MixedStub", () => {
   });
 });
 
-describe("MixedRecordStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of record to the function", async () => {
-      const double = new MixedStub(undefined);
-      let got: unknown[] = [];
-      double.onRecord.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await mixedStubRecord(double);
-      const args = mixedStubRecordArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("MixedHistoryStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of history", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubHistoryPin();
-      double.onHistory.returns(want);
-      expect(await mixedStubHistory(double)).isEqualTo(want, "history returns the result that returns sets");
-    });
-
-    it("configures history for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new MixedStub(failures);
-      double.onHistory.strict();
-      double.onHistory.returns(undefined as never);
-      await settle(() => mixedStubHistory(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of history");
-    });
-  });
-});
-
-describe("MixedGetStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of get", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubGetPin();
-      double.onGet.returns(want);
-      expect(await mixedStubGet(double)).isEqualTo(want, "get returns the result that returns sets");
-    });
-
-    it("configures get for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new MixedStub(failures);
-      double.onGet.strict();
-      double.onGet.returns(undefined as never);
-      await settle(() => mixedStubGet(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of get");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of get to the function", async () => {
-      const double = new MixedStub(undefined);
-      let got: unknown[] = [];
-      double.onGet.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await mixedStubGet(double);
-      const args = mixedStubGetArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
 /** Assigns the sample of each property of EntryStub to double. */
 function entryStubProps(double: EntryStub): void {
   double.txn = 1.5;
@@ -518,10 +385,6 @@ describe("EntryStub", () => {
         name: "keeps each property of a double with a latency",
         giveDouble: () => new EntryStub(undefined, EntryStub.withLatency(1)),
       },
-      {
-        name: "keeps each property of a delayed double",
-        giveDouble: () => EntryStub.newDelayed(undefined, 1, new Controlled()),
-      },
     ];
     for (const tt of tests) {
       it(tt.name, () => {
@@ -539,4 +402,4 @@ describe("EntryStub", () => {
   });
 });
 
-// dokimi:provenance sha256:8563bd0b4f2995fd261b5e746d2866ebae7cd02d89adb7b3db5496cd7809fe8a
+// dokimi:provenance sha256:1ef0e98b5093f46f7bb2a7f20cefdb7b54ed29903f5e6a51f76d19a5b9548ff7

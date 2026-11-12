@@ -2,12 +2,12 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/pointerreader/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
 import type { Value } from "../iface";
-import { PointerReaderStub } from "./iface.stub";
+import { type PointerReaderFindCall, PointerReaderStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of find. An argument without a sample is undefined. */
 function pointerReaderStubFindArgs(): [string] {
@@ -29,98 +29,62 @@ function pointerReaderStubFindPin(): Value | undefined {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for find, on a new double that reports to seat. */
+function pointerReaderStubFindSubject(seat: Seat): Subject<PointerReaderFindCall, Value | undefined | undefined> {
+  const double = new PointerReaderStub(seat);
+  return {
+    stub: double.onFind,
+    call: () => pointerReaderStubFind(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = pointerReaderStubFindArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    result: async () => await pointerReaderStubFind(double),
+    returns: () => {
+      const want = pointerReaderStubFindPin();
+      double.onFind.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onFind.func((...received: unknown[]) => {
+        seen({ key: received[0] } as PointerReaderFindCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => pointerReaderStubFind(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * find alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call find alone.
  */
 function pointerReaderStubInstance(double: PointerReaderStub) {
   return {
     stub: double.onFind,
     call: () => pointerReaderStubFind(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("PointerReaderStub", () => {
   describe("find", () => {
-    const checks = behaviour("PointerReader.find", (seat) => {
-      const double = new PointerReaderStub(seat);
-      return {
-        stub: double.onFind,
-        call: () => pointerReaderStubFind(double),
-        override: (mark) => {
-          double.onFind.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("PointerReader.find", pointerReaderStubFindSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new PointerReaderStub(undefined);
-      await pointerReaderStubFind(double);
-      expect(double.onFind.callCount).isEqualTo(1, "find records the call");
-      const got = double.onFind.calls[0];
-      const args = pointerReaderStubFindArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new PointerReaderStub(undefined);
-      let seen = 0;
-      double.onFind.onRecord(() => {
-        seen += 1;
-      });
-      await pointerReaderStubFind(double);
-      await pointerReaderStubFind(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of find");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => pointerReaderStubInstance(new PointerReaderStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of find", async () => {
-      const double = new PointerReaderStub(undefined);
-      await pointerReaderStubFind(double);
-      double.resetCalls();
-      expect(double.onFind.callCount).isEqualTo(0, "resetCalls clears the calls of find");
-    });
-
-    it("keeps the result of returns of find", async () => {
-      const double = new PointerReaderStub(undefined);
-      const want = pointerReaderStubFindPin();
-      double.onFind.returns(want);
-      double.resetCalls();
-      expect(await pointerReaderStubFind(double)).isEqualTo(want, "resetCalls keeps the result of find");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => pointerReaderStubInstance(PointerReaderStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails find with its error", async () => {
-      const want = new Error("find-failing");
-      const double = PointerReaderStub.newFailing(undefined, want);
-      const outcome = await settle(() => pointerReaderStubFind(double));
-      const message = "find fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("find", () => {
+      for (const c of resetBehaviour("PointerReader.find", pointerReaderStubFindSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -209,38 +173,4 @@ describe("PointerReaderStub", () => {
   });
 });
 
-describe("PointerReaderFindStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of find", async () => {
-      const double = new PointerReaderStub(undefined);
-      const want = pointerReaderStubFindPin();
-      double.onFind.returns(want);
-      expect(await pointerReaderStubFind(double)).isEqualTo(want, "find returns the result that returns sets");
-    });
-
-    it("configures find for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new PointerReaderStub(failures);
-      double.onFind.strict();
-      double.onFind.returns(undefined as never);
-      await settle(() => pointerReaderStubFind(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of find");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of find to the function", async () => {
-      const double = new PointerReaderStub(undefined);
-      let got: unknown[] = [];
-      double.onFind.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await pointerReaderStubFind(double);
-      const args = pointerReaderStubFindArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:9973807eea5030fda0b48efbb3d24acb88ecc1cbfffd01a1597baf61e92f8c61
+// dokimi:provenance sha256:f86a5a64f55f99abfe0f823539442255d272d3f30cdb171d0d143677c1886faa

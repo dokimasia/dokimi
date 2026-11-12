@@ -2,12 +2,12 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/watcher/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
 import type { Subscription, Value } from "../iface";
-import { ContractStub, SubscriptionStub } from "./iface.stub";
+import { ContractStub, type ContractTriggerCall, type ContractWatchCall, type SubscriptionNextCall, type SubscriptionStopCall, SubscriptionStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of watch. An argument without a sample is undefined. */
 function contractStubWatchArgs(): [string] {
@@ -20,6 +20,34 @@ function contractStubWatchArgs(): [string] {
 function contractStubWatch(double: ContractStub): Promise<Subscription> {
   const args = contractStubWatchArgs();
   return double.watch(args[0]);
+}
+
+/** Returns the subject of behaviour and resetBehaviour for watch, on a new double that reports to seat. */
+function contractStubWatchSubject(seat: Seat): Subject<ContractWatchCall, Subscription | undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onWatch,
+    call: () => contractStubWatch(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = contractStubWatchArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    result: async () => await contractStubWatch(double),
+    override: (seen) => {
+      double.onWatch.func((...received: unknown[]) => {
+        seen({ key: received[0] } as ContractWatchCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubWatch(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /** Returns the samples of the arguments of trigger. An argument without a sample is undefined. */
@@ -37,145 +65,69 @@ function contractStubTrigger(double: ContractStub): Promise<void> {
   return double.trigger(args[0], args[1]);
 }
 
+/** Returns the subject of behaviour and resetBehaviour for trigger, on a new double that reports to seat. */
+function contractStubTriggerSubject(seat: Seat): Subject<ContractTriggerCall, undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onTrigger,
+    call: () => contractStubTrigger(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = contractStubTriggerArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+      check.isEqualTo(s, c.v, args[1], "the call records v");
+    },
+    override: (seen) => {
+      double.onTrigger.func((...received: unknown[]) => {
+        seen({ key: received[0], v: received[1] } as ContractTriggerCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubTrigger(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * watch alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call watch alone.
  */
 function contractStubInstance(double: ContractStub) {
   return {
     stub: double.onWatch,
     call: () => contractStubWatch(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("ContractStub", () => {
   describe("watch", () => {
-    const checks = behaviour("Contract.watch", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onWatch,
-        call: () => contractStubWatch(double),
-        override: (mark) => {
-          double.onWatch.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.watch", contractStubWatchSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubWatch(double);
-      expect(double.onWatch.callCount).isEqualTo(1, "watch records the call");
-      const got = double.onWatch.calls[0];
-      const args = contractStubWatchArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onWatch.onRecord(() => {
-        seen += 1;
-      });
-      await contractStubWatch(double);
-      await contractStubWatch(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of watch");
-    });
   });
 
   describe("trigger", () => {
-    const checks = behaviour("Contract.trigger", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onTrigger,
-        call: () => contractStubTrigger(double),
-        override: (mark) => {
-          double.onTrigger.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.trigger", contractStubTriggerSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubTrigger(double);
-      expect(double.onTrigger.callCount).isEqualTo(1, "trigger records the call");
-      const got = double.onTrigger.calls[0];
-      const args = contractStubTriggerArgs();
-      expect.soft(got?.key).isEqualTo(args[0], "the call records key");
-      expect.soft(got?.v).isEqualTo(args[1], "the call records v");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onTrigger.onRecord(() => {
-        seen += 1;
-      });
-      await contractStubTrigger(double);
-      await contractStubTrigger(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of trigger");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => contractStubInstance(new ContractStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of watch", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubWatch(double);
-      double.resetCalls();
-      expect(double.onWatch.callCount).isEqualTo(0, "resetCalls clears the calls of watch");
+    describe("watch", () => {
+      for (const c of resetBehaviour("Contract.watch", contractStubWatchSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of trigger", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubTrigger(double);
-      double.resetCalls();
-      expect(double.onTrigger.callCount).isEqualTo(0, "resetCalls clears the calls of trigger");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => contractStubInstance(ContractStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails watch with its error", async () => {
-      const want = new Error("watch-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubWatch(double));
-      const message = "watch fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails trigger with its error", async () => {
-      const want = new Error("trigger-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubTrigger(double));
-      const message = "trigger fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("trigger", () => {
+      for (const c of resetBehaviour("Contract.trigger", contractStubTriggerSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -300,49 +252,6 @@ describe("ContractStub", () => {
   });
 });
 
-describe("ContractWatchStub", () => {
-  describe("returns", () => {
-    it("configures watch for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new ContractStub(failures);
-      double.onWatch.strict();
-      double.onWatch.returns(undefined as never);
-      await settle(() => contractStubWatch(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of watch");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of watch to the function", async () => {
-      const double = new ContractStub(undefined);
-      let got: unknown[] = [];
-      double.onWatch.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await contractStubWatch(double);
-      const args = contractStubWatchArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("ContractTriggerStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of trigger to the function", async () => {
-      const double = new ContractStub(undefined);
-      let got: unknown[] = [];
-      double.onTrigger.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await contractStubTrigger(double);
-      const args = contractStubTriggerArgs();
-      expect(got).isEqualTo([args[0], args[1]], "the function receives the arguments of the call");
-    });
-  });
-});
-
 /** Returns the samples of the arguments of next. An argument without a sample is undefined. */
 function subscriptionStubNextArgs(): [number] {
   let a0 = undefined as unknown as number;
@@ -363,148 +272,102 @@ function subscriptionStubNextPin(): Value | undefined {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for next, on a new double that reports to seat. */
+function subscriptionStubNextSubject(seat: Seat): Subject<SubscriptionNextCall, Value | undefined | undefined> {
+  const double = new SubscriptionStub(seat);
+  return {
+    stub: double.onNext,
+    call: () => subscriptionStubNext(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = subscriptionStubNextArgs();
+      check.isEqualTo(s, c.timeout, args[0], "the call records timeout");
+    },
+    result: async () => subscriptionStubNext(double),
+    returns: () => {
+      const want = subscriptionStubNextPin();
+      double.onNext.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onNext.func((...received: unknown[]) => {
+        seen({ timeout: received[0] } as SubscriptionNextCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => subscriptionStubNext(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Calls stop of double with the samples of its arguments. */
 function subscriptionStubStop(double: SubscriptionStub): void {
   return double.stop();
 }
 
+/** Returns the subject of behaviour and resetBehaviour for stop, on a new double that reports to seat. */
+function subscriptionStubStopSubject(seat: Seat): Subject<SubscriptionStopCall, undefined> {
+  const double = new SubscriptionStub(seat);
+  return {
+    stub: double.onStop,
+    call: () => subscriptionStubStop(double),
+    reset: () => double.resetCalls(),
+    override: (seen) => {
+      double.onStop.func(() => {
+        seen({} as SubscriptionStopCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => subscriptionStubStop(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * next alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call next alone.
  */
 function subscriptionStubInstance(double: SubscriptionStub) {
   return {
     stub: double.onNext,
     call: () => subscriptionStubNext(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("SubscriptionStub", () => {
   describe("next", () => {
-    const checks = behaviour("Subscription.next", (seat) => {
-      const double = new SubscriptionStub(seat);
-      return {
-        stub: double.onNext,
-        call: () => subscriptionStubNext(double),
-        override: (mark) => {
-          double.onNext.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Subscription.next", subscriptionStubNextSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new SubscriptionStub(undefined);
-      subscriptionStubNext(double);
-      expect(double.onNext.callCount).isEqualTo(1, "next records the call");
-      const got = double.onNext.calls[0];
-      const args = subscriptionStubNextArgs();
-      expect(got?.timeout).isEqualTo(args[0], "the call records timeout");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new SubscriptionStub(undefined);
-      let seen = 0;
-      double.onNext.onRecord(() => {
-        seen += 1;
-      });
-      subscriptionStubNext(double);
-      subscriptionStubNext(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of next");
-    });
   });
 
   describe("stop", () => {
-    const checks = behaviour("Subscription.stop", (seat) => {
-      const double = new SubscriptionStub(seat);
-      return {
-        stub: double.onStop,
-        call: () => subscriptionStubStop(double),
-        override: (mark) => {
-          double.onStop.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Subscription.stop", subscriptionStubStopSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new SubscriptionStub(undefined);
-      let seen = 0;
-      double.onStop.onRecord(() => {
-        seen += 1;
-      });
-      subscriptionStubStop(double);
-      subscriptionStubStop(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of stop");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => subscriptionStubInstance(new SubscriptionStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of next", async () => {
-      const double = new SubscriptionStub(undefined);
-      subscriptionStubNext(double);
-      double.resetCalls();
-      expect(double.onNext.callCount).isEqualTo(0, "resetCalls clears the calls of next");
+    describe("next", () => {
+      for (const c of resetBehaviour("Subscription.next", subscriptionStubNextSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("keeps the result of returns of next", async () => {
-      const double = new SubscriptionStub(undefined);
-      const want = subscriptionStubNextPin();
-      double.onNext.returns(want);
-      double.resetCalls();
-      expect(subscriptionStubNext(double)).isEqualTo(want, "resetCalls keeps the result of next");
-    });
-
-    it("clears the recorded calls of stop", async () => {
-      const double = new SubscriptionStub(undefined);
-      subscriptionStubStop(double);
-      double.resetCalls();
-      expect(double.onStop.callCount).isEqualTo(0, "resetCalls clears the calls of stop");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => subscriptionStubInstance(SubscriptionStub.newDelayed(seat, duration, clock)),
-      false,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails next with its error", async () => {
-      const want = new Error("next-failing");
-      const double = SubscriptionStub.newFailing(undefined, want);
-      const outcome = await settle(() => subscriptionStubNext(double));
-      const message = "next fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails stop with its error", async () => {
-      const want = new Error("stop-failing");
-      const double = SubscriptionStub.newFailing(undefined, want);
-      const outcome = await settle(() => subscriptionStubStop(double));
-      const message = "stop fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("stop", () => {
+      for (const c of resetBehaviour("Subscription.stop", subscriptionStubStopSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -629,38 +492,4 @@ describe("SubscriptionStub", () => {
   });
 });
 
-describe("SubscriptionNextStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of next", async () => {
-      const double = new SubscriptionStub(undefined);
-      const want = subscriptionStubNextPin();
-      double.onNext.returns(want);
-      expect(subscriptionStubNext(double)).isEqualTo(want, "next returns the result that returns sets");
-    });
-
-    it("configures next for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new SubscriptionStub(failures);
-      double.onNext.strict();
-      double.onNext.returns(undefined as never);
-      await settle(() => subscriptionStubNext(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of next");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of next to the function", async () => {
-      const double = new SubscriptionStub(undefined);
-      let got: unknown[] = [];
-      double.onNext.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      subscriptionStubNext(double);
-      const args = subscriptionStubNextArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:bf65a64c656bd17ee695c88dae47971e92098805bc6beff5425313d245b63ba9
+// dokimi:provenance sha256:e5670feeefa428d78232e7411fdeb55e445f1d48b04c694f75b937c66da69ecb

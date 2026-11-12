@@ -2,12 +2,12 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/readernoerror/iface.ts
 
-import { Controlled, Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { Controlled, type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
 import type { Value } from "../iface";
-import { ReaderNoErrorStub, ValueStub } from "./iface.stub";
+import { type ReaderNoErrorLookupCall, ReaderNoErrorStub, ValueStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of lookup. An argument without a sample is undefined. */
 function readerNoErrorStubLookupArgs(): [string] {
@@ -29,98 +29,62 @@ function readerNoErrorStubLookupPin(): Value {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for lookup, on a new double that reports to seat. */
+function readerNoErrorStubLookupSubject(seat: Seat): Subject<ReaderNoErrorLookupCall, Value | undefined> {
+  const double = new ReaderNoErrorStub(seat);
+  return {
+    stub: double.onLookup,
+    call: () => readerNoErrorStubLookup(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = readerNoErrorStubLookupArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    result: async () => await readerNoErrorStubLookup(double),
+    returns: () => {
+      const want = readerNoErrorStubLookupPin();
+      double.onLookup.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onLookup.func((...received: unknown[]) => {
+        seen({ key: received[0] } as ReaderNoErrorLookupCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => readerNoErrorStubLookup(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * lookup alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call lookup alone.
  */
 function readerNoErrorStubInstance(double: ReaderNoErrorStub) {
   return {
     stub: double.onLookup,
     call: () => readerNoErrorStubLookup(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("ReaderNoErrorStub", () => {
   describe("lookup", () => {
-    const checks = behaviour("ReaderNoError.lookup", (seat) => {
-      const double = new ReaderNoErrorStub(seat);
-      return {
-        stub: double.onLookup,
-        call: () => readerNoErrorStubLookup(double),
-        override: (mark) => {
-          double.onLookup.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("ReaderNoError.lookup", readerNoErrorStubLookupSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new ReaderNoErrorStub(undefined);
-      await readerNoErrorStubLookup(double);
-      expect(double.onLookup.callCount).isEqualTo(1, "lookup records the call");
-      const got = double.onLookup.calls[0];
-      const args = readerNoErrorStubLookupArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ReaderNoErrorStub(undefined);
-      let seen = 0;
-      double.onLookup.onRecord(() => {
-        seen += 1;
-      });
-      await readerNoErrorStubLookup(double);
-      await readerNoErrorStubLookup(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of lookup");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => readerNoErrorStubInstance(new ReaderNoErrorStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of lookup", async () => {
-      const double = new ReaderNoErrorStub(undefined);
-      await readerNoErrorStubLookup(double);
-      double.resetCalls();
-      expect(double.onLookup.callCount).isEqualTo(0, "resetCalls clears the calls of lookup");
-    });
-
-    it("keeps the result of returns of lookup", async () => {
-      const double = new ReaderNoErrorStub(undefined);
-      const want = readerNoErrorStubLookupPin();
-      double.onLookup.returns(want);
-      double.resetCalls();
-      expect(await readerNoErrorStubLookup(double)).isEqualTo(want, "resetCalls keeps the result of lookup");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => readerNoErrorStubInstance(ReaderNoErrorStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails lookup with its error", async () => {
-      const want = new Error("lookup-failing");
-      const double = ReaderNoErrorStub.newFailing(undefined, want);
-      const outcome = await settle(() => readerNoErrorStubLookup(double));
-      const message = "lookup fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("lookup", () => {
+      for (const c of resetBehaviour("ReaderNoError.lookup", readerNoErrorStubLookupSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -209,40 +173,6 @@ describe("ReaderNoErrorStub", () => {
   });
 });
 
-describe("ReaderNoErrorLookupStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of lookup", async () => {
-      const double = new ReaderNoErrorStub(undefined);
-      const want = readerNoErrorStubLookupPin();
-      double.onLookup.returns(want);
-      expect(await readerNoErrorStubLookup(double)).isEqualTo(want, "lookup returns the result that returns sets");
-    });
-
-    it("configures lookup for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new ReaderNoErrorStub(failures);
-      double.onLookup.strict();
-      double.onLookup.returns(undefined as never);
-      await settle(() => readerNoErrorStubLookup(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of lookup");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of lookup to the function", async () => {
-      const double = new ReaderNoErrorStub(undefined);
-      let got: unknown[] = [];
-      double.onLookup.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await readerNoErrorStubLookup(double);
-      const args = readerNoErrorStubLookupArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
 /** Assigns the sample of each property of ValueStub to double. */
 function valueStubProps(double: ValueStub): void {
   double.key = "key-a";
@@ -276,10 +206,6 @@ describe("ValueStub", () => {
         name: "keeps each property of a double with a latency",
         giveDouble: () => new ValueStub(undefined, ValueStub.withLatency(1)),
       },
-      {
-        name: "keeps each property of a delayed double",
-        giveDouble: () => ValueStub.newDelayed(undefined, 1, new Controlled()),
-      },
     ];
     for (const tt of tests) {
       it(tt.name, () => {
@@ -295,4 +221,4 @@ describe("ValueStub", () => {
   });
 });
 
-// dokimi:provenance sha256:d372f7bf278e0008f0b3ca3aee542e9aac109c2f5189c46ce7804ecb6dc92d1e
+// dokimi:provenance sha256:d98d065347c30a034a6a7416df88a4a5a3aa348cc1b1478e8c9670c358b1f52b

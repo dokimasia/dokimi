@@ -2,15 +2,38 @@
 // dokimi:plugin stub
 // dokimi:source iface/composite/tx-with-retry/iface.ts
 
-import { Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { TxWithRetryStub } from "./iface.stub";
+import { type TxWithRetryBeginCall, type TxWithRetryCommitCall, type TxWithRetryRollbackCall, TxWithRetryStub } from "./iface.stub";
 
 /** Calls begin of double with the samples of its arguments. */
 function txWithRetryStubBegin(double: TxWithRetryStub): Promise<void> {
   return double.begin();
+}
+
+/** Returns the subject of behaviour and resetBehaviour for begin, on a new double that reports to seat. */
+function txWithRetryStubBeginSubject(seat: Seat): Subject<TxWithRetryBeginCall, undefined> {
+  const double = new TxWithRetryStub(seat);
+  return {
+    stub: double.onBegin,
+    call: () => txWithRetryStubBegin(double),
+    reset: () => double.resetCalls(),
+    override: (seen) => {
+      double.onBegin.func(() => {
+        seen({} as TxWithRetryBeginCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => txWithRetryStubBegin(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /** Calls commit of double with the samples of its arguments. */
@@ -18,176 +41,104 @@ function txWithRetryStubCommit(double: TxWithRetryStub): Promise<void> {
   return double.commit();
 }
 
+/** Returns the subject of behaviour and resetBehaviour for commit, on a new double that reports to seat. */
+function txWithRetryStubCommitSubject(seat: Seat): Subject<TxWithRetryCommitCall, undefined> {
+  const double = new TxWithRetryStub(seat);
+  return {
+    stub: double.onCommit,
+    call: () => txWithRetryStubCommit(double),
+    reset: () => double.resetCalls(),
+    override: (seen) => {
+      double.onCommit.func(() => {
+        seen({} as TxWithRetryCommitCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => txWithRetryStubCommit(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Calls rollback of double with the samples of its arguments. */
 function txWithRetryStubRollback(double: TxWithRetryStub): Promise<void> {
   return double.rollback();
 }
 
+/** Returns the subject of behaviour and resetBehaviour for rollback, on a new double that reports to seat. */
+function txWithRetryStubRollbackSubject(seat: Seat): Subject<TxWithRetryRollbackCall, undefined> {
+  const double = new TxWithRetryStub(seat);
+  return {
+    stub: double.onRollback,
+    call: () => txWithRetryStubRollback(double),
+    reset: () => double.resetCalls(),
+    override: (seen) => {
+      double.onRollback.func(() => {
+        seen({} as TxWithRetryRollbackCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => txWithRetryStubRollback(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * begin alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call begin alone.
  */
 function txWithRetryStubInstance(double: TxWithRetryStub) {
   return {
     stub: double.onBegin,
     call: () => txWithRetryStubBegin(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("TxWithRetryStub", () => {
   describe("begin", () => {
-    const checks = behaviour("TxWithRetry.begin", (seat) => {
-      const double = new TxWithRetryStub(seat);
-      return {
-        stub: double.onBegin,
-        call: () => txWithRetryStubBegin(double),
-        override: (mark) => {
-          double.onBegin.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("TxWithRetry.begin", txWithRetryStubBeginSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new TxWithRetryStub(undefined);
-      let seen = 0;
-      double.onBegin.onRecord(() => {
-        seen += 1;
-      });
-      await txWithRetryStubBegin(double);
-      await txWithRetryStubBegin(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of begin");
-    });
   });
 
   describe("commit", () => {
-    const checks = behaviour("TxWithRetry.commit", (seat) => {
-      const double = new TxWithRetryStub(seat);
-      return {
-        stub: double.onCommit,
-        call: () => txWithRetryStubCommit(double),
-        override: (mark) => {
-          double.onCommit.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("TxWithRetry.commit", txWithRetryStubCommitSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new TxWithRetryStub(undefined);
-      let seen = 0;
-      double.onCommit.onRecord(() => {
-        seen += 1;
-      });
-      await txWithRetryStubCommit(double);
-      await txWithRetryStubCommit(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of commit");
-    });
   });
 
   describe("rollback", () => {
-    const checks = behaviour("TxWithRetry.rollback", (seat) => {
-      const double = new TxWithRetryStub(seat);
-      return {
-        stub: double.onRollback,
-        call: () => txWithRetryStubRollback(double),
-        override: (mark) => {
-          double.onRollback.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("TxWithRetry.rollback", txWithRetryStubRollbackSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new TxWithRetryStub(undefined);
-      let seen = 0;
-      double.onRollback.onRecord(() => {
-        seen += 1;
-      });
-      await txWithRetryStubRollback(double);
-      await txWithRetryStubRollback(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of rollback");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => txWithRetryStubInstance(new TxWithRetryStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of begin", async () => {
-      const double = new TxWithRetryStub(undefined);
-      await txWithRetryStubBegin(double);
-      double.resetCalls();
-      expect(double.onBegin.callCount).isEqualTo(0, "resetCalls clears the calls of begin");
+    describe("begin", () => {
+      for (const c of resetBehaviour("TxWithRetry.begin", txWithRetryStubBeginSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of commit", async () => {
-      const double = new TxWithRetryStub(undefined);
-      await txWithRetryStubCommit(double);
-      double.resetCalls();
-      expect(double.onCommit.callCount).isEqualTo(0, "resetCalls clears the calls of commit");
+    describe("commit", () => {
+      for (const c of resetBehaviour("TxWithRetry.commit", txWithRetryStubCommitSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of rollback", async () => {
-      const double = new TxWithRetryStub(undefined);
-      await txWithRetryStubRollback(double);
-      double.resetCalls();
-      expect(double.onRollback.callCount).isEqualTo(0, "resetCalls clears the calls of rollback");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => txWithRetryStubInstance(TxWithRetryStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails begin with its error", async () => {
-      const want = new Error("begin-failing");
-      const double = TxWithRetryStub.newFailing(undefined, want);
-      const outcome = await settle(() => txWithRetryStubBegin(double));
-      const message = "begin fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails commit with its error", async () => {
-      const want = new Error("commit-failing");
-      const double = TxWithRetryStub.newFailing(undefined, want);
-      const outcome = await settle(() => txWithRetryStubCommit(double));
-      const message = "commit fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails rollback with its error", async () => {
-      const want = new Error("rollback-failing");
-      const double = TxWithRetryStub.newFailing(undefined, want);
-      const outcome = await settle(() => txWithRetryStubRollback(double));
-      const message = "rollback fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("rollback", () => {
+      for (const c of resetBehaviour("TxWithRetry.rollback", txWithRetryStubRollbackSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -348,4 +299,4 @@ describe("TxWithRetryStub", () => {
   });
 });
 
-// dokimi:provenance sha256:b295c6d5e34aed73c19bf213276c925fe0e856a835c20fc600e50a8e78273da7
+// dokimi:provenance sha256:3b940613f0d49b3678e599e93409ec80f9f5bd0f269f657e7e0c3db2644fbe57

@@ -38,8 +38,8 @@ export interface Payload {
 //dokimi:out path=roledtypestest/
 export interface Store {
   /** Writes a payload under a key, which draws both roles. */
-  put(key: Key, payload: Payload): Promise<void>;
+  put(key: Key, payload: Payload, signal: AbortSignal): Promise<void>;
 
   /** Returns the payload under the key, which draws the key alone. */
-  get(key: Key): Promise<Payload>;
+  get(key: Key, signal: AbortSignal): Promise<Payload>;
 }

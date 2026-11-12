@@ -2,12 +2,12 @@
 // dokimi:plugin stub
 // dokimi:source iface/composite/causal-chain/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
 import { type Entry, rootEntry } from "../iface";
-import { LogStub } from "./iface.stub";
+import { type LogAppendCall, type LogReplayCall, LogStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of append. An argument without a sample is undefined. */
 function logStubAppendArgs(): [Entry] {
@@ -22,6 +22,33 @@ function logStubAppend(double: LogStub): Promise<void> {
   return double.append(args[0]);
 }
 
+/** Returns the subject of behaviour and resetBehaviour for append, on a new double that reports to seat. */
+function logStubAppendSubject(seat: Seat): Subject<LogAppendCall, undefined> {
+  const double = new LogStub(seat);
+  return {
+    stub: double.onAppend,
+    call: () => logStubAppend(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = logStubAppendArgs();
+      check.isEqualTo(s, c.e, args[0], "the call records e");
+    },
+    override: (seen) => {
+      double.onAppend.func((...received: unknown[]) => {
+        seen({ e: received[0] } as LogAppendCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => logStubAppend(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Calls replay of double with the samples of its arguments. */
 function logStubReplay(double: LogStub): Promise<Entry[]> {
   return double.replay();
@@ -34,143 +61,70 @@ function logStubReplayPin(): Entry[] {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for replay, on a new double that reports to seat. */
+function logStubReplaySubject(seat: Seat): Subject<LogReplayCall, Entry[] | undefined> {
+  const double = new LogStub(seat);
+  return {
+    stub: double.onReplay,
+    call: () => logStubReplay(double),
+    reset: () => double.resetCalls(),
+    result: async () => await logStubReplay(double),
+    returns: () => {
+      const want = logStubReplayPin();
+      double.onReplay.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onReplay.func(() => {
+        seen({} as LogReplayCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => logStubReplay(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * append alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call append alone.
  */
 function logStubInstance(double: LogStub) {
   return {
     stub: double.onAppend,
     call: () => logStubAppend(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("LogStub", () => {
   describe("append", () => {
-    const checks = behaviour("Log.append", (seat) => {
-      const double = new LogStub(seat);
-      return {
-        stub: double.onAppend,
-        call: () => logStubAppend(double),
-        override: (mark) => {
-          double.onAppend.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Log.append", logStubAppendSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new LogStub(undefined);
-      await logStubAppend(double);
-      expect(double.onAppend.callCount).isEqualTo(1, "append records the call");
-      const got = double.onAppend.calls[0];
-      const args = logStubAppendArgs();
-      expect(got?.e).isEqualTo(args[0], "the call records e");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new LogStub(undefined);
-      let seen = 0;
-      double.onAppend.onRecord(() => {
-        seen += 1;
-      });
-      await logStubAppend(double);
-      await logStubAppend(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of append");
-    });
   });
 
   describe("replay", () => {
-    const checks = behaviour("Log.replay", (seat) => {
-      const double = new LogStub(seat);
-      return {
-        stub: double.onReplay,
-        call: () => logStubReplay(double),
-        override: (mark) => {
-          double.onReplay.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Log.replay", logStubReplaySubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new LogStub(undefined);
-      let seen = 0;
-      double.onReplay.onRecord(() => {
-        seen += 1;
-      });
-      await logStubReplay(double);
-      await logStubReplay(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of replay");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => logStubInstance(new LogStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of append", async () => {
-      const double = new LogStub(undefined);
-      await logStubAppend(double);
-      double.resetCalls();
-      expect(double.onAppend.callCount).isEqualTo(0, "resetCalls clears the calls of append");
+    describe("append", () => {
+      for (const c of resetBehaviour("Log.append", logStubAppendSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of replay", async () => {
-      const double = new LogStub(undefined);
-      await logStubReplay(double);
-      double.resetCalls();
-      expect(double.onReplay.callCount).isEqualTo(0, "resetCalls clears the calls of replay");
-    });
-
-    it("keeps the result of returns of replay", async () => {
-      const double = new LogStub(undefined);
-      const want = logStubReplayPin();
-      double.onReplay.returns(want);
-      double.resetCalls();
-      expect(await logStubReplay(double)).isEqualTo(want, "resetCalls keeps the result of replay");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => logStubInstance(LogStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails append with its error", async () => {
-      const want = new Error("append-failing");
-      const double = LogStub.newFailing(undefined, want);
-      const outcome = await settle(() => logStubAppend(double));
-      const message = "append fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails replay with its error", async () => {
-      const want = new Error("replay-failing");
-      const double = LogStub.newFailing(undefined, want);
-      const outcome = await settle(() => logStubReplay(double));
-      const message = "replay fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("replay", () => {
+      for (const c of resetBehaviour("Log.replay", logStubReplaySubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -295,40 +249,4 @@ describe("LogStub", () => {
   });
 });
 
-describe("LogAppendStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of append to the function", async () => {
-      const double = new LogStub(undefined);
-      let got: unknown[] = [];
-      double.onAppend.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await logStubAppend(double);
-      const args = logStubAppendArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("LogReplayStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of replay", async () => {
-      const double = new LogStub(undefined);
-      const want = logStubReplayPin();
-      double.onReplay.returns(want);
-      expect(await logStubReplay(double)).isEqualTo(want, "replay returns the result that returns sets");
-    });
-
-    it("configures replay for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new LogStub(failures);
-      double.onReplay.strict();
-      double.onReplay.returns(undefined as never);
-      await settle(() => logStubReplay(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of replay");
-    });
-  });
-});
-
-// dokimi:provenance sha256:4518b528ba84595e5524d9cfb73b4b23818aa3604847668ea1561c964bbe6dc1
+// dokimi:provenance sha256:1624db99ab5f5f6fe3c053b751b9c36580c3a9444a89ecf3927250909d99be8d

@@ -511,12 +511,12 @@ func contractActions(c *prop.Case, subject func() workflow.Contract) []stateful.
 		{
 			Name: "Run",
 			Input: func(c *prop.Case, _ struct{}) any {
-				key := c.Draw(prop.Of[string](), "run.key")
+				key := c.Draw(prop.SampledFrom(keysString...), "run.key")
 				return []any{key}
 			},
 			Run: func(c *prop.Case, client int, input any) {
 				args, _ := input.([]any)
-				call := c.History().Invoke(client, "Run", args)
+				call := c.History().Invoke(client, "Run", args, args[0])
 				values, err := contractRunCall(c.Context(), subject(), args)
 				conform.Complete(c.Context(), call, err, values...)
 			},
@@ -552,4 +552,4 @@ func contractStateCall(ctx context.Context, subject workflow.Contract, args []an
 	return []any{r0}, err
 }
 
-// dokimi:provenance sha256:128f54c08a2d4ef83582b73426b85772445e88a031f8e28be2066588460e0966
+// dokimi:provenance sha256:9dd41aca65c0485cb58485a78c376e8fcbaeb6aa9f8033c028771f5015eb22b5

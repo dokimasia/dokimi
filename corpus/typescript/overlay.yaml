@@ -1,0 +1,437 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+# The overlay of TypeScript. It declares each fixture whose axis is a construct of Go, and each
+# difference of TypeScript from the expected outcomes of the corpus of Go.
+language: typescript
+level: 1
+diverge:
+  - fixture: iface/lang/arraylength
+    stance: blocked
+    why: A TypeScript array has no length in its type
+  - fixture: iface/lang/crosspackage
+    stance: blocked
+    why: TypeScript has no internal packages
+  - fixture: iface/lang/kinds
+    stance: blocked
+    why: TypeScript has no kinds of reflect and no channels
+  - fixture: iface/lang/namedreturns
+    stance: blocked
+    why: A TypeScript function returns one value without a name
+  - fixture: iface/lang/opaque
+    stance: blocked
+    why: A TypeScript value does not start from the zero value of its type
+  - fixture: iface/lang/resolved
+    stance: blocked
+    why: A TypeScript value does not start from the zero value of its type
+  - fixture: iface/lang/selfnamed
+    stance: blocked
+    why: A TypeScript interface has no embedded fields
+
+  # A TypeScript call that fails throws and returns no value, so zero-on-error refuses through
+  # returns-beside-error, and its generated binding is absent.
+  - fixture: iface/lang/embedded
+    key: composed.get/zero-on-error
+    expect: check
+    actual: refused
+    gate: returns-beside-error
+    why: A TypeScript call that fails throws and returns no value
+  - fixture: iface/lang/embedded
+    key: composed.get/zero-on-error#generated
+    expect: check
+    actual: absent
+    why: The check of zero-on-error that the generated binding derives from refuses
+  - fixture: iface/lang/generic
+    key: store.get/zero-on-error
+    expect: check
+    actual: refused
+    gate: returns-beside-error
+    why: A TypeScript call that fails throws and returns no value
+  - fixture: iface/lang/generic
+    key: store.get/zero-on-error#generated
+    expect: check
+    actual: absent
+    why: The check of zero-on-error that the generated binding derives from refuses
+  - fixture: iface/lang/genericbound
+    key: ranked.rank/zero-on-error
+    expect: check
+    actual: refused
+    gate: returns-beside-error
+    why: A TypeScript call that fails throws and returns no value
+  - fixture: iface/lang/genericbound
+    key: ranked.rank/zero-on-error#generated
+    expect: check
+    actual: absent
+    why: The check of zero-on-error that the generated binding derives from refuses
+  - fixture: iface/lang/partnernaming
+    key: store.at/zero-on-error
+    expect: check
+    actual: refused
+    gate: returns-beside-error
+    why: A TypeScript call that fails throws and returns no value
+  - fixture: iface/lang/partnernaming
+    key: store.at/zero-on-error#generated
+    expect: check
+    actual: absent
+    why: The check of zero-on-error that the generated binding derives from refuses
+  - fixture: iface/lang/partnernaming
+    key: store.count/zero-on-error
+    expect: check
+    actual: refused
+    gate: returns-beside-error
+    why: A TypeScript call that fails throws and returns no value
+  - fixture: iface/lang/partnernaming
+    key: store.count/zero-on-error#generated
+    expect: check
+    actual: absent
+    why: The check of zero-on-error that the generated binding derives from refuses
+  - fixture: iface/lang/partnernaming
+    key: store.seen/zero-on-error
+    expect: check
+    actual: refused
+    gate: returns-beside-error
+    why: A TypeScript call that fails throws and returns no value
+  - fixture: iface/lang/partnernaming
+    key: store.seen/zero-on-error#generated
+    expect: check
+    actual: absent
+    why: The check of zero-on-error that the generated binding derives from refuses
+  - fixture: iface/lang/partnernaming
+    key: store.version/zero-on-error
+    expect: check
+    actual: refused
+    gate: returns-beside-error
+    why: A TypeScript call that fails throws and returns no value
+  - fixture: iface/lang/partnernaming
+    key: store.version/zero-on-error#generated
+    expect: check
+    actual: absent
+    why: The check of zero-on-error that the generated binding derives from refuses
+  - fixture: iface/lang/roledtypes
+    key: store.get/zero-on-error
+    expect: check
+    actual: refused
+    gate: returns-beside-error
+    why: A TypeScript call that fails throws and returns no value
+  - fixture: iface/lang/roledtypes
+    key: store.get/zero-on-error#generated
+    expect: check
+    actual: absent
+    why: The check of zero-on-error that the generated binding derives from refuses
+  - fixture: iface/lang/seededreader
+    key: catalog.len/zero-on-error
+    expect: check
+    actual: refused
+    gate: returns-beside-error
+    why: A TypeScript call that fails throws and returns no value
+  - fixture: iface/lang/seededreader
+    key: catalog.lookup/zero-on-error
+    expect: check
+    actual: refused
+    gate: returns-beside-error
+    why: A TypeScript call that fails throws and returns no value
+  - fixture: iface/lang/seededreader
+    key: catalog.lookup/zero-on-error#generated
+    expect: check
+    actual: absent
+    why: The check of zero-on-error that the generated binding derives from refuses
+
+  # The TypeScript library has no interface with a method close, so the interface of the fixture
+  # extends Error of the library in place of io.Closer, and its declaration is Failure.
+  - fixture: iface/lang/embeddedforeign
+    key: failure.retryable/predicate
+    expect: absent
+    actual: check
+    why: The interface Failure of TypeScript extends Error in place of the interface Stream of Go
+  - fixture: iface/lang/embeddedforeign
+    key: failure.retryable/smoke
+    expect: absent
+    actual: check
+    why: The interface Failure of TypeScript extends Error in place of the interface Stream of Go
+  - fixture: iface/lang/embeddedforeign
+    key: stream.close/smoke
+    expect: check
+    actual: absent
+    why: The interface Failure of TypeScript extends Error in place of the interface Stream of Go
+  - fixture: iface/lang/embeddedforeign
+    key: stream.close shape:closer
+    expect: unclaimed
+    actual: absent
+    why: The interface Failure of TypeScript extends Error in place of the interface Stream of Go
+  - fixture: iface/lang/embeddedforeign
+    key: stream.read/cancel
+    expect: check
+    actual: absent
+    why: The interface Failure of TypeScript extends Error in place of the interface Stream of Go
+  - fixture: iface/lang/embeddedforeign
+    key: stream.read/cancel#generated
+    expect: check
+    actual: absent
+    why: The interface Failure of TypeScript extends Error in place of the interface Stream of Go
+  - fixture: iface/lang/embeddedforeign
+    key: stream.read/smoke
+    expect: check
+    actual: absent
+    why: The interface Failure of TypeScript extends Error in place of the interface Stream of Go
+  - fixture: iface/lang/embeddedforeign
+    key: stream.read/smoke#generated
+    expect: check
+    actual: absent
+    why: The interface Failure of TypeScript extends Error in place of the interface Stream of Go
+  - fixture: iface/lang/embeddedforeign
+    key: stream.read/zero-on-error
+    expect: check
+    actual: absent
+    why: The interface Failure of TypeScript extends Error in place of the interface Stream of Go
+  - fixture: iface/lang/embeddedforeign
+    key: stream.read/zero-on-error#generated
+    expect: check
+    actual: absent
+    why: The interface Failure of TypeScript extends Error in place of the interface Stream of Go
+
+  # Every TypeScript callable can fail, so a callable without an error of Go has the claims of a
+  # callable that fails, and a tuple is one value of TypeScript.
+  - fixture: iface/lang/dynamic
+    key: diary.count/deterministic
+    expect: check
+    actual: absent
+    why: Every TypeScript callable can fail, so the shape catalog does not classify count as a computation
+  - fixture: iface/lang/dynamic
+    key: diary.count/zero-on-error
+    expect: absent
+    actual: refused
+    gate: returns-beside-error
+    why: Every TypeScript callable can fail, and a call that fails throws and returns no value
+  - fixture: iface/lang/dynamic
+    key: diary.in/smoke
+    expect: absent
+    actual: check
+    why: Every TypeScript callable can fail, so in is a writer, whose smoke check takes its input, in place of a mutator
+  - fixture: iface/lang/dynamic
+    key: diary.in/smoke#generated
+    expect: absent
+    actual: check
+    why: Every TypeScript callable can fail, so in is a writer, whose smoke check takes its input, in place of a mutator
+  - fixture: iface/lang/dynamic
+    key: diary.scale/smoke
+    expect: absent
+    actual: check
+    why: Every TypeScript callable can fail, so scale is a writer, whose smoke check takes its input, in place of a mutator
+  - fixture: iface/lang/dynamic
+    key: diary.scale/smoke#generated
+    expect: absent
+    actual: check
+    why: Every TypeScript callable can fail, so scale is a writer, whose smoke check takes its input, in place of a mutator
+  - fixture: iface/lang/dynamic
+    key: diary.in shape:mutator
+    expect: unclaimed
+    actual: absent
+    why: Every TypeScript callable can fail, and a mutator has no error model
+  - fixture: iface/lang/dynamic
+    key: diary.in shape:writer
+    expect: absent
+    actual: unclaimed
+    stance: silent
+    why: Every TypeScript callable can fail, so in is a writer in place of a mutator
+  - fixture: iface/lang/dynamic
+    key: diary.scale shape:mutator
+    expect: unclaimed
+    actual: absent
+    why: Every TypeScript callable can fail, and a mutator has no error model
+  - fixture: iface/lang/dynamic
+    key: diary.scale shape:writer
+    expect: absent
+    actual: unclaimed
+    stance: silent
+    why: Every TypeScript callable can fail, so scale is a writer in place of a mutator
+  - fixture: iface/lang/dynamic
+    key: diary.field shape:composite-writer
+    expect: absent
+    actual: unclaimed
+    stance: silent
+    why: Every TypeScript callable can fail, so field is a composite writer, which returns no value beside an error
+  - fixture: iface/lang/dynamic
+    key: diary.print shape:composite-writer
+    expect: absent
+    actual: unclaimed
+    stance: silent
+    why: Every TypeScript callable can fail, so print is a composite writer, which returns no value beside an error
+  - fixture: iface/lang/multireturn
+    key: wide.no-error/cancel
+    expect: refused
+    actual: check
+    why: Every TypeScript callable can fail, so the cancel of noError has a check
+  - fixture: iface/lang/multireturn
+    key: wide.no-error/cancel#generated
+    expect: absent
+    actual: check
+    why: Every TypeScript callable can fail, so the cancel of noError has a check
+  - fixture: iface/lang/multireturn
+    key: wide.no-error/zero-on-error
+    expect: absent
+    actual: refused
+    gate: returns-beside-error
+    why: Every TypeScript callable can fail, and a call that fails throws and returns no value
+  - fixture: iface/lang/multireturn
+    key: wide.quad/zero-on-error
+    expect: absent
+    actual: refused
+    gate: returns-beside-error
+    why: A tuple is one value of TypeScript, so quad has the claim of one value beside an error
+  - fixture: iface/lang/multireturn
+    key: wide.quad/zeroes-on-error
+    expect: refused
+    actual: absent
+    why: A tuple is one value of TypeScript, so quad has no claim of several values beside an error
+  - fixture: iface/lang/multireturn
+    key: wide.triple/cancel
+    expect: refused
+    actual: check
+    why: Every TypeScript callable can fail, so the cancel of triple has a check
+  - fixture: iface/lang/multireturn
+    key: wide.triple/cancel#generated
+    expect: absent
+    actual: check
+    why: Every TypeScript callable can fail, so the cancel of triple has a check
+  - fixture: iface/lang/multireturn
+    key: wide.triple/zero-on-error
+    expect: absent
+    actual: refused
+    gate: returns-beside-error
+    why: Every TypeScript callable can fail, and a call that fails throws and returns no value
+  - fixture: iface/lang/multireturn
+    key: wide.triple/zeroes-on-miss
+    expect: refused
+    actual: absent
+    why: A tuple is one value of TypeScript, so triple has no presence flag beside its values
+  - fixture: iface/lang/nested
+    key: dispatcher.weight/deterministic
+    expect: check
+    actual: absent
+    why: Every TypeScript callable can fail, so the shape catalog does not classify weight as a computation
+  - fixture: iface/lang/nested
+    key: dispatcher.weight/zero-on-error
+    expect: absent
+    actual: refused
+    gate: returns-beside-error
+    why: Every TypeScript callable can fail, and a call that fails throws and returns no value
+  - fixture: iface/lang/nocontext
+    key: calculator.add/deterministic
+    expect: check
+    actual: absent
+    why: Every TypeScript callable can fail, so the shape catalog does not classify add as a computation
+  - fixture: iface/lang/nocontext
+    key: calculator.add/deterministic#generated
+    expect: check
+    actual: absent
+    why: Every TypeScript callable can fail, so the shape catalog does not classify add as a computation
+  - fixture: iface/lang/nocontext
+    key: calculator.reset/fresh-reports-no-poison
+    expect: absent
+    actual: check
+    why: Every TypeScript callable can fail, so reset without a value is a poison accessor
+  - fixture: iface/lang/nocontext
+    key: calculator.reset/repeat-survives
+    expect: check
+    actual: absent
+    why: Every TypeScript callable can fail, so reset is no lifecycle method without an error
+  - fixture: iface/lang/packagescope
+    key: slugger.slug/deterministic
+    expect: check
+    actual: absent
+    why: Every TypeScript callable can fail, so the shape catalog does not classify slug as a computation
+  - fixture: iface/lang/packagescope
+    key: slugger.slug/deterministic#generated
+    expect: check
+    actual: absent
+    why: Every TypeScript callable can fail, so the shape catalog does not classify slug as a computation
+  - fixture: iface/lang/packagescope
+    key: slugger.slug/zero-on-error
+    expect: absent
+    actual: refused
+    gate: returns-beside-error
+    why: Every TypeScript callable can fail, and a call that fails throws and returns no value
+  - fixture: iface/lang/recursive
+    key: counter.nodes/deterministic
+    expect: refused
+    actual: absent
+    why: Every TypeScript callable can fail, so the shape catalog does not classify nodes as a computation
+  - fixture: iface/lang/recursive
+    key: counter.nodes/zero-on-error
+    expect: absent
+    actual: refused
+    gate: returns-beside-error
+    why: Every TypeScript callable can fail, and a call that fails throws and returns no value
+  - fixture: iface/lang/recursive
+    key: counter.steps/deterministic
+    expect: check
+    actual: absent
+    why: Every TypeScript callable can fail, so the shape catalog does not classify steps as a computation
+  - fixture: iface/lang/recursive
+    key: counter.steps/smoke
+    expect: check
+    actual: absent
+    why: The check of deterministic entails smoke, and steps has no check of deterministic
+  - fixture: iface/lang/recursive
+    key: counter.steps/zero-on-error
+    expect: absent
+    actual: refused
+    gate: returns-beside-error
+    why: Every TypeScript callable can fail, and a call that fails throws and returns no value
+  - fixture: iface/lang/suitedhandle
+    key: file.name/deterministic
+    expect: check
+    actual: absent
+    why: Every TypeScript callable can fail, so the shape catalog does not classify name as a computation
+  - fixture: iface/lang/suitedhandle
+    key: file.name/zero-on-error
+    expect: absent
+    actual: refused
+    gate: returns-beside-error
+    why: Every TypeScript callable can fail, and a call that fails throws and returns no value
+  - fixture: iface/lang/suitedhandle
+    key: fs.open/zero-on-error
+    expect: refused
+    actual: refused
+    gate: returns-beside-error
+    why: A TypeScript call that fails throws and returns no value, which the derivation gates before the samples of the value
+
+  # A TypeScript function type and an interface with a method have no zero value, and eidos derives
+  # no sample of either. A request with such a field then has no sample, so cancel refuses and smoke
+  # is silent.
+  - fixture: iface/lang/nested
+    key: dispatcher.dispatch/cancel
+    expect: check
+    actual: refused
+    gate: input-samples
+    why: eidos derives no sample of a request with a field of a function type or of an interface with a method
+  - fixture: iface/lang/nested
+    key: dispatcher.dispatch/smoke
+    expect: check
+    actual: absent
+    why: The smoke check of a callable without a sample of its request is silent
+  - fixture: iface/lang/nested
+    key: dispatcher.dispatch-all/cancel
+    expect: check
+    actual: refused
+    gate: input-samples
+    why: eidos derives no sample of a batch of requests with a field of a function type or of an interface with a method
+  - fixture: iface/lang/nested
+    key: dispatcher.dispatch-all/smoke
+    expect: check
+    actual: absent
+    why: The smoke check of a callable without a sample of its batch is silent
+
+  # V8 counts no allocations of a call, so a TypeScript budget has no ceiling of allocations or bytes.
+  - fixture: iface/lang/nested
+    key: dispatcher.dispatch/allocation-budget
+    expect: ceiling
+    actual: absent
+    stance: blocked
+    why: V8 counts no allocations of a call
+  - fixture: iface/lang/nested
+    key: dispatcher.dispatch-all/allocation-budget
+    expect: ceiling
+    actual: absent
+    stance: blocked
+    why: V8 counts no allocations of a call

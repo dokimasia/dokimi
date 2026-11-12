@@ -2,11 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/deleter/iface.ts
 
-import { Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { DeleterStub } from "./iface.stub";
+import { type DeleterDeleteCall, DeleterStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of delete. An argument without a sample is undefined. */
 function deleterStubDeleteArgs(): [string] {
@@ -21,90 +21,56 @@ function deleterStubDelete(double: DeleterStub): Promise<void> {
   return double.delete(args[0]);
 }
 
+/** Returns the subject of behaviour and resetBehaviour for delete, on a new double that reports to seat. */
+function deleterStubDeleteSubject(seat: Seat): Subject<DeleterDeleteCall, undefined> {
+  const double = new DeleterStub(seat);
+  return {
+    stub: double.onDelete,
+    call: () => deleterStubDelete(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = deleterStubDeleteArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    override: (seen) => {
+      double.onDelete.func((...received: unknown[]) => {
+        seen({ key: received[0] } as DeleterDeleteCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => deleterStubDelete(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * delete alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call delete alone.
  */
 function deleterStubInstance(double: DeleterStub) {
   return {
     stub: double.onDelete,
     call: () => deleterStubDelete(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("DeleterStub", () => {
   describe("delete", () => {
-    const checks = behaviour("Deleter.delete", (seat) => {
-      const double = new DeleterStub(seat);
-      return {
-        stub: double.onDelete,
-        call: () => deleterStubDelete(double),
-        override: (mark) => {
-          double.onDelete.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Deleter.delete", deleterStubDeleteSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new DeleterStub(undefined);
-      await deleterStubDelete(double);
-      expect(double.onDelete.callCount).isEqualTo(1, "delete records the call");
-      const got = double.onDelete.calls[0];
-      const args = deleterStubDeleteArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new DeleterStub(undefined);
-      let seen = 0;
-      double.onDelete.onRecord(() => {
-        seen += 1;
-      });
-      await deleterStubDelete(double);
-      await deleterStubDelete(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of delete");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => deleterStubInstance(new DeleterStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of delete", async () => {
-      const double = new DeleterStub(undefined);
-      await deleterStubDelete(double);
-      double.resetCalls();
-      expect(double.onDelete.callCount).isEqualTo(0, "resetCalls clears the calls of delete");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => deleterStubInstance(DeleterStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails delete with its error", async () => {
-      const want = new Error("delete-failing");
-      const double = DeleterStub.newFailing(undefined, want);
-      const outcome = await settle(() => deleterStubDelete(double));
-      const message = "delete fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("delete", () => {
+      for (const c of resetBehaviour("Deleter.delete", deleterStubDeleteSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -193,20 +159,4 @@ describe("DeleterStub", () => {
   });
 });
 
-describe("DeleterDeleteStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of delete to the function", async () => {
-      const double = new DeleterStub(undefined);
-      let got: unknown[] = [];
-      double.onDelete.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await deleterStubDelete(double);
-      const args = deleterStubDeleteArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:1fd705274ce709bd8370d27ce95cccd6c17d421bc262079acf43363412c28181
+// dokimi:provenance sha256:5091c1e2116acc6cfa649c6e18095560fb762fb1c46f2c590b410f02253f2f8c

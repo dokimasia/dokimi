@@ -2,12 +2,12 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/if-match/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
 import type { Value } from "../iface";
-import { ContractStub } from "./iface.stub";
+import { type ContractMatchCall, type ContractPutCall, ContractStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of put. An argument without a sample is undefined. */
 function contractStubPutArgs(): [Value] {
@@ -20,6 +20,33 @@ function contractStubPutArgs(): [Value] {
 function contractStubPut(double: ContractStub): Promise<void> {
   const args = contractStubPutArgs();
   return double.put(args[0]);
+}
+
+/** Returns the subject of behaviour and resetBehaviour for put, on a new double that reports to seat. */
+function contractStubPutSubject(seat: Seat): Subject<ContractPutCall, undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onPut,
+    call: () => contractStubPut(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = contractStubPutArgs();
+      check.isEqualTo(s, c.v, args[0], "the call records v");
+    },
+    override: (seen) => {
+      double.onPut.func((...received: unknown[]) => {
+        seen({ v: received[0] } as ContractPutCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubPut(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /** Returns the samples of the arguments of match. An argument without a sample is undefined. */
@@ -42,152 +69,74 @@ function contractStubMatchPin(): boolean {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for match, on a new double that reports to seat. */
+function contractStubMatchSubject(seat: Seat): Subject<ContractMatchCall, boolean | undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onMatch,
+    call: () => contractStubMatch(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = contractStubMatchArgs();
+      check.isEqualTo(s, c.v, args[0], "the call records v");
+    },
+    result: async () => await contractStubMatch(double),
+    returns: () => {
+      const want = contractStubMatchPin();
+      double.onMatch.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onMatch.func((...received: unknown[]) => {
+        seen({ v: received[0] } as ContractMatchCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubMatch(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * put alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call put alone.
  */
 function contractStubInstance(double: ContractStub) {
   return {
     stub: double.onPut,
     call: () => contractStubPut(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("ContractStub", () => {
   describe("put", () => {
-    const checks = behaviour("Contract.put", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onPut,
-        call: () => contractStubPut(double),
-        override: (mark) => {
-          double.onPut.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.put", contractStubPutSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubPut(double);
-      expect(double.onPut.callCount).isEqualTo(1, "put records the call");
-      const got = double.onPut.calls[0];
-      const args = contractStubPutArgs();
-      expect(got?.v).isEqualTo(args[0], "the call records v");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onPut.onRecord(() => {
-        seen += 1;
-      });
-      await contractStubPut(double);
-      await contractStubPut(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of put");
-    });
   });
 
   describe("match", () => {
-    const checks = behaviour("Contract.match", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onMatch,
-        call: () => contractStubMatch(double),
-        override: (mark) => {
-          double.onMatch.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.match", contractStubMatchSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubMatch(double);
-      expect(double.onMatch.callCount).isEqualTo(1, "match records the call");
-      const got = double.onMatch.calls[0];
-      const args = contractStubMatchArgs();
-      expect(got?.v).isEqualTo(args[0], "the call records v");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onMatch.onRecord(() => {
-        seen += 1;
-      });
-      await contractStubMatch(double);
-      await contractStubMatch(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of match");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => contractStubInstance(new ContractStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of put", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubPut(double);
-      double.resetCalls();
-      expect(double.onPut.callCount).isEqualTo(0, "resetCalls clears the calls of put");
+    describe("put", () => {
+      for (const c of resetBehaviour("Contract.put", contractStubPutSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of match", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubMatch(double);
-      double.resetCalls();
-      expect(double.onMatch.callCount).isEqualTo(0, "resetCalls clears the calls of match");
-    });
-
-    it("keeps the result of returns of match", async () => {
-      const double = new ContractStub(undefined);
-      const want = contractStubMatchPin();
-      double.onMatch.returns(want);
-      double.resetCalls();
-      expect(await contractStubMatch(double)).isEqualTo(want, "resetCalls keeps the result of match");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => contractStubInstance(ContractStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails put with its error", async () => {
-      const want = new Error("put-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubPut(double));
-      const message = "put fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails match with its error", async () => {
-      const want = new Error("match-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubMatch(double));
-      const message = "match fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("match", () => {
+      for (const c of resetBehaviour("Contract.match", contractStubMatchSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -312,54 +261,4 @@ describe("ContractStub", () => {
   });
 });
 
-describe("ContractPutStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of put to the function", async () => {
-      const double = new ContractStub(undefined);
-      let got: unknown[] = [];
-      double.onPut.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await contractStubPut(double);
-      const args = contractStubPutArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("ContractMatchStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of match", async () => {
-      const double = new ContractStub(undefined);
-      const want = contractStubMatchPin();
-      double.onMatch.returns(want);
-      expect(await contractStubMatch(double)).isEqualTo(want, "match returns the result that returns sets");
-    });
-
-    it("configures match for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new ContractStub(failures);
-      double.onMatch.strict();
-      double.onMatch.returns(undefined as never);
-      await settle(() => contractStubMatch(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of match");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of match to the function", async () => {
-      const double = new ContractStub(undefined);
-      let got: unknown[] = [];
-      double.onMatch.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await contractStubMatch(double);
-      const args = contractStubMatchArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:3492a91f3bea3342833965ad17b1e276ea28a4765f6adf4fdb7cb8fb2da80fcd
+// dokimi:provenance sha256:7eaa73980b31b693691c8cb4520dcd77fdc794eef75e3826959933fe9ae939cf

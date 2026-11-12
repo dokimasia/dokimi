@@ -637,13 +637,13 @@ func storeActions(c *prop.Case, subject func() reference.Store) []stateful.Actio
 		{
 			Name: "Put",
 			Input: func(c *prop.Case, _ struct{}) any {
-				key := c.Draw(prop.Of[string](), "put.key")
+				key := c.Draw(prop.SampledFrom(keysString...), "put.key")
 				value := c.Draw(prop.Of[string](), "put.value")
 				return []any{key, value}
 			},
 			Run: func(c *prop.Case, client int, input any) {
 				args, _ := input.([]any)
-				call := c.History().Invoke(client, "Put", args)
+				call := c.History().Invoke(client, "Put", args, args[0])
 				values, err := storePutCall(c.Context(), subject(), args)
 				conform.Complete(c.Context(), call, err, values...)
 			},
@@ -2096,4 +2096,4 @@ func fifoReference(r reference.Fifo) func(context.Context, string, []any) confor
 	}
 }
 
-// dokimi:provenance sha256:dae6107fa460855b31d6aade49745f1e187a3dc486d191fa4b487f99eed18115
+// dokimi:provenance sha256:d6465b968b7ec2e62da1785bd2a47ff630d12b0f32e986755f9f2f7252ab8dc9

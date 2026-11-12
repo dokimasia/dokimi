@@ -316,47 +316,6 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: MixedStubOption[]
-  ): MixedStub {
-    return new MixedStub(
-      seat,
-      MixedStub.withClock(clock),
-      MixedStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: MixedStubOption[]
-  ): MixedStub {
-    return new MixedStub(seat, MixedStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -391,4 +350,4 @@ export class MixedStub implements Mixed {
 
 void compatV1;
 
-// dokimi:provenance sha256:ea9a038838aef4aae3d00c0d2b1908a61a2f28b3aa2cc449e54746e3ff6b2e48
+// dokimi:provenance sha256:546c4cabf911edf7f0adc198be73cd04ef331bcc69f29cb698f8588aa02384a3

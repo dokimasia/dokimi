@@ -2,11 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/windowed/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { MixedStub } from "./iface.stub";
+import { type MixedCountInCall, type MixedRecordCall, MixedStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of record. An argument without a sample is undefined. */
 function mixedStubRecordArgs(): [string] {
@@ -19,6 +19,33 @@ function mixedStubRecordArgs(): [string] {
 function mixedStubRecord(double: MixedStub): Promise<void> {
   const args = mixedStubRecordArgs();
   return double.record(args[0]);
+}
+
+/** Returns the subject of behaviour and resetBehaviour for record, on a new double that reports to seat. */
+function mixedStubRecordSubject(seat: Seat): Subject<MixedRecordCall, undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onRecord,
+    call: () => mixedStubRecord(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = mixedStubRecordArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    override: (seen) => {
+      double.onRecord.func((...received: unknown[]) => {
+        seen({ key: received[0] } as MixedRecordCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubRecord(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /** Returns the samples of the arguments of countIn. An argument without a sample is undefined. */
@@ -41,152 +68,74 @@ function mixedStubCountInPin(): number {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for countIn, on a new double that reports to seat. */
+function mixedStubCountInSubject(seat: Seat): Subject<MixedCountInCall, number | undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onCountIn,
+    call: () => mixedStubCountIn(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = mixedStubCountInArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    result: async () => await mixedStubCountIn(double),
+    returns: () => {
+      const want = mixedStubCountInPin();
+      double.onCountIn.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onCountIn.func((...received: unknown[]) => {
+        seen({ key: received[0] } as MixedCountInCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubCountIn(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * record alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call record alone.
  */
 function mixedStubInstance(double: MixedStub) {
   return {
     stub: double.onRecord,
     call: () => mixedStubRecord(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("MixedStub", () => {
   describe("record", () => {
-    const checks = behaviour("Mixed.record", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onRecord,
-        call: () => mixedStubRecord(double),
-        override: (mark) => {
-          double.onRecord.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.record", mixedStubRecordSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubRecord(double);
-      expect(double.onRecord.callCount).isEqualTo(1, "record records the call");
-      const got = double.onRecord.calls[0];
-      const args = mixedStubRecordArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onRecord.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubRecord(double);
-      await mixedStubRecord(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of record");
-    });
   });
 
   describe("countIn", () => {
-    const checks = behaviour("Mixed.countIn", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onCountIn,
-        call: () => mixedStubCountIn(double),
-        override: (mark) => {
-          double.onCountIn.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.countIn", mixedStubCountInSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubCountIn(double);
-      expect(double.onCountIn.callCount).isEqualTo(1, "countIn records the call");
-      const got = double.onCountIn.calls[0];
-      const args = mixedStubCountInArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onCountIn.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubCountIn(double);
-      await mixedStubCountIn(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of countIn");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of record", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubRecord(double);
-      double.resetCalls();
-      expect(double.onRecord.callCount).isEqualTo(0, "resetCalls clears the calls of record");
+    describe("record", () => {
+      for (const c of resetBehaviour("Mixed.record", mixedStubRecordSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of countIn", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubCountIn(double);
-      double.resetCalls();
-      expect(double.onCountIn.callCount).isEqualTo(0, "resetCalls clears the calls of countIn");
-    });
-
-    it("keeps the result of returns of countIn", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubCountInPin();
-      double.onCountIn.returns(want);
-      double.resetCalls();
-      expect(await mixedStubCountIn(double)).isEqualTo(want, "resetCalls keeps the result of countIn");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails record with its error", async () => {
-      const want = new Error("record-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubRecord(double));
-      const message = "record fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails countIn with its error", async () => {
-      const want = new Error("countIn-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubCountIn(double));
-      const message = "countIn fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("countIn", () => {
+      for (const c of resetBehaviour("Mixed.countIn", mixedStubCountInSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -311,54 +260,4 @@ describe("MixedStub", () => {
   });
 });
 
-describe("MixedRecordStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of record to the function", async () => {
-      const double = new MixedStub(undefined);
-      let got: unknown[] = [];
-      double.onRecord.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await mixedStubRecord(double);
-      const args = mixedStubRecordArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("MixedCountInStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of countIn", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubCountInPin();
-      double.onCountIn.returns(want);
-      expect(await mixedStubCountIn(double)).isEqualTo(want, "countIn returns the result that returns sets");
-    });
-
-    it("configures countIn for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new MixedStub(failures);
-      double.onCountIn.strict();
-      double.onCountIn.returns(undefined as never);
-      await settle(() => mixedStubCountIn(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of countIn");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of countIn to the function", async () => {
-      const double = new MixedStub(undefined);
-      let got: unknown[] = [];
-      double.onCountIn.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await mixedStubCountIn(double);
-      const args = mixedStubCountInArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:cdabf77d4a3edd30d8f4e21fc27126179b3283602821457fd7db6fad449f372f
+// dokimi:provenance sha256:bed6f088823f0017db9c940ec85fd867aef4ae28a06aaa31faf52767bca8e4a0

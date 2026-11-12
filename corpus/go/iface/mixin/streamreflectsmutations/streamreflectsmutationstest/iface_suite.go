@@ -647,12 +647,12 @@ func mixedActions(c *prop.Case, subject func() streamreflectsmutations.Mixed) []
 		{
 			Name: "Add",
 			Input: func(c *prop.Case, _ struct{}) any {
-				item := c.Draw(prop.Of[string](), "add.item")
+				item := c.Draw(prop.SampledFrom(keysString...), "add.item")
 				return []any{item}
 			},
 			Run: func(c *prop.Case, client int, input any) {
 				args, _ := input.([]any)
-				call := c.History().Invoke(client, "Add", args)
+				call := c.History().Invoke(client, "Add", args, args[0])
 				values, err := mixedAddCall(c.Context(), subject(), args)
 				conform.Complete(c.Context(), call, err, values...)
 			},
@@ -701,4 +701,4 @@ func mixedRemoveCall(ctx context.Context, subject streamreflectsmutations.Mixed,
 	return nil, subject.Remove(ctx, a0)
 }
 
-// dokimi:provenance sha256:c2ecade6db520b5571b8a86a10d86a74c2b31ec99e636bd8eed6277428d63fa5
+// dokimi:provenance sha256:dbb6c5b67b9a356fb8ad373ba5b0cb3281a77e9bc5d23f5e99074abab96a4bbb

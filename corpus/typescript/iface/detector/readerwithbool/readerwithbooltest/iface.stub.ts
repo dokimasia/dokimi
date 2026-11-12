@@ -206,47 +206,6 @@ export class ReaderWithBoolStub implements ReaderWithBool {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: ReaderWithBoolStubOption[]
-  ): ReaderWithBoolStub {
-    return new ReaderWithBoolStub(
-      seat,
-      ReaderWithBoolStub.withClock(clock),
-      ReaderWithBoolStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: ReaderWithBoolStubOption[]
-  ): ReaderWithBoolStub {
-    return new ReaderWithBoolStub(seat, ReaderWithBoolStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -265,4 +224,4 @@ export class ReaderWithBoolStub implements ReaderWithBool {
 
 void compatV1;
 
-// dokimi:provenance sha256:302cd8b8430b8cc4e1b6379f25ae2ab9db429f4d865603b09f22c5cd7feaccdd
+// dokimi:provenance sha256:978718dd543065fa7adff5b03bfceceb5c1ddd414edd484ce74e15ecff0c0f42

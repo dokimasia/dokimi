@@ -2,92 +2,63 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/lifecycle/iface.ts
 
-import { Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { LifecycleStub } from "./iface.stub";
+import { type LifecycleCloseCall, LifecycleStub } from "./iface.stub";
 
 /** Calls close of double with the samples of its arguments. */
 function lifecycleStubClose(double: LifecycleStub): Promise<void> {
   return double.close();
 }
 
+/** Returns the subject of behaviour and resetBehaviour for close, on a new double that reports to seat. */
+function lifecycleStubCloseSubject(seat: Seat): Subject<LifecycleCloseCall, undefined> {
+  const double = new LifecycleStub(seat);
+  return {
+    stub: double.onClose,
+    call: () => lifecycleStubClose(double),
+    reset: () => double.resetCalls(),
+    override: (seen) => {
+      double.onClose.func(() => {
+        seen({} as LifecycleCloseCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => lifecycleStubClose(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * close alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call close alone.
  */
 function lifecycleStubInstance(double: LifecycleStub) {
   return {
     stub: double.onClose,
     call: () => lifecycleStubClose(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("LifecycleStub", () => {
   describe("close", () => {
-    const checks = behaviour("Lifecycle.close", (seat) => {
-      const double = new LifecycleStub(seat);
-      return {
-        stub: double.onClose,
-        call: () => lifecycleStubClose(double),
-        override: (mark) => {
-          double.onClose.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Lifecycle.close", lifecycleStubCloseSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new LifecycleStub(undefined);
-      let seen = 0;
-      double.onClose.onRecord(() => {
-        seen += 1;
-      });
-      await lifecycleStubClose(double);
-      await lifecycleStubClose(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of close");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => lifecycleStubInstance(new LifecycleStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of close", async () => {
-      const double = new LifecycleStub(undefined);
-      await lifecycleStubClose(double);
-      double.resetCalls();
-      expect(double.onClose.callCount).isEqualTo(0, "resetCalls clears the calls of close");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => lifecycleStubInstance(LifecycleStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails close with its error", async () => {
-      const want = new Error("close-failing");
-      const double = LifecycleStub.newFailing(undefined, want);
-      const outcome = await settle(() => lifecycleStubClose(double));
-      const message = "close fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("close", () => {
+      for (const c of resetBehaviour("Lifecycle.close", lifecycleStubCloseSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -176,4 +147,4 @@ describe("LifecycleStub", () => {
   });
 });
 
-// dokimi:provenance sha256:5a7d4e7a67fabcdba477432db38bd1390df1f5fb48ac15cedc701f2da1da1437
+// dokimi:provenance sha256:7dfdae77449cfc15ba97ac0a5eab997d9bb4b81775f5fb9632496d244d922111

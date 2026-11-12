@@ -9,14 +9,16 @@ The TypeScript corpus is the TypeScript form of `corpus/go`. It has the same axe
 
 ## Run the corpus
 
-Generate the files, then type-check them and run their tests:
+Install the packages, generate the files and type-check them, then run the gate of the corpus:
 
 ```sh
+pnpm --dir corpus/typescript install
 dokimi -C corpus/typescript run
-npm --prefix corpus/typescript install
-npm --prefix corpus/typescript run types
-npm --prefix corpus/typescript test
+pnpm --dir corpus/typescript run types
+dokimi conform --lang typescript
 ```
+
+`dokimi conform --lang typescript` checks that the generated files are current, and runs the tests of the fixtures at the level of `overlay.yaml` through `pnpm exec vitest run --reporter=json`. It then judges each fixture against its expected outcomes under `corpus/expect`. `overlay.yaml` declares each difference of TypeScript from the corpus of Go. The gate fails on a difference without an entry.
 
 The script `test` measures the coverage of the doubles, the builders and the surfaces of the enumerations, and fails below 100%. `vitest.config.ts` runs `vitest.setup.ts` before each test file, and the setup file registers the assertions of `@dokimi/assert` on the `expect` of vitest, which the generated tests call. The configuration in `tsconfig.json` turns on every strict check, `noUnusedLocals` and `noUnusedParameters` included, so the generated code compiles in the strictest project that consumes it.
 
@@ -24,7 +26,7 @@ The script `test` measures the coverage of the doubles, the builders and the sur
 
 | Go | TypeScript |
 |---|---|
-| A method with a `context.Context` | An asynchronous method, whose result is a `Promise` |
+| A method with a `context.Context` | An asynchronous method whose result is a `Promise`. Its last parameter is `signal: AbortSignal`, and a rest parameter follows the signal |
 | A method without a `context.Context` | A synchronous method |
 | The results `(T, error)` | The result `T`. A failure rejects the promise or throws |
 | The result `error` alone | The result `void` |

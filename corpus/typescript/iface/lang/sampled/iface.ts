@@ -77,5 +77,5 @@ export interface Labeller {
    * admits lets the claim engage.
    */
   //dokimi:mixin idempotent
-  apply(tag: Tag, level: Level): Promise<void>;
+  apply(tag: Tag, level: Level, signal: AbortSignal): Promise<void>;
 }

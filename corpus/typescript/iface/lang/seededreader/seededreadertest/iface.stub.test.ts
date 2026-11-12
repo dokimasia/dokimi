@@ -2,24 +2,25 @@
 // dokimi:plugin stub
 // dokimi:source iface/lang/seededreader/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
 import type { Body, Key } from "../iface";
-import { CatalogStub } from "./iface.stub";
+import { type CatalogLenCall, type CatalogLookupCall, CatalogStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of lookup. An argument without a sample is undefined. */
-function catalogStubLookupArgs(): [Key] {
+function catalogStubLookupArgs(): [Key, AbortSignal] {
   let a0 = undefined as unknown as Key;
+  let a1 = undefined as unknown as AbortSignal;
   a0 = "lookup-a";
-  return [a0];
+  return [a0, a1];
 }
 
 /** Calls lookup of double with the samples of its arguments. */
 function catalogStubLookup(double: CatalogStub): Promise<Body> {
   const args = catalogStubLookupArgs();
-  return double.lookup(args[0]);
+  return double.lookup(args[0], args[1]);
 }
 
 /** Returns the sample of the result of lookup. */
@@ -29,9 +30,50 @@ function catalogStubLookupPin(): Body {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for lookup, on a new double that reports to seat. */
+function catalogStubLookupSubject(seat: Seat): Subject<CatalogLookupCall, Body | undefined> {
+  const double = new CatalogStub(seat);
+  return {
+    stub: double.onLookup,
+    call: () => catalogStubLookup(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = catalogStubLookupArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+      check.isEqualTo(s, c.signal, args[1], "the call records signal");
+    },
+    result: async () => await catalogStubLookup(double),
+    returns: () => {
+      const want = catalogStubLookupPin();
+      double.onLookup.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onLookup.func((...received: unknown[]) => {
+        seen({ key: received[0], signal: received[1] } as CatalogLookupCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => catalogStubLookup(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
+/** Returns the samples of the arguments of len. An argument without a sample is undefined. */
+function catalogStubLenArgs(): [AbortSignal] {
+  let a0 = undefined as unknown as AbortSignal;
+  return [a0];
+}
+
 /** Calls len of double with the samples of its arguments. */
 function catalogStubLen(double: CatalogStub): Promise<number> {
-  return double.len();
+  const args = catalogStubLenArgs();
+  return double.len(args[0]);
 }
 
 /** Returns the sample of the result of len. */
@@ -41,151 +83,74 @@ function catalogStubLenPin(): number {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for len, on a new double that reports to seat. */
+function catalogStubLenSubject(seat: Seat): Subject<CatalogLenCall, number | undefined> {
+  const double = new CatalogStub(seat);
+  return {
+    stub: double.onLen,
+    call: () => catalogStubLen(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = catalogStubLenArgs();
+      check.isEqualTo(s, c.signal, args[0], "the call records signal");
+    },
+    result: async () => await catalogStubLen(double),
+    returns: () => {
+      const want = catalogStubLenPin();
+      double.onLen.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onLen.func((...received: unknown[]) => {
+        seen({ signal: received[0] } as CatalogLenCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => catalogStubLen(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * lookup alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call lookup alone.
  */
 function catalogStubInstance(double: CatalogStub) {
   return {
     stub: double.onLookup,
     call: () => catalogStubLookup(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("CatalogStub", () => {
   describe("lookup", () => {
-    const checks = behaviour("Catalog.lookup", (seat) => {
-      const double = new CatalogStub(seat);
-      return {
-        stub: double.onLookup,
-        call: () => catalogStubLookup(double),
-        override: (mark) => {
-          double.onLookup.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Catalog.lookup", catalogStubLookupSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new CatalogStub(undefined);
-      await catalogStubLookup(double);
-      expect(double.onLookup.callCount).isEqualTo(1, "lookup records the call");
-      const got = double.onLookup.calls[0];
-      const args = catalogStubLookupArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new CatalogStub(undefined);
-      let seen = 0;
-      double.onLookup.onRecord(() => {
-        seen += 1;
-      });
-      await catalogStubLookup(double);
-      await catalogStubLookup(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of lookup");
-    });
   });
 
   describe("len", () => {
-    const checks = behaviour("Catalog.len", (seat) => {
-      const double = new CatalogStub(seat);
-      return {
-        stub: double.onLen,
-        call: () => catalogStubLen(double),
-        override: (mark) => {
-          double.onLen.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Catalog.len", catalogStubLenSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new CatalogStub(undefined);
-      let seen = 0;
-      double.onLen.onRecord(() => {
-        seen += 1;
-      });
-      await catalogStubLen(double);
-      await catalogStubLen(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of len");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => catalogStubInstance(new CatalogStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of lookup", async () => {
-      const double = new CatalogStub(undefined);
-      await catalogStubLookup(double);
-      double.resetCalls();
-      expect(double.onLookup.callCount).isEqualTo(0, "resetCalls clears the calls of lookup");
+    describe("lookup", () => {
+      for (const c of resetBehaviour("Catalog.lookup", catalogStubLookupSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("keeps the result of returns of lookup", async () => {
-      const double = new CatalogStub(undefined);
-      const want = catalogStubLookupPin();
-      double.onLookup.returns(want);
-      double.resetCalls();
-      expect(await catalogStubLookup(double)).isEqualTo(want, "resetCalls keeps the result of lookup");
-    });
-
-    it("clears the recorded calls of len", async () => {
-      const double = new CatalogStub(undefined);
-      await catalogStubLen(double);
-      double.resetCalls();
-      expect(double.onLen.callCount).isEqualTo(0, "resetCalls clears the calls of len");
-    });
-
-    it("keeps the result of returns of len", async () => {
-      const double = new CatalogStub(undefined);
-      const want = catalogStubLenPin();
-      double.onLen.returns(want);
-      double.resetCalls();
-      expect(await catalogStubLen(double)).isEqualTo(want, "resetCalls keeps the result of len");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => catalogStubInstance(CatalogStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails lookup with its error", async () => {
-      const want = new Error("lookup-failing");
-      const double = CatalogStub.newFailing(undefined, want);
-      const outcome = await settle(() => catalogStubLookup(double));
-      const message = "lookup fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails len with its error", async () => {
-      const want = new Error("len-failing");
-      const double = CatalogStub.newFailing(undefined, want);
-      const outcome = await settle(() => catalogStubLen(double));
-      const message = "len fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("len", () => {
+      for (const c of resetBehaviour("Catalog.len", catalogStubLenSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -310,58 +275,4 @@ describe("CatalogStub", () => {
   });
 });
 
-describe("CatalogLookupStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of lookup", async () => {
-      const double = new CatalogStub(undefined);
-      const want = catalogStubLookupPin();
-      double.onLookup.returns(want);
-      expect(await catalogStubLookup(double)).isEqualTo(want, "lookup returns the result that returns sets");
-    });
-
-    it("configures lookup for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new CatalogStub(failures);
-      double.onLookup.strict();
-      double.onLookup.returns(undefined as never);
-      await settle(() => catalogStubLookup(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of lookup");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of lookup to the function", async () => {
-      const double = new CatalogStub(undefined);
-      let got: unknown[] = [];
-      double.onLookup.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await catalogStubLookup(double);
-      const args = catalogStubLookupArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("CatalogLenStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of len", async () => {
-      const double = new CatalogStub(undefined);
-      const want = catalogStubLenPin();
-      double.onLen.returns(want);
-      expect(await catalogStubLen(double)).isEqualTo(want, "len returns the result that returns sets");
-    });
-
-    it("configures len for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new CatalogStub(failures);
-      double.onLen.strict();
-      double.onLen.returns(undefined as never);
-      await settle(() => catalogStubLen(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of len");
-    });
-  });
-});
-
-// dokimi:provenance sha256:6484719c45f90961ad87dff323a3374e94906adc0978b1de3d33d35c82a3ec1e
+// dokimi:provenance sha256:aa3c70a31233a4ba5440c8a48ae1ac346ebaaebbd985e3cf91d5b0c29e933c4a

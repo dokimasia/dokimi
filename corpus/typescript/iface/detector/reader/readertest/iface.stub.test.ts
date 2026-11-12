@@ -2,12 +2,12 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/reader/iface.ts
 
-import { Controlled, Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { Controlled, type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
 import { type Value, notFound } from "../iface";
-import { ReaderStub, ValueStub } from "./iface.stub";
+import { type ReaderGetCall, ReaderStub, ValueStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of get. An argument without a sample is undefined. */
 function readerStubGetArgs(): [string] {
@@ -29,98 +29,62 @@ function readerStubGetPin(): Value {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for get, on a new double that reports to seat. */
+function readerStubGetSubject(seat: Seat): Subject<ReaderGetCall, Value | undefined> {
+  const double = new ReaderStub(seat);
+  return {
+    stub: double.onGet,
+    call: () => readerStubGet(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = readerStubGetArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    result: async () => await readerStubGet(double),
+    returns: () => {
+      const want = readerStubGetPin();
+      double.onGet.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onGet.func((...received: unknown[]) => {
+        seen({ key: received[0] } as ReaderGetCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => readerStubGet(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * get alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call get alone.
  */
 function readerStubInstance(double: ReaderStub) {
   return {
     stub: double.onGet,
     call: () => readerStubGet(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("ReaderStub", () => {
   describe("get", () => {
-    const checks = behaviour("Reader.get", (seat) => {
-      const double = new ReaderStub(seat);
-      return {
-        stub: double.onGet,
-        call: () => readerStubGet(double),
-        override: (mark) => {
-          double.onGet.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Reader.get", readerStubGetSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new ReaderStub(undefined);
-      await readerStubGet(double);
-      expect(double.onGet.callCount).isEqualTo(1, "get records the call");
-      const got = double.onGet.calls[0];
-      const args = readerStubGetArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ReaderStub(undefined);
-      let seen = 0;
-      double.onGet.onRecord(() => {
-        seen += 1;
-      });
-      await readerStubGet(double);
-      await readerStubGet(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of get");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => readerStubInstance(new ReaderStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of get", async () => {
-      const double = new ReaderStub(undefined);
-      await readerStubGet(double);
-      double.resetCalls();
-      expect(double.onGet.callCount).isEqualTo(0, "resetCalls clears the calls of get");
-    });
-
-    it("keeps the result of returns of get", async () => {
-      const double = new ReaderStub(undefined);
-      const want = readerStubGetPin();
-      double.onGet.returns(want);
-      double.resetCalls();
-      expect(await readerStubGet(double)).isEqualTo(want, "resetCalls keeps the result of get");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => readerStubInstance(ReaderStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails get with its error", async () => {
-      const want = new Error("get-failing");
-      const double = ReaderStub.newFailing(undefined, want);
-      const outcome = await settle(() => readerStubGet(double));
-      const message = "get fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("get", () => {
+      for (const c of resetBehaviour("Reader.get", readerStubGetSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -210,38 +174,6 @@ describe("ReaderStub", () => {
 });
 
 describe("ReaderGetStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of get", async () => {
-      const double = new ReaderStub(undefined);
-      const want = readerStubGetPin();
-      double.onGet.returns(want);
-      expect(await readerStubGet(double)).isEqualTo(want, "get returns the result that returns sets");
-    });
-
-    it("configures get for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new ReaderStub(failures);
-      double.onGet.strict();
-      double.onGet.returns(undefined as never);
-      await settle(() => readerStubGet(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of get");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of get to the function", async () => {
-      const double = new ReaderStub(undefined);
-      let got: unknown[] = [];
-      double.onGet.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await readerStubGet(double);
-      const args = readerStubGetArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-
   describe("faultNotFound", () => {
     it("fails the next call of get with notFound", async () => {
       const double = new ReaderStub(undefined);
@@ -339,10 +271,6 @@ describe("ValueStub", () => {
         name: "keeps each property of a double with a latency",
         giveDouble: () => new ValueStub(undefined, ValueStub.withLatency(1)),
       },
-      {
-        name: "keeps each property of a delayed double",
-        giveDouble: () => ValueStub.newDelayed(undefined, 1, new Controlled()),
-      },
     ];
     for (const tt of tests) {
       it(tt.name, () => {
@@ -358,4 +286,4 @@ describe("ValueStub", () => {
   });
 });
 
-// dokimi:provenance sha256:562d613a955567c5ca9d3556d072dea568916512b926049b2cdcfaa347be6591
+// dokimi:provenance sha256:5665dce53490bf47b6ad2ab9a52a872901360d1b952f60729ea810ff40aca656

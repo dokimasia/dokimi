@@ -2,11 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/sideeffect/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { MixedStub } from "./iface.stub";
+import { type MixedObservedCall, MixedStub, type MixedTouchCall } from "./iface.stub";
 
 /** Returns the samples of the arguments of touch. An argument without a sample is undefined. */
 function mixedStubTouchArgs(): [string] {
@@ -19,6 +19,33 @@ function mixedStubTouchArgs(): [string] {
 function mixedStubTouch(double: MixedStub): Promise<void> {
   const args = mixedStubTouchArgs();
   return double.touch(args[0]);
+}
+
+/** Returns the subject of behaviour and resetBehaviour for touch, on a new double that reports to seat. */
+function mixedStubTouchSubject(seat: Seat): Subject<MixedTouchCall, undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onTouch,
+    call: () => mixedStubTouch(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = mixedStubTouchArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    override: (seen) => {
+      double.onTouch.func((...received: unknown[]) => {
+        seen({ key: received[0] } as MixedTouchCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubTouch(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /** Returns the samples of the arguments of observed. An argument without a sample is undefined. */
@@ -41,152 +68,74 @@ function mixedStubObservedPin(): number {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for observed, on a new double that reports to seat. */
+function mixedStubObservedSubject(seat: Seat): Subject<MixedObservedCall, number | undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onObserved,
+    call: () => mixedStubObserved(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = mixedStubObservedArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    result: async () => await mixedStubObserved(double),
+    returns: () => {
+      const want = mixedStubObservedPin();
+      double.onObserved.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onObserved.func((...received: unknown[]) => {
+        seen({ key: received[0] } as MixedObservedCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubObserved(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * touch alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call touch alone.
  */
 function mixedStubInstance(double: MixedStub) {
   return {
     stub: double.onTouch,
     call: () => mixedStubTouch(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("MixedStub", () => {
   describe("touch", () => {
-    const checks = behaviour("Mixed.touch", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onTouch,
-        call: () => mixedStubTouch(double),
-        override: (mark) => {
-          double.onTouch.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.touch", mixedStubTouchSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubTouch(double);
-      expect(double.onTouch.callCount).isEqualTo(1, "touch records the call");
-      const got = double.onTouch.calls[0];
-      const args = mixedStubTouchArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onTouch.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubTouch(double);
-      await mixedStubTouch(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of touch");
-    });
   });
 
   describe("observed", () => {
-    const checks = behaviour("Mixed.observed", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onObserved,
-        call: () => mixedStubObserved(double),
-        override: (mark) => {
-          double.onObserved.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.observed", mixedStubObservedSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubObserved(double);
-      expect(double.onObserved.callCount).isEqualTo(1, "observed records the call");
-      const got = double.onObserved.calls[0];
-      const args = mixedStubObservedArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onObserved.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubObserved(double);
-      await mixedStubObserved(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of observed");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of touch", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubTouch(double);
-      double.resetCalls();
-      expect(double.onTouch.callCount).isEqualTo(0, "resetCalls clears the calls of touch");
+    describe("touch", () => {
+      for (const c of resetBehaviour("Mixed.touch", mixedStubTouchSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of observed", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubObserved(double);
-      double.resetCalls();
-      expect(double.onObserved.callCount).isEqualTo(0, "resetCalls clears the calls of observed");
-    });
-
-    it("keeps the result of returns of observed", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubObservedPin();
-      double.onObserved.returns(want);
-      double.resetCalls();
-      expect(await mixedStubObserved(double)).isEqualTo(want, "resetCalls keeps the result of observed");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails touch with its error", async () => {
-      const want = new Error("touch-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubTouch(double));
-      const message = "touch fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails observed with its error", async () => {
-      const want = new Error("observed-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubObserved(double));
-      const message = "observed fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("observed", () => {
+      for (const c of resetBehaviour("Mixed.observed", mixedStubObservedSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -311,54 +260,4 @@ describe("MixedStub", () => {
   });
 });
 
-describe("MixedTouchStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of touch to the function", async () => {
-      const double = new MixedStub(undefined);
-      let got: unknown[] = [];
-      double.onTouch.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await mixedStubTouch(double);
-      const args = mixedStubTouchArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("MixedObservedStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of observed", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubObservedPin();
-      double.onObserved.returns(want);
-      expect(await mixedStubObserved(double)).isEqualTo(want, "observed returns the result that returns sets");
-    });
-
-    it("configures observed for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new MixedStub(failures);
-      double.onObserved.strict();
-      double.onObserved.returns(undefined as never);
-      await settle(() => mixedStubObserved(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of observed");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of observed to the function", async () => {
-      const double = new MixedStub(undefined);
-      let got: unknown[] = [];
-      double.onObserved.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await mixedStubObserved(double);
-      const args = mixedStubObservedArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:a357360f2c8978ccc7e50942fddd94f43d4b83182aada639e262b4f866ff8071
+// dokimi:provenance sha256:7ee574599aba1a04d39a1f72dbfcdbe6b8f60434b700aa7be15fcbf7532cf3c4

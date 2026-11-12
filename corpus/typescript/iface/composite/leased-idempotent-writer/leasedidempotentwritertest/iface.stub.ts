@@ -245,47 +245,6 @@ export class LeasedWriterStub implements LeasedWriter {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: LeasedWriterStubOption[]
-  ): LeasedWriterStub {
-    return new LeasedWriterStub(
-      seat,
-      LeasedWriterStub.withClock(clock),
-      LeasedWriterStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: LeasedWriterStubOption[]
-  ): LeasedWriterStub {
-    return new LeasedWriterStub(seat, LeasedWriterStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -312,4 +271,4 @@ export class LeasedWriterStub implements LeasedWriter {
 
 void compatV1;
 
-// dokimi:provenance sha256:e2aff01bf10acd64e328b4647ae1c24839ae94b1e765f3513e2b74e175648992
+// dokimi:provenance sha256:1228c88b71556b26656fe2b2a1ad48b2fad5fcfe23604012ea81945e8490d1b5

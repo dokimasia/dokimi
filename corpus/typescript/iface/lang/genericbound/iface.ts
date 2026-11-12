@@ -54,7 +54,7 @@ export interface Score {
 //dokimi:out path=genericboundtest/
 export interface Ranked<K extends Ordered, V> {
   /** Returns the value of the rank of the key. */
-  rank(key: K): Promise<V>;
+  rank(key: K, signal: AbortSignal): Promise<V>;
   /** Clears the ranks. */
-  reset(): Promise<void>;
+  reset(signal: AbortSignal): Promise<void>;
 }

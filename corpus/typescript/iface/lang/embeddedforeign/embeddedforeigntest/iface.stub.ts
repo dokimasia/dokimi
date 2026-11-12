@@ -212,47 +212,6 @@ export class FailureStub implements Failure {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: FailureStubOption[]
-  ): FailureStub {
-    return new FailureStub(
-      seat,
-      FailureStub.withClock(clock),
-      FailureStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: FailureStubOption[]
-  ): FailureStub {
-    return new FailureStub(seat, FailureStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -271,4 +230,4 @@ export class FailureStub implements Failure {
 
 void compatV1;
 
-// dokimi:provenance sha256:46ff37d10aad8cec2a39fd7c4ca66e468879bba5d61b05f4f0b2b3370a57d540
+// dokimi:provenance sha256:02da5435c14829aa930a0b741836061641ead72378aa2547aa1e1d38661ea654

@@ -266,47 +266,6 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: ContractStubOption[]
-  ): ContractStub {
-    return new ContractStub(
-      seat,
-      ContractStub.withClock(clock),
-      ContractStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: ContractStubOption[]
-  ): ContractStub {
-    return new ContractStub(seat, ContractStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -585,47 +544,6 @@ export class SubscriptionStub implements Subscription {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: SubscriptionStubOption[]
-  ): SubscriptionStub {
-    return new SubscriptionStub(
-      seat,
-      SubscriptionStub.withClock(clock),
-      SubscriptionStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: SubscriptionStubOption[]
-  ): SubscriptionStub {
-    return new SubscriptionStub(seat, SubscriptionStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -652,4 +570,4 @@ export class SubscriptionStub implements Subscription {
 
 void compatV1;
 
-// dokimi:provenance sha256:0d26616832437f43780fc61947cbda683f78e25527091ca2400a0631750592b6
+// dokimi:provenance sha256:1ff68b8c84c0c3379d3134dd23710f37cb41af27d0cdab961f3d1f5ea3f37d59

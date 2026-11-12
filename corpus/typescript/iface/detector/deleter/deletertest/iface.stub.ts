@@ -187,47 +187,6 @@ export class DeleterStub implements Deleter {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: DeleterStubOption[]
-  ): DeleterStub {
-    return new DeleterStub(
-      seat,
-      DeleterStub.withClock(clock),
-      DeleterStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: DeleterStubOption[]
-  ): DeleterStub {
-    return new DeleterStub(seat, DeleterStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -246,4 +205,4 @@ export class DeleterStub implements Deleter {
 
 void compatV1;
 
-// dokimi:provenance sha256:d466e082472f81c0d78ab8b7c83d5e874bd8fb7a88322786594ed8713d5363cf
+// dokimi:provenance sha256:7a66ffd3e231c38644f0f419b0451dba7fdc6bd08aeead5ee07a69785a47cccf

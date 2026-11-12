@@ -2,12 +2,12 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/writer/iface.ts
 
-import { Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
 import type { Value } from "../iface";
-import { WriterStub } from "./iface.stub";
+import { type WriterPutCall, WriterStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of put. An argument without a sample is undefined. */
 function writerStubPutArgs(): [Value] {
@@ -22,90 +22,56 @@ function writerStubPut(double: WriterStub): Promise<void> {
   return double.put(args[0]);
 }
 
+/** Returns the subject of behaviour and resetBehaviour for put, on a new double that reports to seat. */
+function writerStubPutSubject(seat: Seat): Subject<WriterPutCall, undefined> {
+  const double = new WriterStub(seat);
+  return {
+    stub: double.onPut,
+    call: () => writerStubPut(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = writerStubPutArgs();
+      check.isEqualTo(s, c.v, args[0], "the call records v");
+    },
+    override: (seen) => {
+      double.onPut.func((...received: unknown[]) => {
+        seen({ v: received[0] } as WriterPutCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => writerStubPut(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * put alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call put alone.
  */
 function writerStubInstance(double: WriterStub) {
   return {
     stub: double.onPut,
     call: () => writerStubPut(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("WriterStub", () => {
   describe("put", () => {
-    const checks = behaviour("Writer.put", (seat) => {
-      const double = new WriterStub(seat);
-      return {
-        stub: double.onPut,
-        call: () => writerStubPut(double),
-        override: (mark) => {
-          double.onPut.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Writer.put", writerStubPutSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new WriterStub(undefined);
-      await writerStubPut(double);
-      expect(double.onPut.callCount).isEqualTo(1, "put records the call");
-      const got = double.onPut.calls[0];
-      const args = writerStubPutArgs();
-      expect(got?.v).isEqualTo(args[0], "the call records v");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new WriterStub(undefined);
-      let seen = 0;
-      double.onPut.onRecord(() => {
-        seen += 1;
-      });
-      await writerStubPut(double);
-      await writerStubPut(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of put");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => writerStubInstance(new WriterStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of put", async () => {
-      const double = new WriterStub(undefined);
-      await writerStubPut(double);
-      double.resetCalls();
-      expect(double.onPut.callCount).isEqualTo(0, "resetCalls clears the calls of put");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => writerStubInstance(WriterStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails put with its error", async () => {
-      const want = new Error("put-failing");
-      const double = WriterStub.newFailing(undefined, want);
-      const outcome = await settle(() => writerStubPut(double));
-      const message = "put fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("put", () => {
+      for (const c of resetBehaviour("Writer.put", writerStubPutSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -194,20 +160,4 @@ describe("WriterStub", () => {
   });
 });
 
-describe("WriterPutStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of put to the function", async () => {
-      const double = new WriterStub(undefined);
-      let got: unknown[] = [];
-      double.onPut.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await writerStubPut(double);
-      const args = writerStubPutArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:d00cecd6fb248adb9db8f8bd7b736f016c26eeb1d233f90df421d9844a199a7d
+// dokimi:provenance sha256:00fa4140c0a90180ae20e98b96efacc239cc73d8a818ee0db3e3ed05a0f420cf

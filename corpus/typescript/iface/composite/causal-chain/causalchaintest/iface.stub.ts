@@ -262,47 +262,6 @@ export class LogStub implements Log {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: LogStubOption[]
-  ): LogStub {
-    return new LogStub(
-      seat,
-      LogStub.withClock(clock),
-      LogStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: LogStubOption[]
-  ): LogStub {
-    return new LogStub(seat, LogStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -329,4 +288,4 @@ export class LogStub implements Log {
 
 void compatV1;
 
-// dokimi:provenance sha256:a0317192c29f6b8d9ddae67cd442de2846f002b01e23f3d73170034010e84842
+// dokimi:provenance sha256:8243cb992349473b70e874875a58f898aa35cf97292d8ae80f8245966e478946

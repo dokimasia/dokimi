@@ -187,47 +187,6 @@ export class MutatorStub implements Mutator {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: MutatorStubOption[]
-  ): MutatorStub {
-    return new MutatorStub(
-      seat,
-      MutatorStub.withClock(clock),
-      MutatorStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: MutatorStubOption[]
-  ): MutatorStub {
-    return new MutatorStub(seat, MutatorStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -246,4 +205,4 @@ export class MutatorStub implements Mutator {
 
 void compatV1;
 
-// dokimi:provenance sha256:3181139985aef05e79829335b8c8da9e8d7c8dc6284afb661450f0fc436f692c
+// dokimi:provenance sha256:c0680ddf59306c62bce987878598bf10c3e4b56c00881ad0efc732a1ec5bd6ca

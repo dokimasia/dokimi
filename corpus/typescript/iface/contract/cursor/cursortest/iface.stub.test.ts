@@ -2,12 +2,12 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/cursor/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
 import type { Value } from "../iface";
-import { ContractStub } from "./iface.stub";
+import { type ContractCloseCall, type ContractNextCall, ContractStub } from "./iface.stub";
 
 /** Calls next of double with the samples of its arguments. */
 function contractStubNext(double: ContractStub): Promise<Value | undefined> {
@@ -21,139 +21,98 @@ function contractStubNextPin(): Value | undefined {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for next, on a new double that reports to seat. */
+function contractStubNextSubject(seat: Seat): Subject<ContractNextCall, Value | undefined | undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onNext,
+    call: () => contractStubNext(double),
+    reset: () => double.resetCalls(),
+    result: async () => await contractStubNext(double),
+    returns: () => {
+      const want = contractStubNextPin();
+      double.onNext.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onNext.func(() => {
+        seen({} as ContractNextCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubNext(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Calls close of double with the samples of its arguments. */
 function contractStubClose(double: ContractStub): Promise<void> {
   return double.close();
 }
 
+/** Returns the subject of behaviour and resetBehaviour for close, on a new double that reports to seat. */
+function contractStubCloseSubject(seat: Seat): Subject<ContractCloseCall, undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onClose,
+    call: () => contractStubClose(double),
+    reset: () => double.resetCalls(),
+    override: (seen) => {
+      double.onClose.func(() => {
+        seen({} as ContractCloseCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubClose(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * next alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call next alone.
  */
 function contractStubInstance(double: ContractStub) {
   return {
     stub: double.onNext,
     call: () => contractStubNext(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("ContractStub", () => {
   describe("next", () => {
-    const checks = behaviour("Contract.next", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onNext,
-        call: () => contractStubNext(double),
-        override: (mark) => {
-          double.onNext.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.next", contractStubNextSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onNext.onRecord(() => {
-        seen += 1;
-      });
-      await contractStubNext(double);
-      await contractStubNext(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of next");
-    });
   });
 
   describe("close", () => {
-    const checks = behaviour("Contract.close", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onClose,
-        call: () => contractStubClose(double),
-        override: (mark) => {
-          double.onClose.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.close", contractStubCloseSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onClose.onRecord(() => {
-        seen += 1;
-      });
-      await contractStubClose(double);
-      await contractStubClose(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of close");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => contractStubInstance(new ContractStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of next", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubNext(double);
-      double.resetCalls();
-      expect(double.onNext.callCount).isEqualTo(0, "resetCalls clears the calls of next");
+    describe("next", () => {
+      for (const c of resetBehaviour("Contract.next", contractStubNextSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("keeps the result of returns of next", async () => {
-      const double = new ContractStub(undefined);
-      const want = contractStubNextPin();
-      double.onNext.returns(want);
-      double.resetCalls();
-      expect(await contractStubNext(double)).isEqualTo(want, "resetCalls keeps the result of next");
-    });
-
-    it("clears the recorded calls of close", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubClose(double);
-      double.resetCalls();
-      expect(double.onClose.callCount).isEqualTo(0, "resetCalls clears the calls of close");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => contractStubInstance(ContractStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails next with its error", async () => {
-      const want = new Error("next-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubNext(double));
-      const message = "next fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails close with its error", async () => {
-      const want = new Error("close-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubClose(double));
-      const message = "close fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("close", () => {
+      for (const c of resetBehaviour("Contract.close", contractStubCloseSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -278,24 +237,4 @@ describe("ContractStub", () => {
   });
 });
 
-describe("ContractNextStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of next", async () => {
-      const double = new ContractStub(undefined);
-      const want = contractStubNextPin();
-      double.onNext.returns(want);
-      expect(await contractStubNext(double)).isEqualTo(want, "next returns the result that returns sets");
-    });
-
-    it("configures next for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new ContractStub(failures);
-      double.onNext.strict();
-      double.onNext.returns(undefined as never);
-      await settle(() => contractStubNext(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of next");
-    });
-  });
-});
-
-// dokimi:provenance sha256:85bea0550151cfda64f056636cdda766dc368bc2e23bb1aff479df4d1494a6d8
+// dokimi:provenance sha256:1a072371e9720e2880372ac2931691b926def0ae4892ace974dccccb0c728504

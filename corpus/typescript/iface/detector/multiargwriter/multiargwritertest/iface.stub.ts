@@ -268,47 +268,6 @@ export class MultiArgWriterStub implements MultiArgWriter {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: MultiArgWriterStubOption[]
-  ): MultiArgWriterStub {
-    return new MultiArgWriterStub(
-      seat,
-      MultiArgWriterStub.withClock(clock),
-      MultiArgWriterStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: MultiArgWriterStubOption[]
-  ): MultiArgWriterStub {
-    return new MultiArgWriterStub(seat, MultiArgWriterStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -335,4 +294,4 @@ export class MultiArgWriterStub implements MultiArgWriter {
 
 void compatV1;
 
-// dokimi:provenance sha256:0aea7d66cb37c85dfcdc1211ee4859bddcea65820257204ebd0f7dd050bdfac1
+// dokimi:provenance sha256:cb378efc4018487aa286b47409ac62718310f7277bc7be20854560f1b88c6e57

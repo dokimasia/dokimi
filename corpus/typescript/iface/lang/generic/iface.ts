@@ -24,7 +24,7 @@
 //dokimi:out path=generictest/
 export interface Store<K, V> {
   /** Returns the value under the key. */
-  get(key: K): Promise<V>;
+  get(key: K, signal: AbortSignal): Promise<V>;
   /** Stores the value under the key. */
-  put(key: K, value: V): Promise<void>;
+  put(key: K, value: V, signal: AbortSignal): Promise<void>;
 }

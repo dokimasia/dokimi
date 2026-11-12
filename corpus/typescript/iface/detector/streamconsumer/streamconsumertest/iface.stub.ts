@@ -204,47 +204,6 @@ export class SourceStub implements Source {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: SourceStubOption[]
-  ): SourceStub {
-    return new SourceStub(
-      seat,
-      SourceStub.withClock(clock),
-      SourceStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: SourceStubOption[]
-  ): SourceStub {
-    return new SourceStub(seat, SourceStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -457,47 +416,6 @@ export class StreamConsumerStub implements StreamConsumer {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: StreamConsumerStubOption[]
-  ): StreamConsumerStub {
-    return new StreamConsumerStub(
-      seat,
-      StreamConsumerStub.withClock(clock),
-      StreamConsumerStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: StreamConsumerStubOption[]
-  ): StreamConsumerStub {
-    return new StreamConsumerStub(seat, StreamConsumerStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -516,4 +434,4 @@ export class StreamConsumerStub implements StreamConsumer {
 
 void compatV1;
 
-// dokimi:provenance sha256:c9cd2a0efacdca4ba23f2e8f92aca6a229f451b25845bd2dc57b75d5fa8610d9
+// dokimi:provenance sha256:6ad67054354b6ed87b40cc6461f21fab5f9975d3c273711dcad3810f6d566204

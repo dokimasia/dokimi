@@ -2,11 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/injectionsafe/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { MixedStub } from "./iface.stub";
+import { type MixedLoadCall, type MixedStoreCall, MixedStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of store. An argument without a sample is undefined. */
 function mixedStubStoreArgs(): [string, string] {
@@ -21,6 +21,34 @@ function mixedStubStoreArgs(): [string, string] {
 function mixedStubStore(double: MixedStub): Promise<void> {
   const args = mixedStubStoreArgs();
   return double.store(args[0], args[1]);
+}
+
+/** Returns the subject of behaviour and resetBehaviour for store, on a new double that reports to seat. */
+function mixedStubStoreSubject(seat: Seat): Subject<MixedStoreCall, undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onStore,
+    call: () => mixedStubStore(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = mixedStubStoreArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+      check.isEqualTo(s, c.value, args[1], "the call records value");
+    },
+    override: (seen) => {
+      double.onStore.func((...received: unknown[]) => {
+        seen({ key: received[0], value: received[1] } as MixedStoreCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubStore(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /** Returns the samples of the arguments of load. An argument without a sample is undefined. */
@@ -43,153 +71,74 @@ function mixedStubLoadPin(): string {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for load, on a new double that reports to seat. */
+function mixedStubLoadSubject(seat: Seat): Subject<MixedLoadCall, string | undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onLoad,
+    call: () => mixedStubLoad(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = mixedStubLoadArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    result: async () => await mixedStubLoad(double),
+    returns: () => {
+      const want = mixedStubLoadPin();
+      double.onLoad.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onLoad.func((...received: unknown[]) => {
+        seen({ key: received[0] } as MixedLoadCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubLoad(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * store alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call store alone.
  */
 function mixedStubInstance(double: MixedStub) {
   return {
     stub: double.onStore,
     call: () => mixedStubStore(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("MixedStub", () => {
   describe("store", () => {
-    const checks = behaviour("Mixed.store", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onStore,
-        call: () => mixedStubStore(double),
-        override: (mark) => {
-          double.onStore.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.store", mixedStubStoreSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubStore(double);
-      expect(double.onStore.callCount).isEqualTo(1, "store records the call");
-      const got = double.onStore.calls[0];
-      const args = mixedStubStoreArgs();
-      expect.soft(got?.key).isEqualTo(args[0], "the call records key");
-      expect.soft(got?.value).isEqualTo(args[1], "the call records value");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onStore.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubStore(double);
-      await mixedStubStore(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of store");
-    });
   });
 
   describe("load", () => {
-    const checks = behaviour("Mixed.load", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onLoad,
-        call: () => mixedStubLoad(double),
-        override: (mark) => {
-          double.onLoad.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.load", mixedStubLoadSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubLoad(double);
-      expect(double.onLoad.callCount).isEqualTo(1, "load records the call");
-      const got = double.onLoad.calls[0];
-      const args = mixedStubLoadArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onLoad.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubLoad(double);
-      await mixedStubLoad(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of load");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of store", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubStore(double);
-      double.resetCalls();
-      expect(double.onStore.callCount).isEqualTo(0, "resetCalls clears the calls of store");
+    describe("store", () => {
+      for (const c of resetBehaviour("Mixed.store", mixedStubStoreSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of load", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubLoad(double);
-      double.resetCalls();
-      expect(double.onLoad.callCount).isEqualTo(0, "resetCalls clears the calls of load");
-    });
-
-    it("keeps the result of returns of load", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubLoadPin();
-      double.onLoad.returns(want);
-      double.resetCalls();
-      expect(await mixedStubLoad(double)).isEqualTo(want, "resetCalls keeps the result of load");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails store with its error", async () => {
-      const want = new Error("store-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubStore(double));
-      const message = "store fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails load with its error", async () => {
-      const want = new Error("load-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubLoad(double));
-      const message = "load fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("load", () => {
+      for (const c of resetBehaviour("Mixed.load", mixedStubLoadSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -314,54 +263,4 @@ describe("MixedStub", () => {
   });
 });
 
-describe("MixedStoreStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of store to the function", async () => {
-      const double = new MixedStub(undefined);
-      let got: unknown[] = [];
-      double.onStore.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await mixedStubStore(double);
-      const args = mixedStubStoreArgs();
-      expect(got).isEqualTo([args[0], args[1]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("MixedLoadStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of load", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubLoadPin();
-      double.onLoad.returns(want);
-      expect(await mixedStubLoad(double)).isEqualTo(want, "load returns the result that returns sets");
-    });
-
-    it("configures load for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new MixedStub(failures);
-      double.onLoad.strict();
-      double.onLoad.returns(undefined as never);
-      await settle(() => mixedStubLoad(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of load");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of load to the function", async () => {
-      const double = new MixedStub(undefined);
-      let got: unknown[] = [];
-      double.onLoad.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await mixedStubLoad(double);
-      const args = mixedStubLoadArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:4b905d79db0c1b1e7a4280115debb77902f57fbf27c91f2e9c601dcca4cc155e
+// dokimi:provenance sha256:9b9fe970dfe1af2dccbfaec1ce7bdfb95abbc5ce4cc539fd52b3f1e0ba6b100b

@@ -8,7 +8,7 @@ import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
 import { compatV1 } from "@dokimi/runtime/stub/compat";
 import { Group } from "@dokimi/runtime/stub/group";
 import { MethodStub } from "@dokimi/runtime/stub/method-stub";
-import type { Store } from "../iface";
+import type { Rec, Store } from "../iface";
 
 /** StoreTouchCall records one call of Store.touch. */
 export interface StoreTouchCall {
@@ -16,6 +16,8 @@ export interface StoreTouchCall {
   key: string;
   /** The argument weight. */
   weight: number;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -24,6 +26,8 @@ export interface StoreTouchCall {
 export interface StoreSeenCall {
   /** The argument k. */
   k: string;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The result of the call, where it returned one. */
   result?: number | undefined;
   /** The error that failed the call, where one did. */
@@ -36,6 +40,8 @@ export interface StoreMoveCall {
   from: string;
   /** The argument to. */
   to: string;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -44,6 +50,8 @@ export interface StoreMoveCall {
 export interface StoreAtCall {
   /** The argument where. */
   where: string;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The result of the call, where it returned one. */
   result?: number | undefined;
   /** The error that failed the call, where one did. */
@@ -54,6 +62,8 @@ export interface StoreAtCall {
 export interface StoreEmitCall {
   /** The argument id. */
   id: string;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -62,8 +72,42 @@ export interface StoreEmitCall {
 export interface StoreCountCall {
   /** The argument bucket. */
   bucket: number;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The result of the call, where it returned one. */
   result?: number | undefined;
+  /** The error that failed the call, where one did. */
+  error?: unknown;
+}
+
+/** StoreVersionCall records one call of Store.version. */
+export interface StoreVersionCall {
+  /** The argument key. */
+  key: string;
+  /** The argument signal. */
+  signal: AbortSignal;
+  /** The result of the call, where it returned one. */
+  result?: Rec | undefined;
+  /** The error that failed the call, where one did. */
+  error?: unknown;
+}
+
+/** StorePutCall records one call of Store.put. */
+export interface StorePutCall {
+  /** The argument r. */
+  r: Rec;
+  /** The argument signal. */
+  signal: AbortSignal;
+  /** The error that failed the call, where one did. */
+  error?: unknown;
+}
+
+/** StoreReplaceCall records one call of Store.replace. */
+export interface StoreReplaceCall {
+  /** The argument r. */
+  r: Rec;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -73,7 +117,7 @@ export interface StoreCountCall {
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreTouchStub extends MethodStub<StoreTouchCall> {
-  #fn: ((key: string, weight: number) => void | PromiseLike<void>) | undefined;
+  #fn: ((key: string, weight: number, signal: AbortSignal) => void | PromiseLike<void>) | undefined;
 
   /**
    * Sets the function that computes the result of touch from its
@@ -82,7 +126,7 @@ export class StoreTouchStub extends MethodStub<StoreTouchCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (key: string, weight: number) => void | PromiseLike<void>): this {
+  func(fn: (key: string, weight: number, signal: AbortSignal) => void | PromiseLike<void>): this {
     this.#fn = fn;
     return this;
   }
@@ -90,10 +134,10 @@ export class StoreTouchStub extends MethodStub<StoreTouchCall> {
   /**
    * Returns the arms of a call of touch with its arguments.
    */
-  arms(key: string, weight: number): Arms<StoreTouchCall, void, void | PromiseLike<void>> {
+  arms(key: string, weight: number, signal: AbortSignal): Arms<StoreTouchCall, void, void | PromiseLike<void>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn(key, weight)),
+      invoke: fn && (() => fn(key, weight, signal)),
       fail: (call, error) => {
         call.error = error;
       },
@@ -106,7 +150,7 @@ export class StoreTouchStub extends MethodStub<StoreTouchCall> {
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreSeenStub extends MethodStub<StoreSeenCall> {
-  #fn: ((k: string) => number | PromiseLike<number>) | undefined;
+  #fn: ((k: string, signal: AbortSignal) => number | PromiseLike<number>) | undefined;
   #fallback: { readonly value: number } | undefined;
 
   /**
@@ -128,7 +172,7 @@ export class StoreSeenStub extends MethodStub<StoreSeenCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (k: string) => number | PromiseLike<number>): this {
+  func(fn: (k: string, signal: AbortSignal) => number | PromiseLike<number>): this {
     this.#fn = fn;
     return this;
   }
@@ -136,10 +180,10 @@ export class StoreSeenStub extends MethodStub<StoreSeenCall> {
   /**
    * Returns the arms of a call of seen with its arguments.
    */
-  arms(k: string): Arms<StoreSeenCall, number, number | PromiseLike<number>> {
+  arms(k: string, signal: AbortSignal): Arms<StoreSeenCall, number, number | PromiseLike<number>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn(k)),
+      invoke: fn && (() => fn(k, signal)),
       fallback: this.#fallback,
       stamp: (call, result) => {
         call.result = result;
@@ -156,7 +200,7 @@ export class StoreSeenStub extends MethodStub<StoreSeenCall> {
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreMoveStub extends MethodStub<StoreMoveCall> {
-  #fn: ((from: string, to: string) => void | PromiseLike<void>) | undefined;
+  #fn: ((from: string, to: string, signal: AbortSignal) => void | PromiseLike<void>) | undefined;
 
   /**
    * Sets the function that computes the result of move from its
@@ -165,7 +209,7 @@ export class StoreMoveStub extends MethodStub<StoreMoveCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (from: string, to: string) => void | PromiseLike<void>): this {
+  func(fn: (from: string, to: string, signal: AbortSignal) => void | PromiseLike<void>): this {
     this.#fn = fn;
     return this;
   }
@@ -173,10 +217,10 @@ export class StoreMoveStub extends MethodStub<StoreMoveCall> {
   /**
    * Returns the arms of a call of move with its arguments.
    */
-  arms(from: string, to: string): Arms<StoreMoveCall, void, void | PromiseLike<void>> {
+  arms(from: string, to: string, signal: AbortSignal): Arms<StoreMoveCall, void, void | PromiseLike<void>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn(from, to)),
+      invoke: fn && (() => fn(from, to, signal)),
       fail: (call, error) => {
         call.error = error;
       },
@@ -189,7 +233,7 @@ export class StoreMoveStub extends MethodStub<StoreMoveCall> {
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreAtStub extends MethodStub<StoreAtCall> {
-  #fn: ((where: string) => number | PromiseLike<number>) | undefined;
+  #fn: ((where: string, signal: AbortSignal) => number | PromiseLike<number>) | undefined;
   #fallback: { readonly value: number } | undefined;
 
   /**
@@ -211,7 +255,7 @@ export class StoreAtStub extends MethodStub<StoreAtCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (where: string) => number | PromiseLike<number>): this {
+  func(fn: (where: string, signal: AbortSignal) => number | PromiseLike<number>): this {
     this.#fn = fn;
     return this;
   }
@@ -219,10 +263,10 @@ export class StoreAtStub extends MethodStub<StoreAtCall> {
   /**
    * Returns the arms of a call of at with its arguments.
    */
-  arms(where: string): Arms<StoreAtCall, number, number | PromiseLike<number>> {
+  arms(where: string, signal: AbortSignal): Arms<StoreAtCall, number, number | PromiseLike<number>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn(where)),
+      invoke: fn && (() => fn(where, signal)),
       fallback: this.#fallback,
       stamp: (call, result) => {
         call.result = result;
@@ -239,7 +283,7 @@ export class StoreAtStub extends MethodStub<StoreAtCall> {
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreEmitStub extends MethodStub<StoreEmitCall> {
-  #fn: ((id: string) => void | PromiseLike<void>) | undefined;
+  #fn: ((id: string, signal: AbortSignal) => void | PromiseLike<void>) | undefined;
 
   /**
    * Sets the function that computes the result of emit from its
@@ -248,7 +292,7 @@ export class StoreEmitStub extends MethodStub<StoreEmitCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (id: string) => void | PromiseLike<void>): this {
+  func(fn: (id: string, signal: AbortSignal) => void | PromiseLike<void>): this {
     this.#fn = fn;
     return this;
   }
@@ -256,10 +300,10 @@ export class StoreEmitStub extends MethodStub<StoreEmitCall> {
   /**
    * Returns the arms of a call of emit with its arguments.
    */
-  arms(id: string): Arms<StoreEmitCall, void, void | PromiseLike<void>> {
+  arms(id: string, signal: AbortSignal): Arms<StoreEmitCall, void, void | PromiseLike<void>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn(id)),
+      invoke: fn && (() => fn(id, signal)),
       fail: (call, error) => {
         call.error = error;
       },
@@ -272,7 +316,7 @@ export class StoreEmitStub extends MethodStub<StoreEmitCall> {
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreCountStub extends MethodStub<StoreCountCall> {
-  #fn: ((bucket: number) => number | PromiseLike<number>) | undefined;
+  #fn: ((bucket: number, signal: AbortSignal) => number | PromiseLike<number>) | undefined;
   #fallback: { readonly value: number } | undefined;
 
   /**
@@ -294,7 +338,7 @@ export class StoreCountStub extends MethodStub<StoreCountCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (bucket: number) => number | PromiseLike<number>): this {
+  func(fn: (bucket: number, signal: AbortSignal) => number | PromiseLike<number>): this {
     this.#fn = fn;
     return this;
   }
@@ -302,14 +346,130 @@ export class StoreCountStub extends MethodStub<StoreCountCall> {
   /**
    * Returns the arms of a call of count with its arguments.
    */
-  arms(bucket: number): Arms<StoreCountCall, number, number | PromiseLike<number>> {
+  arms(bucket: number, signal: AbortSignal): Arms<StoreCountCall, number, number | PromiseLike<number>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn(bucket)),
+      invoke: fn && (() => fn(bucket, signal)),
       fallback: this.#fallback,
       stamp: (call, result) => {
         call.result = result;
       },
+      fail: (call, error) => {
+        call.error = error;
+      },
+    };
+  }
+}
+
+/**
+ * StoreVersionStub configures version and records its calls. A fault armed
+ * through it takes precedence over the function and the fixed result.
+ */
+export class StoreVersionStub extends MethodStub<StoreVersionCall> {
+  #fn: ((key: string, signal: AbortSignal) => Rec | PromiseLike<Rec>) | undefined;
+  #fallback: { readonly value: Rec } | undefined;
+
+  /**
+   * Sets the result of every call of version. A function and an injected
+   * fault take precedence over it.
+   *
+   * @param result - The result.
+   * @returns The stub.
+   */
+  returns(result: Rec): this {
+    this.#fallback = { value: result };
+    return this;
+  }
+
+  /**
+   * Sets the function that computes the result of version from its
+   * arguments. An injected fault takes precedence over it.
+   *
+   * @param fn - The function.
+   * @returns The stub.
+   */
+  func(fn: (key: string, signal: AbortSignal) => Rec | PromiseLike<Rec>): this {
+    this.#fn = fn;
+    return this;
+  }
+
+  /**
+   * Returns the arms of a call of version with its arguments.
+   */
+  arms(key: string, signal: AbortSignal): Arms<StoreVersionCall, Rec, Rec | PromiseLike<Rec>> {
+    const fn = this.#fn;
+    return {
+      invoke: fn && (() => fn(key, signal)),
+      fallback: this.#fallback,
+      stamp: (call, result) => {
+        call.result = result;
+      },
+      fail: (call, error) => {
+        call.error = error;
+      },
+    };
+  }
+}
+
+/**
+ * StorePutStub configures put and records its calls. A fault armed
+ * through it takes precedence over the function and the fixed result.
+ */
+export class StorePutStub extends MethodStub<StorePutCall> {
+  #fn: ((r: Rec, signal: AbortSignal) => void | PromiseLike<void>) | undefined;
+
+  /**
+   * Sets the function that computes the result of put from its
+   * arguments. An injected fault takes precedence over it.
+   *
+   * @param fn - The function.
+   * @returns The stub.
+   */
+  func(fn: (r: Rec, signal: AbortSignal) => void | PromiseLike<void>): this {
+    this.#fn = fn;
+    return this;
+  }
+
+  /**
+   * Returns the arms of a call of put with its arguments.
+   */
+  arms(r: Rec, signal: AbortSignal): Arms<StorePutCall, void, void | PromiseLike<void>> {
+    const fn = this.#fn;
+    return {
+      invoke: fn && (() => fn(r, signal)),
+      fail: (call, error) => {
+        call.error = error;
+      },
+    };
+  }
+}
+
+/**
+ * StoreReplaceStub configures replace and records its calls. A fault armed
+ * through it takes precedence over the function and the fixed result.
+ */
+export class StoreReplaceStub extends MethodStub<StoreReplaceCall> {
+  #fn: ((r: Rec, signal: AbortSignal) => void | PromiseLike<void>) | undefined;
+
+  /**
+   * Sets the function that computes the result of replace from its
+   * arguments. An injected fault takes precedence over it.
+   *
+   * @param fn - The function.
+   * @returns The stub.
+   */
+  func(fn: (r: Rec, signal: AbortSignal) => void | PromiseLike<void>): this {
+    this.#fn = fn;
+    return this;
+  }
+
+  /**
+   * Returns the arms of a call of replace with its arguments.
+   */
+  arms(r: Rec, signal: AbortSignal): Arms<StoreReplaceCall, void, void | PromiseLike<void>> {
+    const fn = this.#fn;
+    return {
+      invoke: fn && (() => fn(r, signal)),
       fail: (call, error) => {
         call.error = error;
       },
@@ -338,6 +498,12 @@ export class StoreStub implements Store {
   readonly onEmit: StoreEmitStub;
   /** Configures count. */
   readonly onCount: StoreCountStub;
+  /** Configures version. */
+  readonly onVersion: StoreVersionStub;
+  /** Configures put. */
+  readonly onPut: StorePutStub;
+  /** Configures replace. */
+  readonly onReplace: StoreReplaceStub;
   readonly #group: Group;
   #strict = false;
 
@@ -356,7 +522,10 @@ export class StoreStub implements Store {
     this.onAt = new StoreAtStub(seat, "Store.at");
     this.onEmit = new StoreEmitStub(seat, "Store.emit");
     this.onCount = new StoreCountStub(seat, "Store.count");
-    this.#group = new Group(this.onTouch, this.onSeen, this.onMove, this.onAt, this.onEmit, this.onCount);
+    this.onVersion = new StoreVersionStub(seat, "Store.version");
+    this.onPut = new StorePutStub(seat, "Store.put");
+    this.onReplace = new StoreReplaceStub(seat, "Store.replace");
+    this.#group = new Group(this.onTouch, this.onSeen, this.onMove, this.onAt, this.onEmit, this.onCount, this.onVersion, this.onPut, this.onReplace);
     for (const option of options) {
       option(this);
     }
@@ -392,6 +561,9 @@ export class StoreStub implements Store {
       double.onAt.func(impl.at.bind(impl));
       double.onEmit.func(impl.emit.bind(impl));
       double.onCount.func(impl.count.bind(impl));
+      double.onVersion.func(impl.version.bind(impl));
+      double.onPut.func(impl.put.bind(impl));
+      double.onReplace.func(impl.replace.bind(impl));
     };
   }
 
@@ -462,6 +634,9 @@ export class StoreStub implements Store {
       double.onAt.faults(error, 1);
       double.onEmit.faults(error, 1);
       double.onCount.faults(error, 1);
+      double.onVersion.faults(error, 1);
+      double.onPut.faults(error, 1);
+      double.onReplace.faults(error, 1);
     };
   }
 
@@ -471,7 +646,7 @@ export class StoreStub implements Store {
    * @param fn - The function.
    * @returns The option.
    */
-  static withStoreTouch(fn: (key: string, weight: number) => void | PromiseLike<void>): StoreStubOption {
+  static withStoreTouch(fn: (key: string, weight: number, signal: AbortSignal) => void | PromiseLike<void>): StoreStubOption {
     return (double) => {
       double.onTouch.func(fn);
     };
@@ -483,7 +658,7 @@ export class StoreStub implements Store {
    * @param fn - The function.
    * @returns The option.
    */
-  static withStoreSeen(fn: (k: string) => number | PromiseLike<number>): StoreStubOption {
+  static withStoreSeen(fn: (k: string, signal: AbortSignal) => number | PromiseLike<number>): StoreStubOption {
     return (double) => {
       double.onSeen.func(fn);
     };
@@ -495,7 +670,7 @@ export class StoreStub implements Store {
    * @param fn - The function.
    * @returns The option.
    */
-  static withStoreMove(fn: (from: string, to: string) => void | PromiseLike<void>): StoreStubOption {
+  static withStoreMove(fn: (from: string, to: string, signal: AbortSignal) => void | PromiseLike<void>): StoreStubOption {
     return (double) => {
       double.onMove.func(fn);
     };
@@ -507,7 +682,7 @@ export class StoreStub implements Store {
    * @param fn - The function.
    * @returns The option.
    */
-  static withStoreAt(fn: (where: string) => number | PromiseLike<number>): StoreStubOption {
+  static withStoreAt(fn: (where: string, signal: AbortSignal) => number | PromiseLike<number>): StoreStubOption {
     return (double) => {
       double.onAt.func(fn);
     };
@@ -519,7 +694,7 @@ export class StoreStub implements Store {
    * @param fn - The function.
    * @returns The option.
    */
-  static withStoreEmit(fn: (id: string) => void | PromiseLike<void>): StoreStubOption {
+  static withStoreEmit(fn: (id: string, signal: AbortSignal) => void | PromiseLike<void>): StoreStubOption {
     return (double) => {
       double.onEmit.func(fn);
     };
@@ -531,51 +706,46 @@ export class StoreStub implements Store {
    * @param fn - The function.
    * @returns The option.
    */
-  static withStoreCount(fn: (bucket: number) => number | PromiseLike<number>): StoreStubOption {
+  static withStoreCount(fn: (bucket: number, signal: AbortSignal) => number | PromiseLike<number>): StoreStubOption {
     return (double) => {
       double.onCount.func(fn);
     };
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
+   * Returns the option that sets the function of version.
    *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
+   * @param fn - The function.
+   * @returns The option.
    */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: StoreStubOption[]
-  ): StoreStub {
-    return new StoreStub(
-      seat,
-      StoreStub.withClock(clock),
-      StoreStub.withLatency(duration),
-      ...options,
-    );
+  static withStoreVersion(fn: (key: string, signal: AbortSignal) => Rec | PromiseLike<Rec>): StoreStubOption {
+    return (double) => {
+      double.onVersion.func(fn);
+    };
   }
 
   /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
+   * Returns the option that sets the function of put.
    *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
+   * @param fn - The function.
+   * @returns The option.
    */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: StoreStubOption[]
-  ): StoreStub {
-    return new StoreStub(seat, StoreStub.failing(error), ...options);
+  static withStorePut(fn: (r: Rec, signal: AbortSignal) => void | PromiseLike<void>): StoreStubOption {
+    return (double) => {
+      double.onPut.func(fn);
+    };
+  }
+
+  /**
+   * Returns the option that sets the function of replace.
+   *
+   * @param fn - The function.
+   * @returns The option.
+   */
+  static withStoreReplace(fn: (r: Rec, signal: AbortSignal) => void | PromiseLike<void>): StoreStubOption {
+    return (double) => {
+      double.onReplace.func(fn);
+    };
   }
 
   /**
@@ -589,52 +759,185 @@ export class StoreStub implements Store {
   /**
    * Records the call of touch and returns its result.
    */
-  touch(key: string, weight: number): Promise<void> {
-    const call: StoreTouchCall = { key, weight };
-    return answerAsync(this.onTouch, call, this.onTouch.arms(key, weight));
+  touch(key: string, weight: number, signal: AbortSignal): Promise<void> {
+    const call: StoreTouchCall = { key, weight, signal };
+    return answerAsync(this.onTouch, call, this.onTouch.arms(key, weight, signal));
   }
 
   /**
    * Records the call of seen and returns its result.
    */
-  seen(k: string): Promise<number> {
-    const call: StoreSeenCall = { k };
-    return answerAsync(this.onSeen, call, this.onSeen.arms(k));
+  seen(k: string, signal: AbortSignal): Promise<number> {
+    const call: StoreSeenCall = { k, signal };
+    return answerAsync(this.onSeen, call, this.onSeen.arms(k, signal));
   }
 
   /**
    * Records the call of move and returns its result.
    */
-  move(from: string, to: string): Promise<void> {
-    const call: StoreMoveCall = { from, to };
-    return answerAsync(this.onMove, call, this.onMove.arms(from, to));
+  move(from: string, to: string, signal: AbortSignal): Promise<void> {
+    const call: StoreMoveCall = { from, to, signal };
+    return answerAsync(this.onMove, call, this.onMove.arms(from, to, signal));
   }
 
   /**
    * Records the call of at and returns its result.
    */
-  at(where: string): Promise<number> {
-    const call: StoreAtCall = { where };
-    return answerAsync(this.onAt, call, this.onAt.arms(where));
+  at(where: string, signal: AbortSignal): Promise<number> {
+    const call: StoreAtCall = { where, signal };
+    return answerAsync(this.onAt, call, this.onAt.arms(where, signal));
   }
 
   /**
    * Records the call of emit and returns its result.
    */
-  emit(id: string): Promise<void> {
-    const call: StoreEmitCall = { id };
-    return answerAsync(this.onEmit, call, this.onEmit.arms(id));
+  emit(id: string, signal: AbortSignal): Promise<void> {
+    const call: StoreEmitCall = { id, signal };
+    return answerAsync(this.onEmit, call, this.onEmit.arms(id, signal));
   }
 
   /**
    * Records the call of count and returns its result.
    */
-  count(bucket: number): Promise<number> {
-    const call: StoreCountCall = { bucket };
-    return answerAsync(this.onCount, call, this.onCount.arms(bucket));
+  count(bucket: number, signal: AbortSignal): Promise<number> {
+    const call: StoreCountCall = { bucket, signal };
+    return answerAsync(this.onCount, call, this.onCount.arms(bucket, signal));
+  }
+
+  /**
+   * Records the call of version and returns its result.
+   */
+  version(key: string, signal: AbortSignal): Promise<Rec> {
+    const call: StoreVersionCall = { key, signal };
+    return answerAsync(this.onVersion, call, this.onVersion.arms(key, signal));
+  }
+
+  /**
+   * Records the call of put and returns its result.
+   */
+  put(r: Rec, signal: AbortSignal): Promise<void> {
+    const call: StorePutCall = { r, signal };
+    return answerAsync(this.onPut, call, this.onPut.arms(r, signal));
+  }
+
+  /**
+   * Records the call of replace and returns its result.
+   */
+  replace(r: Rec, signal: AbortSignal): Promise<void> {
+    const call: StoreReplaceCall = { r, signal };
+    return answerAsync(this.onReplace, call, this.onReplace.arms(r, signal));
+  }
+}
+
+// Rec is a handle that a method of Store returns.
+
+/** Configures a RecStub at its construction. */
+export type RecStubOption = (double: RecStub) => void;
+
+/**
+ * RecStub is a recording test double of Rec. Each property
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
+ */
+export class RecStub implements Rec {
+  /** The property key, which a test assigns. */
+  key!: string;
+  /** The property rev, which a test assigns. */
+  rev!: number;
+  readonly #group: Group;
+  #strict = false;
+
+  /**
+   * Creates a double of Rec that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
+   *
+   * @param seat - The seat of the test.
+   * @param options - The options.
+   */
+  constructor(seat: Seat | undefined, ...options: RecStubOption[]) {
+    this.#group = new Group();
+    for (const option of options) {
+      option(this);
+    }
+    if (this.#strict) {
+      this.#group.strictAll();
+    }
+    this.#group.bind(seat);
+  }
+
+  /**
+   * Returns the option that makes an unconfigured method fail the test.
+   *
+   * @returns The option.
+   */
+  static strict(): RecStubOption {
+    return (double) => {
+      double.#strict = true;
+    };
+  }
+
+  /**
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
+   *
+   * @param clock - The clock.
+   * @returns The option.
+   */
+  static withClock(clock: Clock): RecStubOption {
+    return (double) => {
+      double.#group.setClock(clock);
+    };
+  }
+
+  /**
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
+   *
+   * @param random - The source.
+   * @returns The option.
+   */
+  static withRandSource(random: RandomSource): RecStubOption {
+    return (double) => {
+      double.#group.setRandSource(random);
+    };
+  }
+
+  /**
+   * Returns the option that turns the recording of calls off. The methods
+   * still return their results.
+   *
+   * @returns The option.
+   */
+  static benchMode(): RecStubOption {
+    return (double) => {
+      double.#group.benchMode();
+    };
+  }
+
+  /**
+   * Returns the option that makes every asynchronous method wait duration on
+   * the clock of the double before it returns.
+   *
+   * @param duration - The latency, in milliseconds.
+   * @returns The option.
+   */
+  static withLatency(duration: number): RecStubOption {
+    return (double) => {
+      double.#group.setLatency(duration);
+    };
+  }
+
+  /**
+   * Clears the recorded calls, the counters of the faults and the expected
+   * counts. It keeps the functions, the fixed results and the faults.
+   */
+  resetCalls(): void {
+    this.#group.reset();
   }
 }
 
 void compatV1;
 
-// dokimi:provenance sha256:84d886651b34ad03832a2c6b3c06af711b1ca9d2af0de0176c8d7ccef8dbd905
+// dokimi:provenance sha256:314634e8c98e4331e5f6e36856d81b1008da2688d464bf870034db9357a024e4

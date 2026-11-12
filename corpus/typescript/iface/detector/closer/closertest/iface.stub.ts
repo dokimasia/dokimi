@@ -185,47 +185,6 @@ export class CloserStub implements Closer {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: CloserStubOption[]
-  ): CloserStub {
-    return new CloserStub(
-      seat,
-      CloserStub.withClock(clock),
-      CloserStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: CloserStubOption[]
-  ): CloserStub {
-    return new CloserStub(seat, CloserStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -244,4 +203,4 @@ export class CloserStub implements Closer {
 
 void compatV1;
 
-// dokimi:provenance sha256:c94c68e5d709f6493d9e0faa0c7b32f3b8a116ff455e7f3d91bcea1b9597b52e
+// dokimi:provenance sha256:602b7ceb320a3354a326d9b778d2f87357c588900fff022a45df9dd3506ba6f6

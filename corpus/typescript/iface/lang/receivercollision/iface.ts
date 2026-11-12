@@ -43,11 +43,11 @@ export interface Call {
 //dokimi:out path=receivercollisiontest/
 export interface Store {
   /** Stores the call, as the writer form: one parameter, named for its type. */
-  put(call: Call): Promise<void>;
+  put(call: Call, signal: AbortSignal): Promise<void>;
 
   /** Returns the call under the key fn, as the reader form with the collision on the key. */
-  get(fn: string): Promise<Call>;
+  get(fn: string, signal: AbortSignal): Promise<Call>;
 
   /** Marks the call as used, as the form that returns nothing. */
-  touch(call: Call): Promise<void>;
+  touch(call: Call, signal: AbortSignal): Promise<void>;
 }

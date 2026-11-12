@@ -2,11 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/hooks/iface.ts
 
-import { Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { MixedStub } from "./iface.stub";
+import { type MixedFireCall, type MixedOnEventCall, MixedStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of fire. An argument without a sample is undefined. */
 function mixedStubFireArgs(): [string] {
@@ -21,6 +21,33 @@ function mixedStubFire(double: MixedStub): Promise<void> {
   return double.fire(args[0]);
 }
 
+/** Returns the subject of behaviour and resetBehaviour for fire, on a new double that reports to seat. */
+function mixedStubFireSubject(seat: Seat): Subject<MixedFireCall, undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onFire,
+    call: () => mixedStubFire(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = mixedStubFireArgs();
+      check.isEqualTo(s, c.event, args[0], "the call records event");
+    },
+    override: (seen) => {
+      double.onFire.func((...received: unknown[]) => {
+        seen({ event: received[0] } as MixedFireCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubFire(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Returns the samples of the arguments of onEvent. An argument without a sample is undefined. */
 function mixedStubOnEventArgs(): [(event: string) => void] {
   let a0 = undefined as unknown as (event: string) => void;
@@ -33,144 +60,68 @@ function mixedStubOnEvent(double: MixedStub): void {
   return double.onEvent(args[0]);
 }
 
+/** Returns the subject of behaviour and resetBehaviour for onEvent, on a new double that reports to seat. */
+function mixedStubOnEventSubject(seat: Seat): Subject<MixedOnEventCall, undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onOnEvent,
+    call: () => mixedStubOnEvent(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = mixedStubOnEventArgs();
+      check.isEqualTo(s, c.fn, args[0], "the call records fn");
+    },
+    override: (seen) => {
+      double.onOnEvent.func((...received: unknown[]) => {
+        seen({ fn: received[0] } as MixedOnEventCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubOnEvent(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * fire alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call fire alone.
  */
 function mixedStubInstance(double: MixedStub) {
   return {
     stub: double.onFire,
     call: () => mixedStubFire(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("MixedStub", () => {
   describe("fire", () => {
-    const checks = behaviour("Mixed.fire", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onFire,
-        call: () => mixedStubFire(double),
-        override: (mark) => {
-          double.onFire.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.fire", mixedStubFireSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubFire(double);
-      expect(double.onFire.callCount).isEqualTo(1, "fire records the call");
-      const got = double.onFire.calls[0];
-      const args = mixedStubFireArgs();
-      expect(got?.event).isEqualTo(args[0], "the call records event");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onFire.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubFire(double);
-      await mixedStubFire(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of fire");
-    });
   });
 
   describe("onEvent", () => {
-    const checks = behaviour("Mixed.onEvent", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onOnEvent,
-        call: () => mixedStubOnEvent(double),
-        override: (mark) => {
-          double.onOnEvent.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.onEvent", mixedStubOnEventSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MixedStub(undefined);
-      mixedStubOnEvent(double);
-      expect(double.onOnEvent.callCount).isEqualTo(1, "onEvent records the call");
-      const got = double.onOnEvent.calls[0];
-      const args = mixedStubOnEventArgs();
-      expect(got?.fn).isEqualTo(args[0], "the call records fn");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onOnEvent.onRecord(() => {
-        seen += 1;
-      });
-      mixedStubOnEvent(double);
-      mixedStubOnEvent(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of onEvent");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of fire", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubFire(double);
-      double.resetCalls();
-      expect(double.onFire.callCount).isEqualTo(0, "resetCalls clears the calls of fire");
+    describe("fire", () => {
+      for (const c of resetBehaviour("Mixed.fire", mixedStubFireSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of onEvent", async () => {
-      const double = new MixedStub(undefined);
-      mixedStubOnEvent(double);
-      double.resetCalls();
-      expect(double.onOnEvent.callCount).isEqualTo(0, "resetCalls clears the calls of onEvent");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails fire with its error", async () => {
-      const want = new Error("fire-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubFire(double));
-      const message = "fire fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails onEvent with its error", async () => {
-      const want = new Error("onEvent-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubOnEvent(double));
-      const message = "onEvent fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("onEvent", () => {
+      for (const c of resetBehaviour("Mixed.onEvent", mixedStubOnEventSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -295,36 +246,4 @@ describe("MixedStub", () => {
   });
 });
 
-describe("MixedFireStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of fire to the function", async () => {
-      const double = new MixedStub(undefined);
-      let got: unknown[] = [];
-      double.onFire.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await mixedStubFire(double);
-      const args = mixedStubFireArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("MixedOnEventStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of onEvent to the function", async () => {
-      const double = new MixedStub(undefined);
-      let got: unknown[] = [];
-      double.onOnEvent.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      mixedStubOnEvent(double);
-      const args = mixedStubOnEventArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:b63cac16eaf606501b2e98fae3f07ca646542bc42a1c763d8de593ca6a274f77
+// dokimi:provenance sha256:44f09d18d3cba278929f1f5e4bc163130d1ac756663f10bb630c64d4c8b3409e

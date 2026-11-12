@@ -187,47 +187,6 @@ export class WriterStub implements Writer {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: WriterStubOption[]
-  ): WriterStub {
-    return new WriterStub(
-      seat,
-      WriterStub.withClock(clock),
-      WriterStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: WriterStubOption[]
-  ): WriterStub {
-    return new WriterStub(seat, WriterStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -246,4 +205,4 @@ export class WriterStub implements Writer {
 
 void compatV1;
 
-// dokimi:provenance sha256:3b500de4ab242eb5869c5b34c2b22df45b7af1546b1e712f6550adf477a099fc
+// dokimi:provenance sha256:230f3123db437152bcc57e4c77de3ce1c926e66fc2a92387e421abac86191fb5

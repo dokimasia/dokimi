@@ -204,47 +204,6 @@ export class PredicateStub implements Predicate {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: PredicateStubOption[]
-  ): PredicateStub {
-    return new PredicateStub(
-      seat,
-      PredicateStub.withClock(clock),
-      PredicateStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: PredicateStubOption[]
-  ): PredicateStub {
-    return new PredicateStub(seat, PredicateStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -263,4 +222,4 @@ export class PredicateStub implements Predicate {
 
 void compatV1;
 
-// dokimi:provenance sha256:02cc6aee760f07fdd66d647d1fcd95c27f1ec4a84d709397a965efd3c9a3f475
+// dokimi:provenance sha256:b1ccacf5aeb9531f3e1ab394d2819210131f0afae4f78a79b590221b1d0622cb

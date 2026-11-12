@@ -2,92 +2,63 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/closer/iface.ts
 
-import { Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { CloserStub } from "./iface.stub";
+import { type CloserCloseCall, CloserStub } from "./iface.stub";
 
 /** Calls close of double with the samples of its arguments. */
 function closerStubClose(double: CloserStub): void {
   return double.close();
 }
 
+/** Returns the subject of behaviour and resetBehaviour for close, on a new double that reports to seat. */
+function closerStubCloseSubject(seat: Seat): Subject<CloserCloseCall, undefined> {
+  const double = new CloserStub(seat);
+  return {
+    stub: double.onClose,
+    call: () => closerStubClose(double),
+    reset: () => double.resetCalls(),
+    override: (seen) => {
+      double.onClose.func(() => {
+        seen({} as CloserCloseCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => closerStubClose(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * close alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call close alone.
  */
 function closerStubInstance(double: CloserStub) {
   return {
     stub: double.onClose,
     call: () => closerStubClose(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("CloserStub", () => {
   describe("close", () => {
-    const checks = behaviour("Closer.close", (seat) => {
-      const double = new CloserStub(seat);
-      return {
-        stub: double.onClose,
-        call: () => closerStubClose(double),
-        override: (mark) => {
-          double.onClose.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Closer.close", closerStubCloseSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new CloserStub(undefined);
-      let seen = 0;
-      double.onClose.onRecord(() => {
-        seen += 1;
-      });
-      closerStubClose(double);
-      closerStubClose(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of close");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => closerStubInstance(new CloserStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of close", async () => {
-      const double = new CloserStub(undefined);
-      closerStubClose(double);
-      double.resetCalls();
-      expect(double.onClose.callCount).isEqualTo(0, "resetCalls clears the calls of close");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => closerStubInstance(CloserStub.newDelayed(seat, duration, clock)),
-      false,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails close with its error", async () => {
-      const want = new Error("close-failing");
-      const double = CloserStub.newFailing(undefined, want);
-      const outcome = await settle(() => closerStubClose(double));
-      const message = "close fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("close", () => {
+      for (const c of resetBehaviour("Closer.close", closerStubCloseSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -176,4 +147,4 @@ describe("CloserStub", () => {
   });
 });
 
-// dokimi:provenance sha256:77ce2c4956d4a29d778ea2f81d99eea362b4dbc6a61a300dea98249e12ec3a04
+// dokimi:provenance sha256:fc22da3c9c5cf16e67efab02cc8148c2a57089960f4cdb6447e8a61f1174db89

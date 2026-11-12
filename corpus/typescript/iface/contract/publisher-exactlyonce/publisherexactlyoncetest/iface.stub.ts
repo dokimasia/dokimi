@@ -332,47 +332,6 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: ContractStubOption[]
-  ): ContractStub {
-    return new ContractStub(
-      seat,
-      ContractStub.withClock(clock),
-      ContractStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: ContractStubOption[]
-  ): ContractStub {
-    return new ContractStub(seat, ContractStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -407,4 +366,4 @@ export class ContractStub implements Contract {
 
 void compatV1;
 
-// dokimi:provenance sha256:1afb6e31b6c571d0620d11913dbf5a3cc40b10ae43009f794d1c304f49031d95
+// dokimi:provenance sha256:c9f64a5ca0d018e310f2195c38b2606169887813b6c3e776ced63a86351c069b

@@ -38,8 +38,8 @@ export type Body = string;
 //dokimi:out path=seededreadertest/
 export interface Catalog {
   /** Returns the body of a seeded key, and reports a miss for any other. */
-  lookup(key: Key): Promise<Body>;
+  lookup(key: Key, signal: AbortSignal): Promise<Body>;
 
   /** Returns the count of the documents that the harness loaded. */
-  len(): Promise<number>;
+  len(signal: AbortSignal): Promise<number>;
 }

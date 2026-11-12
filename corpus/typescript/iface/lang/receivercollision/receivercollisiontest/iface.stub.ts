@@ -14,6 +14,8 @@ import type { Call, Store } from "../iface";
 export interface StorePutCall {
   /** The argument call. */
   call: Call;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -22,6 +24,8 @@ export interface StorePutCall {
 export interface StoreGetCall {
   /** The argument fn. */
   fn: string;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The result of the call, where it returned one. */
   result?: Call | undefined;
   /** The error that failed the call, where one did. */
@@ -32,6 +36,8 @@ export interface StoreGetCall {
 export interface StoreTouchCall {
   /** The argument call. */
   call: Call;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -41,7 +47,7 @@ export interface StoreTouchCall {
  * through it takes precedence over the function and the fixed result.
  */
 export class StorePutStub extends MethodStub<StorePutCall> {
-  #fn: ((call: Call) => void | PromiseLike<void>) | undefined;
+  #fn: ((call: Call, signal: AbortSignal) => void | PromiseLike<void>) | undefined;
 
   /**
    * Sets the function that computes the result of put from its
@@ -50,7 +56,7 @@ export class StorePutStub extends MethodStub<StorePutCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (call: Call) => void | PromiseLike<void>): this {
+  func(fn: (call: Call, signal: AbortSignal) => void | PromiseLike<void>): this {
     this.#fn = fn;
     return this;
   }
@@ -58,10 +64,10 @@ export class StorePutStub extends MethodStub<StorePutCall> {
   /**
    * Returns the arms of a call of put with its arguments.
    */
-  arms(call: Call): Arms<StorePutCall, void, void | PromiseLike<void>> {
+  arms(call: Call, signal: AbortSignal): Arms<StorePutCall, void, void | PromiseLike<void>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn(call)),
+      invoke: fn && (() => fn(call, signal)),
       fail: (call, error) => {
         call.error = error;
       },
@@ -74,7 +80,7 @@ export class StorePutStub extends MethodStub<StorePutCall> {
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreGetStub extends MethodStub<StoreGetCall> {
-  #fn: ((fn: string) => Call | PromiseLike<Call>) | undefined;
+  #fn: ((fn: string, signal: AbortSignal) => Call | PromiseLike<Call>) | undefined;
   #fallback: { readonly value: Call } | undefined;
 
   /**
@@ -96,7 +102,7 @@ export class StoreGetStub extends MethodStub<StoreGetCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (fn: string) => Call | PromiseLike<Call>): this {
+  func(fn: (fn: string, signal: AbortSignal) => Call | PromiseLike<Call>): this {
     this.#fn = fn;
     return this;
   }
@@ -104,10 +110,10 @@ export class StoreGetStub extends MethodStub<StoreGetCall> {
   /**
    * Returns the arms of a call of get with its arguments.
    */
-  arms(fn: string): Arms<StoreGetCall, Call, Call | PromiseLike<Call>> {
+  arms(fn: string, signal: AbortSignal): Arms<StoreGetCall, Call, Call | PromiseLike<Call>> {
     const fn0 = this.#fn;
     return {
-      invoke: fn0 && (() => fn0(fn)),
+      invoke: fn0 && (() => fn0(fn, signal)),
       fallback: this.#fallback,
       stamp: (call, result) => {
         call.result = result;
@@ -124,7 +130,7 @@ export class StoreGetStub extends MethodStub<StoreGetCall> {
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreTouchStub extends MethodStub<StoreTouchCall> {
-  #fn: ((call: Call) => void | PromiseLike<void>) | undefined;
+  #fn: ((call: Call, signal: AbortSignal) => void | PromiseLike<void>) | undefined;
 
   /**
    * Sets the function that computes the result of touch from its
@@ -133,7 +139,7 @@ export class StoreTouchStub extends MethodStub<StoreTouchCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (call: Call) => void | PromiseLike<void>): this {
+  func(fn: (call: Call, signal: AbortSignal) => void | PromiseLike<void>): this {
     this.#fn = fn;
     return this;
   }
@@ -141,10 +147,10 @@ export class StoreTouchStub extends MethodStub<StoreTouchCall> {
   /**
    * Returns the arms of a call of touch with its arguments.
    */
-  arms(call: Call): Arms<StoreTouchCall, void, void | PromiseLike<void>> {
+  arms(call: Call, signal: AbortSignal): Arms<StoreTouchCall, void, void | PromiseLike<void>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn(call)),
+      invoke: fn && (() => fn(call, signal)),
       fail: (call, error) => {
         call.error = error;
       },
@@ -291,7 +297,7 @@ export class StoreStub implements Store {
    * @param fn - The function.
    * @returns The option.
    */
-  static withStorePut(fn: (call: Call) => void | PromiseLike<void>): StoreStubOption {
+  static withStorePut(fn: (call: Call, signal: AbortSignal) => void | PromiseLike<void>): StoreStubOption {
     return (double) => {
       double.onPut.func(fn);
     };
@@ -303,7 +309,7 @@ export class StoreStub implements Store {
    * @param fn - The function.
    * @returns The option.
    */
-  static withStoreGet(fn: (fn: string) => Call | PromiseLike<Call>): StoreStubOption {
+  static withStoreGet(fn: (fn: string, signal: AbortSignal) => Call | PromiseLike<Call>): StoreStubOption {
     return (double) => {
       double.onGet.func(fn);
     };
@@ -315,51 +321,10 @@ export class StoreStub implements Store {
    * @param fn - The function.
    * @returns The option.
    */
-  static withStoreTouch(fn: (call: Call) => void | PromiseLike<void>): StoreStubOption {
+  static withStoreTouch(fn: (call: Call, signal: AbortSignal) => void | PromiseLike<void>): StoreStubOption {
     return (double) => {
       double.onTouch.func(fn);
     };
-  }
-
-  /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: StoreStubOption[]
-  ): StoreStub {
-    return new StoreStub(
-      seat,
-      StoreStub.withClock(clock),
-      StoreStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: StoreStubOption[]
-  ): StoreStub {
-    return new StoreStub(seat, StoreStub.failing(error), ...options);
   }
 
   /**
@@ -373,25 +338,25 @@ export class StoreStub implements Store {
   /**
    * Records the call of put and returns its result.
    */
-  put(call: Call): Promise<void> {
-    const call0: StorePutCall = { call };
-    return answerAsync(this.onPut, call0, this.onPut.arms(call));
+  put(call: Call, signal: AbortSignal): Promise<void> {
+    const call0: StorePutCall = { call, signal };
+    return answerAsync(this.onPut, call0, this.onPut.arms(call, signal));
   }
 
   /**
    * Records the call of get and returns its result.
    */
-  get(fn: string): Promise<Call> {
-    const call: StoreGetCall = { fn };
-    return answerAsync(this.onGet, call, this.onGet.arms(fn));
+  get(fn: string, signal: AbortSignal): Promise<Call> {
+    const call: StoreGetCall = { fn, signal };
+    return answerAsync(this.onGet, call, this.onGet.arms(fn, signal));
   }
 
   /**
    * Records the call of touch and returns its result.
    */
-  touch(call: Call): Promise<void> {
-    const call0: StoreTouchCall = { call };
-    return answerAsync(this.onTouch, call0, this.onTouch.arms(call));
+  touch(call: Call, signal: AbortSignal): Promise<void> {
+    const call0: StoreTouchCall = { call, signal };
+    return answerAsync(this.onTouch, call0, this.onTouch.arms(call, signal));
   }
 }
 
@@ -494,30 +459,6 @@ export class CallStub implements Call {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: CallStubOption[]
-  ): CallStub {
-    return new CallStub(
-      seat,
-      CallStub.withClock(clock),
-      CallStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -528,4 +469,4 @@ export class CallStub implements Call {
 
 void compatV1;
 
-// dokimi:provenance sha256:630d736b754cccb8fa8b129c57d1894d28af71c67477471579cf920f8761a2c6
+// dokimi:provenance sha256:b93f8df1b8cdc87e6f2dbf02ea0c307481554654c8c8fb1f271b319495c2818c

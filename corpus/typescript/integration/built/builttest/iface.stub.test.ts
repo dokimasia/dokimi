@@ -2,14 +2,14 @@
 // dokimi:plugin stub
 // dokimi:source integration/built/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
 import { Invoice } from "../billing/billing";
 import { Account, Note, Page } from "../iface";
 import { AccountBuilder, PageBuilder } from "./iface.builder";
-import { LedgerStub } from "./iface.stub";
+import { type LedgerBillCall, type LedgerFindCall, type LedgerGetCall, type LedgerListCall, type LedgerLookupCall, type LedgerNoteCall, LedgerStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of get. An argument without a sample is undefined. */
 function ledgerStubGetArgs(): [string] {
@@ -29,6 +29,40 @@ function ledgerStubGetPin(): Account {
   let want0: Account;
   want0 = Object.assign(new Account(), { id: "id-a" });
   return want0;
+}
+
+/** Returns the subject of behaviour and resetBehaviour for get, on a new double that reports to seat. */
+function ledgerStubGetSubject(seat: Seat): Subject<LedgerGetCall, Account | undefined> {
+  const double = new LedgerStub(seat);
+  return {
+    stub: double.onGet,
+    call: () => ledgerStubGet(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = ledgerStubGetArgs();
+      check.isEqualTo(s, c.id, args[0], "the call records id");
+    },
+    result: async () => await ledgerStubGet(double),
+    default: () => AccountBuilder.create().build(),
+    returns: () => {
+      const want = ledgerStubGetPin();
+      double.onGet.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onGet.func((...received: unknown[]) => {
+        seen({ id: received[0] } as LedgerGetCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => ledgerStubGet(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /** Returns the samples of the arguments of find. An argument without a sample is undefined. */
@@ -51,6 +85,40 @@ function ledgerStubFindPin(): Account | undefined {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for find, on a new double that reports to seat. */
+function ledgerStubFindSubject(seat: Seat): Subject<LedgerFindCall, Account | undefined | undefined> {
+  const double = new LedgerStub(seat);
+  return {
+    stub: double.onFind,
+    call: () => ledgerStubFind(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = ledgerStubFindArgs();
+      check.isEqualTo(s, c.id, args[0], "the call records id");
+    },
+    result: async () => await ledgerStubFind(double),
+    default: () => AccountBuilder.create().build(),
+    returns: () => {
+      const want = ledgerStubFindPin();
+      double.onFind.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onFind.func((...received: unknown[]) => {
+        seen({ id: received[0] } as LedgerFindCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => ledgerStubFind(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Returns the samples of the arguments of lookup. An argument without a sample is undefined. */
 function ledgerStubLookupArgs(): [string] {
   let a0 = undefined as unknown as string;
@@ -71,6 +139,40 @@ function ledgerStubLookupPin(): Account | undefined {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for lookup, on a new double that reports to seat. */
+function ledgerStubLookupSubject(seat: Seat): Subject<LedgerLookupCall, Account | undefined | undefined> {
+  const double = new LedgerStub(seat);
+  return {
+    stub: double.onLookup,
+    call: () => ledgerStubLookup(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = ledgerStubLookupArgs();
+      check.isEqualTo(s, c.id, args[0], "the call records id");
+    },
+    result: async () => ledgerStubLookup(double),
+    default: () => AccountBuilder.create().build(),
+    returns: () => {
+      const want = ledgerStubLookupPin();
+      double.onLookup.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onLookup.func((...received: unknown[]) => {
+        seen({ id: received[0] } as LedgerLookupCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => ledgerStubLookup(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Calls list of double with the samples of its arguments. */
 function ledgerStubList(double: LedgerStub): Promise<Page<Account>> {
   return double.list();
@@ -81,6 +183,36 @@ function ledgerStubListPin(): Page<Account> {
   let want0: Page<Account>;
   want0 = Object.assign(new Page<Account>(), { items: [Object.assign(new Account(), { id: "id-a" })] });
   return want0;
+}
+
+/** Returns the subject of behaviour and resetBehaviour for list, on a new double that reports to seat. */
+function ledgerStubListSubject(seat: Seat): Subject<LedgerListCall, Page<Account> | undefined> {
+  const double = new LedgerStub(seat);
+  return {
+    stub: double.onList,
+    call: () => ledgerStubList(double),
+    reset: () => double.resetCalls(),
+    result: async () => await ledgerStubList(double),
+    default: () => PageBuilder.create<Account>().build(),
+    returns: () => {
+      const want = ledgerStubListPin();
+      double.onList.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onList.func(() => {
+        seen({} as LedgerListCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => ledgerStubList(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /** Returns the samples of the arguments of note. An argument without a sample is undefined. */
@@ -103,6 +235,39 @@ function ledgerStubNotePin(): Note {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for note, on a new double that reports to seat. */
+function ledgerStubNoteSubject(seat: Seat): Subject<LedgerNoteCall, Note | undefined> {
+  const double = new LedgerStub(seat);
+  return {
+    stub: double.onNote,
+    call: () => ledgerStubNote(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = ledgerStubNoteArgs();
+      check.isEqualTo(s, c.id, args[0], "the call records id");
+    },
+    result: async () => ledgerStubNote(double),
+    returns: () => {
+      const want = ledgerStubNotePin();
+      double.onNote.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onNote.func((...received: unknown[]) => {
+        seen({ id: received[0] } as LedgerNoteCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => ledgerStubNote(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Returns the samples of the arguments of bill. An argument without a sample is undefined. */
 function ledgerStubBillArgs(): [string] {
   let a0 = undefined as unknown as string;
@@ -123,403 +288,122 @@ function ledgerStubBillPin(): Invoice {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for bill, on a new double that reports to seat. */
+function ledgerStubBillSubject(seat: Seat): Subject<LedgerBillCall, Invoice | undefined> {
+  const double = new LedgerStub(seat);
+  return {
+    stub: double.onBill,
+    call: () => ledgerStubBill(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = ledgerStubBillArgs();
+      check.isEqualTo(s, c.id, args[0], "the call records id");
+    },
+    result: async () => ledgerStubBill(double),
+    returns: () => {
+      const want = ledgerStubBillPin();
+      double.onBill.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onBill.func((...received: unknown[]) => {
+        seen({ id: received[0] } as LedgerBillCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => ledgerStubBill(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * get alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call get alone.
  */
 function ledgerStubInstance(double: LedgerStub) {
   return {
     stub: double.onGet,
     call: () => ledgerStubGet(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("LedgerStub", () => {
   describe("get", () => {
-    const checks = behaviour("Ledger.get", (seat) => {
-      const double = new LedgerStub(seat);
-      return {
-        stub: double.onGet,
-        call: () => ledgerStubGet(double),
-        override: (mark) => {
-          double.onGet.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-        default: () => AccountBuilder.create().build(),
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Ledger.get", ledgerStubGetSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new LedgerStub(undefined);
-      await ledgerStubGet(double);
-      expect(double.onGet.callCount).isEqualTo(1, "get records the call");
-      const got = double.onGet.calls[0];
-      const args = ledgerStubGetArgs();
-      expect(got?.id).isEqualTo(args[0], "the call records id");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new LedgerStub(undefined);
-      let seen = 0;
-      double.onGet.onRecord(() => {
-        seen += 1;
-      });
-      await ledgerStubGet(double);
-      await ledgerStubGet(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of get");
-    });
   });
 
   describe("find", () => {
-    const checks = behaviour("Ledger.find", (seat) => {
-      const double = new LedgerStub(seat);
-      return {
-        stub: double.onFind,
-        call: () => ledgerStubFind(double),
-        override: (mark) => {
-          double.onFind.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-        default: () => AccountBuilder.create().build(),
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Ledger.find", ledgerStubFindSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new LedgerStub(undefined);
-      await ledgerStubFind(double);
-      expect(double.onFind.callCount).isEqualTo(1, "find records the call");
-      const got = double.onFind.calls[0];
-      const args = ledgerStubFindArgs();
-      expect(got?.id).isEqualTo(args[0], "the call records id");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new LedgerStub(undefined);
-      let seen = 0;
-      double.onFind.onRecord(() => {
-        seen += 1;
-      });
-      await ledgerStubFind(double);
-      await ledgerStubFind(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of find");
-    });
   });
 
   describe("lookup", () => {
-    const checks = behaviour("Ledger.lookup", (seat) => {
-      const double = new LedgerStub(seat);
-      return {
-        stub: double.onLookup,
-        call: () => ledgerStubLookup(double),
-        override: (mark) => {
-          double.onLookup.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-        default: () => AccountBuilder.create().build(),
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Ledger.lookup", ledgerStubLookupSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new LedgerStub(undefined);
-      ledgerStubLookup(double);
-      expect(double.onLookup.callCount).isEqualTo(1, "lookup records the call");
-      const got = double.onLookup.calls[0];
-      const args = ledgerStubLookupArgs();
-      expect(got?.id).isEqualTo(args[0], "the call records id");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new LedgerStub(undefined);
-      let seen = 0;
-      double.onLookup.onRecord(() => {
-        seen += 1;
-      });
-      ledgerStubLookup(double);
-      ledgerStubLookup(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of lookup");
-    });
   });
 
   describe("list", () => {
-    const checks = behaviour("Ledger.list", (seat) => {
-      const double = new LedgerStub(seat);
-      return {
-        stub: double.onList,
-        call: () => ledgerStubList(double),
-        override: (mark) => {
-          double.onList.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-        default: () => PageBuilder.create<Account>().build(),
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Ledger.list", ledgerStubListSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new LedgerStub(undefined);
-      let seen = 0;
-      double.onList.onRecord(() => {
-        seen += 1;
-      });
-      await ledgerStubList(double);
-      await ledgerStubList(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of list");
-    });
   });
 
   describe("note", () => {
-    const checks = behaviour("Ledger.note", (seat) => {
-      const double = new LedgerStub(seat);
-      return {
-        stub: double.onNote,
-        call: () => ledgerStubNote(double),
-        override: (mark) => {
-          double.onNote.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Ledger.note", ledgerStubNoteSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new LedgerStub(undefined);
-      ledgerStubNote(double);
-      expect(double.onNote.callCount).isEqualTo(1, "note records the call");
-      const got = double.onNote.calls[0];
-      const args = ledgerStubNoteArgs();
-      expect(got?.id).isEqualTo(args[0], "the call records id");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new LedgerStub(undefined);
-      let seen = 0;
-      double.onNote.onRecord(() => {
-        seen += 1;
-      });
-      ledgerStubNote(double);
-      ledgerStubNote(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of note");
-    });
   });
 
   describe("bill", () => {
-    const checks = behaviour("Ledger.bill", (seat) => {
-      const double = new LedgerStub(seat);
-      return {
-        stub: double.onBill,
-        call: () => ledgerStubBill(double),
-        override: (mark) => {
-          double.onBill.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Ledger.bill", ledgerStubBillSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new LedgerStub(undefined);
-      ledgerStubBill(double);
-      expect(double.onBill.callCount).isEqualTo(1, "bill records the call");
-      const got = double.onBill.calls[0];
-      const args = ledgerStubBillArgs();
-      expect(got?.id).isEqualTo(args[0], "the call records id");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new LedgerStub(undefined);
-      let seen = 0;
-      double.onBill.onRecord(() => {
-        seen += 1;
-      });
-      ledgerStubBill(double);
-      ledgerStubBill(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of bill");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => ledgerStubInstance(new LedgerStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of get", async () => {
-      const double = new LedgerStub(undefined);
-      await ledgerStubGet(double);
-      double.resetCalls();
-      expect(double.onGet.callCount).isEqualTo(0, "resetCalls clears the calls of get");
+    describe("get", () => {
+      for (const c of resetBehaviour("Ledger.get", ledgerStubGetSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("keeps the result of returns of get", async () => {
-      const double = new LedgerStub(undefined);
-      const want = ledgerStubGetPin();
-      double.onGet.returns(want);
-      double.resetCalls();
-      expect(await ledgerStubGet(double)).isEqualTo(want, "resetCalls keeps the result of get");
+    describe("find", () => {
+      for (const c of resetBehaviour("Ledger.find", ledgerStubFindSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of find", async () => {
-      const double = new LedgerStub(undefined);
-      await ledgerStubFind(double);
-      double.resetCalls();
-      expect(double.onFind.callCount).isEqualTo(0, "resetCalls clears the calls of find");
+    describe("lookup", () => {
+      for (const c of resetBehaviour("Ledger.lookup", ledgerStubLookupSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("keeps the result of returns of find", async () => {
-      const double = new LedgerStub(undefined);
-      const want = ledgerStubFindPin();
-      double.onFind.returns(want);
-      double.resetCalls();
-      expect(await ledgerStubFind(double)).isEqualTo(want, "resetCalls keeps the result of find");
+    describe("list", () => {
+      for (const c of resetBehaviour("Ledger.list", ledgerStubListSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of lookup", async () => {
-      const double = new LedgerStub(undefined);
-      ledgerStubLookup(double);
-      double.resetCalls();
-      expect(double.onLookup.callCount).isEqualTo(0, "resetCalls clears the calls of lookup");
+    describe("note", () => {
+      for (const c of resetBehaviour("Ledger.note", ledgerStubNoteSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("keeps the result of returns of lookup", async () => {
-      const double = new LedgerStub(undefined);
-      const want = ledgerStubLookupPin();
-      double.onLookup.returns(want);
-      double.resetCalls();
-      expect(ledgerStubLookup(double)).isEqualTo(want, "resetCalls keeps the result of lookup");
-    });
-
-    it("clears the recorded calls of list", async () => {
-      const double = new LedgerStub(undefined);
-      await ledgerStubList(double);
-      double.resetCalls();
-      expect(double.onList.callCount).isEqualTo(0, "resetCalls clears the calls of list");
-    });
-
-    it("keeps the result of returns of list", async () => {
-      const double = new LedgerStub(undefined);
-      const want = ledgerStubListPin();
-      double.onList.returns(want);
-      double.resetCalls();
-      expect(await ledgerStubList(double)).isEqualTo(want, "resetCalls keeps the result of list");
-    });
-
-    it("clears the recorded calls of note", async () => {
-      const double = new LedgerStub(undefined);
-      ledgerStubNote(double);
-      double.resetCalls();
-      expect(double.onNote.callCount).isEqualTo(0, "resetCalls clears the calls of note");
-    });
-
-    it("keeps the result of returns of note", async () => {
-      const double = new LedgerStub(undefined);
-      const want = ledgerStubNotePin();
-      double.onNote.returns(want);
-      double.resetCalls();
-      expect(ledgerStubNote(double)).isEqualTo(want, "resetCalls keeps the result of note");
-    });
-
-    it("clears the recorded calls of bill", async () => {
-      const double = new LedgerStub(undefined);
-      ledgerStubBill(double);
-      double.resetCalls();
-      expect(double.onBill.callCount).isEqualTo(0, "resetCalls clears the calls of bill");
-    });
-
-    it("keeps the result of returns of bill", async () => {
-      const double = new LedgerStub(undefined);
-      const want = ledgerStubBillPin();
-      double.onBill.returns(want);
-      double.resetCalls();
-      expect(ledgerStubBill(double)).isEqualTo(want, "resetCalls keeps the result of bill");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => ledgerStubInstance(LedgerStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails get with its error", async () => {
-      const want = new Error("get-failing");
-      const double = LedgerStub.newFailing(undefined, want);
-      const outcome = await settle(() => ledgerStubGet(double));
-      const message = "get fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails find with its error", async () => {
-      const want = new Error("find-failing");
-      const double = LedgerStub.newFailing(undefined, want);
-      const outcome = await settle(() => ledgerStubFind(double));
-      const message = "find fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails lookup with its error", async () => {
-      const want = new Error("lookup-failing");
-      const double = LedgerStub.newFailing(undefined, want);
-      const outcome = await settle(() => ledgerStubLookup(double));
-      const message = "lookup fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails list with its error", async () => {
-      const want = new Error("list-failing");
-      const double = LedgerStub.newFailing(undefined, want);
-      const outcome = await settle(() => ledgerStubList(double));
-      const message = "list fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails note with its error", async () => {
-      const want = new Error("note-failing");
-      const double = LedgerStub.newFailing(undefined, want);
-      const outcome = await settle(() => ledgerStubNote(double));
-      const message = "note fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails bill with its error", async () => {
-      const want = new Error("bill-failing");
-      const double = LedgerStub.newFailing(undefined, want);
-      const outcome = await settle(() => ledgerStubBill(double));
-      const message = "bill fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("bill", () => {
+      for (const c of resetBehaviour("Ledger.bill", ledgerStubBillSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -788,202 +672,4 @@ describe("LedgerStub", () => {
   });
 });
 
-describe("LedgerGetStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of get", async () => {
-      const double = new LedgerStub(undefined);
-      const want = ledgerStubGetPin();
-      const unset = AccountBuilder.create().build();
-      expect(want).isNotEqualTo(unset, "the sample of the result differs from its default result");
-      double.onGet.returns(want);
-      expect(await ledgerStubGet(double)).isEqualTo(want, "get returns the result that returns sets");
-    });
-
-    it("configures get for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new LedgerStub(failures);
-      double.onGet.strict();
-      double.onGet.returns(undefined as never);
-      await settle(() => ledgerStubGet(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of get");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of get to the function", async () => {
-      const double = new LedgerStub(undefined);
-      let got: unknown[] = [];
-      double.onGet.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await ledgerStubGet(double);
-      const args = ledgerStubGetArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("LedgerFindStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of find", async () => {
-      const double = new LedgerStub(undefined);
-      const want = ledgerStubFindPin();
-      const unset = AccountBuilder.create().build();
-      expect(want).isNotEqualTo(unset, "the sample of the result differs from its default result");
-      double.onFind.returns(want);
-      expect(await ledgerStubFind(double)).isEqualTo(want, "find returns the result that returns sets");
-    });
-
-    it("configures find for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new LedgerStub(failures);
-      double.onFind.strict();
-      double.onFind.returns(undefined as never);
-      await settle(() => ledgerStubFind(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of find");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of find to the function", async () => {
-      const double = new LedgerStub(undefined);
-      let got: unknown[] = [];
-      double.onFind.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await ledgerStubFind(double);
-      const args = ledgerStubFindArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("LedgerLookupStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of lookup", async () => {
-      const double = new LedgerStub(undefined);
-      const want = ledgerStubLookupPin();
-      const unset = AccountBuilder.create().build();
-      expect(want).isNotEqualTo(unset, "the sample of the result differs from its default result");
-      double.onLookup.returns(want);
-      expect(ledgerStubLookup(double)).isEqualTo(want, "lookup returns the result that returns sets");
-    });
-
-    it("configures lookup for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new LedgerStub(failures);
-      double.onLookup.strict();
-      double.onLookup.returns(undefined as never);
-      await settle(() => ledgerStubLookup(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of lookup");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of lookup to the function", async () => {
-      const double = new LedgerStub(undefined);
-      let got: unknown[] = [];
-      double.onLookup.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      ledgerStubLookup(double);
-      const args = ledgerStubLookupArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("LedgerListStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of list", async () => {
-      const double = new LedgerStub(undefined);
-      const want = ledgerStubListPin();
-      const unset = PageBuilder.create<Account>().build();
-      expect(want).isNotEqualTo(unset, "the sample of the result differs from its default result");
-      double.onList.returns(want);
-      expect(await ledgerStubList(double)).isEqualTo(want, "list returns the result that returns sets");
-    });
-
-    it("configures list for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new LedgerStub(failures);
-      double.onList.strict();
-      double.onList.returns(undefined as never);
-      await settle(() => ledgerStubList(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of list");
-    });
-  });
-});
-
-describe("LedgerNoteStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of note", async () => {
-      const double = new LedgerStub(undefined);
-      const want = ledgerStubNotePin();
-      double.onNote.returns(want);
-      expect(ledgerStubNote(double)).isEqualTo(want, "note returns the result that returns sets");
-    });
-
-    it("configures note for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new LedgerStub(failures);
-      double.onNote.strict();
-      double.onNote.returns(undefined as never);
-      await settle(() => ledgerStubNote(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of note");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of note to the function", async () => {
-      const double = new LedgerStub(undefined);
-      let got: unknown[] = [];
-      double.onNote.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      ledgerStubNote(double);
-      const args = ledgerStubNoteArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("LedgerBillStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of bill", async () => {
-      const double = new LedgerStub(undefined);
-      const want = ledgerStubBillPin();
-      double.onBill.returns(want);
-      expect(ledgerStubBill(double)).isEqualTo(want, "bill returns the result that returns sets");
-    });
-
-    it("configures bill for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new LedgerStub(failures);
-      double.onBill.strict();
-      double.onBill.returns(undefined as never);
-      await settle(() => ledgerStubBill(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of bill");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of bill to the function", async () => {
-      const double = new LedgerStub(undefined);
-      let got: unknown[] = [];
-      double.onBill.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      ledgerStubBill(double);
-      const args = ledgerStubBillArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:18873a6b9c341791ed99546c03f1798e3538342d6d445a84f713bfbd59f3d0b5
+// dokimi:provenance sha256:33d93e586f6fe2f16d59d851b7fd3a3ea847284e74da0097f544478cd25d91f0

@@ -185,47 +185,6 @@ export class VoidLifecycleStub implements VoidLifecycle {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: VoidLifecycleStubOption[]
-  ): VoidLifecycleStub {
-    return new VoidLifecycleStub(
-      seat,
-      VoidLifecycleStub.withClock(clock),
-      VoidLifecycleStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: VoidLifecycleStubOption[]
-  ): VoidLifecycleStub {
-    return new VoidLifecycleStub(seat, VoidLifecycleStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -244,4 +203,4 @@ export class VoidLifecycleStub implements VoidLifecycle {
 
 void compatV1;
 
-// dokimi:provenance sha256:bbfb739a9f301310317cc56a35631ba078e4556851efddc71fdd25e77323db70
+// dokimi:provenance sha256:403af999eea83ea065af568dbbbaa21afe222d27cfd625a2783abc78bb2dfead

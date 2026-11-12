@@ -2,11 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/lease/iface.ts
 
-import { Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { ContractStub } from "./iface.stub";
+import { type ContractAcquireCall, type ContractReleaseCall, ContractStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of acquire. An argument without a sample is undefined. */
 function contractStubAcquireArgs(): [string] {
@@ -19,6 +19,33 @@ function contractStubAcquireArgs(): [string] {
 function contractStubAcquire(double: ContractStub): Promise<void> {
   const args = contractStubAcquireArgs();
   return double.acquire(args[0]);
+}
+
+/** Returns the subject of behaviour and resetBehaviour for acquire, on a new double that reports to seat. */
+function contractStubAcquireSubject(seat: Seat): Subject<ContractAcquireCall, undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onAcquire,
+    call: () => contractStubAcquire(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = contractStubAcquireArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    override: (seen) => {
+      double.onAcquire.func((...received: unknown[]) => {
+        seen({ key: received[0] } as ContractAcquireCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubAcquire(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /** Returns the samples of the arguments of release. An argument without a sample is undefined. */
@@ -34,144 +61,68 @@ function contractStubRelease(double: ContractStub): Promise<void> {
   return double.release(args[0]);
 }
 
+/** Returns the subject of behaviour and resetBehaviour for release, on a new double that reports to seat. */
+function contractStubReleaseSubject(seat: Seat): Subject<ContractReleaseCall, undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onRelease,
+    call: () => contractStubRelease(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = contractStubReleaseArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    override: (seen) => {
+      double.onRelease.func((...received: unknown[]) => {
+        seen({ key: received[0] } as ContractReleaseCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubRelease(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * acquire alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call acquire alone.
  */
 function contractStubInstance(double: ContractStub) {
   return {
     stub: double.onAcquire,
     call: () => contractStubAcquire(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("ContractStub", () => {
   describe("acquire", () => {
-    const checks = behaviour("Contract.acquire", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onAcquire,
-        call: () => contractStubAcquire(double),
-        override: (mark) => {
-          double.onAcquire.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.acquire", contractStubAcquireSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubAcquire(double);
-      expect(double.onAcquire.callCount).isEqualTo(1, "acquire records the call");
-      const got = double.onAcquire.calls[0];
-      const args = contractStubAcquireArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onAcquire.onRecord(() => {
-        seen += 1;
-      });
-      await contractStubAcquire(double);
-      await contractStubAcquire(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of acquire");
-    });
   });
 
   describe("release", () => {
-    const checks = behaviour("Contract.release", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onRelease,
-        call: () => contractStubRelease(double),
-        override: (mark) => {
-          double.onRelease.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.release", contractStubReleaseSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubRelease(double);
-      expect(double.onRelease.callCount).isEqualTo(1, "release records the call");
-      const got = double.onRelease.calls[0];
-      const args = contractStubReleaseArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onRelease.onRecord(() => {
-        seen += 1;
-      });
-      await contractStubRelease(double);
-      await contractStubRelease(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of release");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => contractStubInstance(new ContractStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of acquire", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubAcquire(double);
-      double.resetCalls();
-      expect(double.onAcquire.callCount).isEqualTo(0, "resetCalls clears the calls of acquire");
+    describe("acquire", () => {
+      for (const c of resetBehaviour("Contract.acquire", contractStubAcquireSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of release", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubRelease(double);
-      double.resetCalls();
-      expect(double.onRelease.callCount).isEqualTo(0, "resetCalls clears the calls of release");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => contractStubInstance(ContractStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails acquire with its error", async () => {
-      const want = new Error("acquire-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubAcquire(double));
-      const message = "acquire fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails release with its error", async () => {
-      const want = new Error("release-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubRelease(double));
-      const message = "release fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("release", () => {
+      for (const c of resetBehaviour("Contract.release", contractStubReleaseSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -296,36 +247,4 @@ describe("ContractStub", () => {
   });
 });
 
-describe("ContractAcquireStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of acquire to the function", async () => {
-      const double = new ContractStub(undefined);
-      let got: unknown[] = [];
-      double.onAcquire.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await contractStubAcquire(double);
-      const args = contractStubAcquireArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("ContractReleaseStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of release to the function", async () => {
-      const double = new ContractStub(undefined);
-      let got: unknown[] = [];
-      double.onRelease.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await contractStubRelease(double);
-      const args = contractStubReleaseArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:24962d08b1205788dfc2a2958d21122f53d9b72deb87a9b09444900e747a9fd4
+// dokimi:provenance sha256:c923e759950b62b4a75ac6674e56477fe7bc1e594e7aaee9e0298f7ee1632fbe

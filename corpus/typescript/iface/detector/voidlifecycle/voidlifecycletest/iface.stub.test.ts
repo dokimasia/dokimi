@@ -2,92 +2,63 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/voidlifecycle/iface.ts
 
-import { Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { VoidLifecycleStub } from "./iface.stub";
+import { type VoidLifecycleStopCall, VoidLifecycleStub } from "./iface.stub";
 
 /** Calls stop of double with the samples of its arguments. */
 function voidLifecycleStubStop(double: VoidLifecycleStub): void {
   return double.stop();
 }
 
+/** Returns the subject of behaviour and resetBehaviour for stop, on a new double that reports to seat. */
+function voidLifecycleStubStopSubject(seat: Seat): Subject<VoidLifecycleStopCall, undefined> {
+  const double = new VoidLifecycleStub(seat);
+  return {
+    stub: double.onStop,
+    call: () => voidLifecycleStubStop(double),
+    reset: () => double.resetCalls(),
+    override: (seen) => {
+      double.onStop.func(() => {
+        seen({} as VoidLifecycleStopCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => voidLifecycleStubStop(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * stop alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call stop alone.
  */
 function voidLifecycleStubInstance(double: VoidLifecycleStub) {
   return {
     stub: double.onStop,
     call: () => voidLifecycleStubStop(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("VoidLifecycleStub", () => {
   describe("stop", () => {
-    const checks = behaviour("VoidLifecycle.stop", (seat) => {
-      const double = new VoidLifecycleStub(seat);
-      return {
-        stub: double.onStop,
-        call: () => voidLifecycleStubStop(double),
-        override: (mark) => {
-          double.onStop.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("VoidLifecycle.stop", voidLifecycleStubStopSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new VoidLifecycleStub(undefined);
-      let seen = 0;
-      double.onStop.onRecord(() => {
-        seen += 1;
-      });
-      voidLifecycleStubStop(double);
-      voidLifecycleStubStop(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of stop");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => voidLifecycleStubInstance(new VoidLifecycleStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of stop", async () => {
-      const double = new VoidLifecycleStub(undefined);
-      voidLifecycleStubStop(double);
-      double.resetCalls();
-      expect(double.onStop.callCount).isEqualTo(0, "resetCalls clears the calls of stop");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => voidLifecycleStubInstance(VoidLifecycleStub.newDelayed(seat, duration, clock)),
-      false,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails stop with its error", async () => {
-      const want = new Error("stop-failing");
-      const double = VoidLifecycleStub.newFailing(undefined, want);
-      const outcome = await settle(() => voidLifecycleStubStop(double));
-      const message = "stop fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("stop", () => {
+      for (const c of resetBehaviour("VoidLifecycle.stop", voidLifecycleStubStopSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -176,4 +147,4 @@ describe("VoidLifecycleStub", () => {
   });
 });
 
-// dokimi:provenance sha256:0715387ec41a89e0bfdc25146ad7f86c8142ebc80a74b4d0f5559bf647295cbc
+// dokimi:provenance sha256:73a6e5d73fd56f920002612e968523127505bff5d79e99ee503c7f2677f7a8fb

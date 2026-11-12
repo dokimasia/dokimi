@@ -16,6 +16,8 @@ export interface StorePutCall {
   key: Key;
   /** The argument payload. */
   payload: Payload;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -24,6 +26,8 @@ export interface StorePutCall {
 export interface StoreGetCall {
   /** The argument key. */
   key: Key;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The result of the call, where it returned one. */
   result?: Payload | undefined;
   /** The error that failed the call, where one did. */
@@ -35,7 +39,7 @@ export interface StoreGetCall {
  * through it takes precedence over the function and the fixed result.
  */
 export class StorePutStub extends MethodStub<StorePutCall> {
-  #fn: ((key: Key, payload: Payload) => void | PromiseLike<void>) | undefined;
+  #fn: ((key: Key, payload: Payload, signal: AbortSignal) => void | PromiseLike<void>) | undefined;
 
   /**
    * Sets the function that computes the result of put from its
@@ -44,7 +48,7 @@ export class StorePutStub extends MethodStub<StorePutCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (key: Key, payload: Payload) => void | PromiseLike<void>): this {
+  func(fn: (key: Key, payload: Payload, signal: AbortSignal) => void | PromiseLike<void>): this {
     this.#fn = fn;
     return this;
   }
@@ -52,10 +56,10 @@ export class StorePutStub extends MethodStub<StorePutCall> {
   /**
    * Returns the arms of a call of put with its arguments.
    */
-  arms(key: Key, payload: Payload): Arms<StorePutCall, void, void | PromiseLike<void>> {
+  arms(key: Key, payload: Payload, signal: AbortSignal): Arms<StorePutCall, void, void | PromiseLike<void>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn(key, payload)),
+      invoke: fn && (() => fn(key, payload, signal)),
       fail: (call, error) => {
         call.error = error;
       },
@@ -68,7 +72,7 @@ export class StorePutStub extends MethodStub<StorePutCall> {
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreGetStub extends MethodStub<StoreGetCall> {
-  #fn: ((key: Key) => Payload | PromiseLike<Payload>) | undefined;
+  #fn: ((key: Key, signal: AbortSignal) => Payload | PromiseLike<Payload>) | undefined;
   #fallback: { readonly value: Payload } | undefined;
 
   /**
@@ -90,7 +94,7 @@ export class StoreGetStub extends MethodStub<StoreGetCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (key: Key) => Payload | PromiseLike<Payload>): this {
+  func(fn: (key: Key, signal: AbortSignal) => Payload | PromiseLike<Payload>): this {
     this.#fn = fn;
     return this;
   }
@@ -98,10 +102,10 @@ export class StoreGetStub extends MethodStub<StoreGetCall> {
   /**
    * Returns the arms of a call of get with its arguments.
    */
-  arms(key: Key): Arms<StoreGetCall, Payload, Payload | PromiseLike<Payload>> {
+  arms(key: Key, signal: AbortSignal): Arms<StoreGetCall, Payload, Payload | PromiseLike<Payload>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn(key)),
+      invoke: fn && (() => fn(key, signal)),
       fallback: this.#fallback,
       stamp: (call, result) => {
         call.result = result;
@@ -247,7 +251,7 @@ export class StoreStub implements Store {
    * @param fn - The function.
    * @returns The option.
    */
-  static withStorePut(fn: (key: Key, payload: Payload) => void | PromiseLike<void>): StoreStubOption {
+  static withStorePut(fn: (key: Key, payload: Payload, signal: AbortSignal) => void | PromiseLike<void>): StoreStubOption {
     return (double) => {
       double.onPut.func(fn);
     };
@@ -259,51 +263,10 @@ export class StoreStub implements Store {
    * @param fn - The function.
    * @returns The option.
    */
-  static withStoreGet(fn: (key: Key) => Payload | PromiseLike<Payload>): StoreStubOption {
+  static withStoreGet(fn: (key: Key, signal: AbortSignal) => Payload | PromiseLike<Payload>): StoreStubOption {
     return (double) => {
       double.onGet.func(fn);
     };
-  }
-
-  /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: StoreStubOption[]
-  ): StoreStub {
-    return new StoreStub(
-      seat,
-      StoreStub.withClock(clock),
-      StoreStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: StoreStubOption[]
-  ): StoreStub {
-    return new StoreStub(seat, StoreStub.failing(error), ...options);
   }
 
   /**
@@ -317,17 +280,17 @@ export class StoreStub implements Store {
   /**
    * Records the call of put and returns its result.
    */
-  put(key: Key, payload: Payload): Promise<void> {
-    const call: StorePutCall = { key, payload };
-    return answerAsync(this.onPut, call, this.onPut.arms(key, payload));
+  put(key: Key, payload: Payload, signal: AbortSignal): Promise<void> {
+    const call: StorePutCall = { key, payload, signal };
+    return answerAsync(this.onPut, call, this.onPut.arms(key, payload, signal));
   }
 
   /**
    * Records the call of get and returns its result.
    */
-  get(key: Key): Promise<Payload> {
-    const call: StoreGetCall = { key };
-    return answerAsync(this.onGet, call, this.onGet.arms(key));
+  get(key: Key, signal: AbortSignal): Promise<Payload> {
+    const call: StoreGetCall = { key, signal };
+    return answerAsync(this.onGet, call, this.onGet.arms(key, signal));
   }
 }
 
@@ -430,30 +393,6 @@ export class PayloadStub implements Payload {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: PayloadStubOption[]
-  ): PayloadStub {
-    return new PayloadStub(
-      seat,
-      PayloadStub.withClock(clock),
-      PayloadStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -464,4 +403,4 @@ export class PayloadStub implements Payload {
 
 void compatV1;
 
-// dokimi:provenance sha256:382756a31fece463a92ef234f1ae531f02a54c857e408e25cd4f302646c7dd7e
+// dokimi:provenance sha256:6723adf720665d517121280ebfcd68c94f5e9076b88ac59374cbde9a386711a8

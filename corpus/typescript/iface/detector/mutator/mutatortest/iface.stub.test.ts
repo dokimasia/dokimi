@@ -2,11 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/mutator/iface.ts
 
-import { Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { MutatorStub } from "./iface.stub";
+import { MutatorStub, type MutatorTouchCall } from "./iface.stub";
 
 /** Returns the samples of the arguments of touch. An argument without a sample is undefined. */
 function mutatorStubTouchArgs(): [string] {
@@ -21,90 +21,56 @@ function mutatorStubTouch(double: MutatorStub): Promise<void> {
   return double.touch(args[0]);
 }
 
+/** Returns the subject of behaviour and resetBehaviour for touch, on a new double that reports to seat. */
+function mutatorStubTouchSubject(seat: Seat): Subject<MutatorTouchCall, undefined> {
+  const double = new MutatorStub(seat);
+  return {
+    stub: double.onTouch,
+    call: () => mutatorStubTouch(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = mutatorStubTouchArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    override: (seen) => {
+      double.onTouch.func((...received: unknown[]) => {
+        seen({ key: received[0] } as MutatorTouchCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mutatorStubTouch(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * touch alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call touch alone.
  */
 function mutatorStubInstance(double: MutatorStub) {
   return {
     stub: double.onTouch,
     call: () => mutatorStubTouch(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("MutatorStub", () => {
   describe("touch", () => {
-    const checks = behaviour("Mutator.touch", (seat) => {
-      const double = new MutatorStub(seat);
-      return {
-        stub: double.onTouch,
-        call: () => mutatorStubTouch(double),
-        override: (mark) => {
-          double.onTouch.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mutator.touch", mutatorStubTouchSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MutatorStub(undefined);
-      await mutatorStubTouch(double);
-      expect(double.onTouch.callCount).isEqualTo(1, "touch records the call");
-      const got = double.onTouch.calls[0];
-      const args = mutatorStubTouchArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MutatorStub(undefined);
-      let seen = 0;
-      double.onTouch.onRecord(() => {
-        seen += 1;
-      });
-      await mutatorStubTouch(double);
-      await mutatorStubTouch(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of touch");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => mutatorStubInstance(new MutatorStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of touch", async () => {
-      const double = new MutatorStub(undefined);
-      await mutatorStubTouch(double);
-      double.resetCalls();
-      expect(double.onTouch.callCount).isEqualTo(0, "resetCalls clears the calls of touch");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => mutatorStubInstance(MutatorStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails touch with its error", async () => {
-      const want = new Error("touch-failing");
-      const double = MutatorStub.newFailing(undefined, want);
-      const outcome = await settle(() => mutatorStubTouch(double));
-      const message = "touch fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("touch", () => {
+      for (const c of resetBehaviour("Mutator.touch", mutatorStubTouchSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -193,20 +159,4 @@ describe("MutatorStub", () => {
   });
 });
 
-describe("MutatorTouchStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of touch to the function", async () => {
-      const double = new MutatorStub(undefined);
-      let got: unknown[] = [];
-      double.onTouch.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await mutatorStubTouch(double);
-      const args = mutatorStubTouchArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:850764605e0a01a7ac40b6d82e7d6bad7feda965d47cea586e1a86562044fc3b
+// dokimi:provenance sha256:c9b07bf8278ae337c5dbf22f2a53430166c3eb87d358d1189310bc8938c24a64

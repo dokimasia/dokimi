@@ -14,6 +14,8 @@ import type { Ordered, Ranked } from "../iface";
 export interface RankedRankCall<K extends Ordered, V> {
   /** The argument key. */
   key: K;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The result of the call, where it returned one. */
   result?: V | undefined;
   /** The error that failed the call, where one did. */
@@ -22,6 +24,8 @@ export interface RankedRankCall<K extends Ordered, V> {
 
 /** RankedResetCall records one call of Ranked.reset. */
 export interface RankedResetCall {
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -31,7 +35,7 @@ export interface RankedResetCall {
  * through it takes precedence over the function and the fixed result.
  */
 export class RankedRankStub<K extends Ordered, V> extends MethodStub<RankedRankCall<K, V>> {
-  #fn: ((key: K) => V | PromiseLike<V>) | undefined;
+  #fn: ((key: K, signal: AbortSignal) => V | PromiseLike<V>) | undefined;
   #fallback: { readonly value: V } | undefined;
 
   /**
@@ -53,7 +57,7 @@ export class RankedRankStub<K extends Ordered, V> extends MethodStub<RankedRankC
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (key: K) => V | PromiseLike<V>): this {
+  func(fn: (key: K, signal: AbortSignal) => V | PromiseLike<V>): this {
     this.#fn = fn;
     return this;
   }
@@ -61,10 +65,10 @@ export class RankedRankStub<K extends Ordered, V> extends MethodStub<RankedRankC
   /**
    * Returns the arms of a call of rank with its arguments.
    */
-  arms(key: K): Arms<RankedRankCall<K, V>, V, V | PromiseLike<V>> {
+  arms(key: K, signal: AbortSignal): Arms<RankedRankCall<K, V>, V, V | PromiseLike<V>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn(key)),
+      invoke: fn && (() => fn(key, signal)),
       fallback: this.#fallback,
       stamp: (call, result) => {
         call.result = result;
@@ -81,7 +85,7 @@ export class RankedRankStub<K extends Ordered, V> extends MethodStub<RankedRankC
  * through it takes precedence over the function and the fixed result.
  */
 export class RankedResetStub extends MethodStub<RankedResetCall> {
-  #fn: (() => void | PromiseLike<void>) | undefined;
+  #fn: ((signal: AbortSignal) => void | PromiseLike<void>) | undefined;
 
   /**
    * Sets the function that computes the result of reset from its
@@ -90,7 +94,7 @@ export class RankedResetStub extends MethodStub<RankedResetCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: () => void | PromiseLike<void>): this {
+  func(fn: (signal: AbortSignal) => void | PromiseLike<void>): this {
     this.#fn = fn;
     return this;
   }
@@ -98,10 +102,10 @@ export class RankedResetStub extends MethodStub<RankedResetCall> {
   /**
    * Returns the arms of a call of reset with its arguments.
    */
-  arms(): Arms<RankedResetCall, void, void | PromiseLike<void>> {
+  arms(signal: AbortSignal): Arms<RankedResetCall, void, void | PromiseLike<void>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn()),
+      invoke: fn && (() => fn(signal)),
       fail: (call, error) => {
         call.error = error;
       },
@@ -243,7 +247,7 @@ export class RankedStub<K extends Ordered, V> implements Ranked<K, V> {
    * @param fn - The function.
    * @returns The option.
    */
-  static withRankedRank<K extends Ordered, V>(fn: (key: K) => V | PromiseLike<V>): RankedStubOption<K, V> {
+  static withRankedRank<K extends Ordered, V>(fn: (key: K, signal: AbortSignal) => V | PromiseLike<V>): RankedStubOption<K, V> {
     return (double) => {
       double.onRank.func(fn);
     };
@@ -255,51 +259,10 @@ export class RankedStub<K extends Ordered, V> implements Ranked<K, V> {
    * @param fn - The function.
    * @returns The option.
    */
-  static withRankedReset<K extends Ordered, V>(fn: () => void | PromiseLike<void>): RankedStubOption<K, V> {
+  static withRankedReset<K extends Ordered, V>(fn: (signal: AbortSignal) => void | PromiseLike<void>): RankedStubOption<K, V> {
     return (double) => {
       double.onReset.func(fn);
     };
-  }
-
-  /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed<K extends Ordered, V>(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: RankedStubOption<K, V>[]
-  ): RankedStub<K, V> {
-    return new RankedStub<K, V>(
-      seat,
-      RankedStub.withClock<K, V>(clock),
-      RankedStub.withLatency<K, V>(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing<K extends Ordered, V>(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: RankedStubOption<K, V>[]
-  ): RankedStub<K, V> {
-    return new RankedStub<K, V>(seat, RankedStub.failing<K, V>(error), ...options);
   }
 
   /**
@@ -313,20 +276,20 @@ export class RankedStub<K extends Ordered, V> implements Ranked<K, V> {
   /**
    * Records the call of rank and returns its result.
    */
-  rank(key: K): Promise<V> {
-    const call: RankedRankCall<K, V> = { key };
-    return answerAsync(this.onRank, call, this.onRank.arms(key));
+  rank(key: K, signal: AbortSignal): Promise<V> {
+    const call: RankedRankCall<K, V> = { key, signal };
+    return answerAsync(this.onRank, call, this.onRank.arms(key, signal));
   }
 
   /**
    * Records the call of reset and returns its result.
    */
-  reset(): Promise<void> {
-    const call: RankedResetCall = {};
-    return answerAsync(this.onReset, call, this.onReset.arms());
+  reset(signal: AbortSignal): Promise<void> {
+    const call: RankedResetCall = { signal };
+    return answerAsync(this.onReset, call, this.onReset.arms(signal));
   }
 }
 
 void compatV1;
 
-// dokimi:provenance sha256:ab5b61b4a70038030783645a92121967f2816941a97771019b6e8feed2303fe4
+// dokimi:provenance sha256:4d046076e79699913923de329e540e2865061222cd3673453d845816f31f701e

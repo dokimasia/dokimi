@@ -267,47 +267,6 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: StoreStubOption[]
-  ): StoreStub {
-    return new StoreStub(
-      seat,
-      StoreStub.withClock(clock),
-      StoreStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: StoreStubOption[]
-  ): StoreStub {
-    return new StoreStub(seat, StoreStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -334,4 +293,4 @@ export class StoreStub implements Store {
 
 void compatV1;
 
-// dokimi:provenance sha256:f2958092afce45e8029de66854ecdab1eb92ce836f0dd832c2db5c495b96e91f
+// dokimi:provenance sha256:584252aa2beff68c4a02a5e5e9c1b45ca0a1800d5381e446d69453af97578d3c

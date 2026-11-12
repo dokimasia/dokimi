@@ -36,7 +36,7 @@ export interface Base {
    * An extending interface's double implements ping without declaring it. A
    * contributor reading only the declarations would silently skip it.
    */
-  ping(): Promise<void>;
+  ping(signal: AbortSignal): Promise<void>;
 }
 
 /** Represents the base that {@link Composed} extends beside {@link Base}. */
@@ -44,7 +44,7 @@ export interface Base {
 //dokimi:out path=embeddedtest/
 export interface Closer {
   /** Releases the subject. */
-  close(): Promise<void>;
+  close(signal: AbortSignal): Promise<void>;
 }
 
 /**
@@ -59,5 +59,5 @@ export interface Closer {
 //dokimi:out path=embeddedtest/
 export interface Composed extends Base, Closer {
   /** Returns the value under the key. */
-  get(key: string): Promise<string>;
+  get(key: string, signal: AbortSignal): Promise<string>;
 }

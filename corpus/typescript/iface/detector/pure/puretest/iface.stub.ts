@@ -204,47 +204,6 @@ export class PureStub implements Pure {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: PureStubOption[]
-  ): PureStub {
-    return new PureStub(
-      seat,
-      PureStub.withClock(clock),
-      PureStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: PureStubOption[]
-  ): PureStub {
-    return new PureStub(seat, PureStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -263,4 +222,4 @@ export class PureStub implements Pure {
 
 void compatV1;
 
-// dokimi:provenance sha256:40ab3c4ab0d2cf14465c31e93dbcf0f24a574dc344f47e6836ebcac55197a893
+// dokimi:provenance sha256:5a89c04ac01c27e994f524e8c8a7e1f79f24202d145dea7e1c0767c08927771a

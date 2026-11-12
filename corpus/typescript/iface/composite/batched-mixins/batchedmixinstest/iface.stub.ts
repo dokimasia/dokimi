@@ -341,47 +341,6 @@ export class BatchedStub implements Batched {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: BatchedStubOption[]
-  ): BatchedStub {
-    return new BatchedStub(
-      seat,
-      BatchedStub.withClock(clock),
-      BatchedStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: BatchedStubOption[]
-  ): BatchedStub {
-    return new BatchedStub(seat, BatchedStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -416,4 +375,4 @@ export class BatchedStub implements Batched {
 
 void compatV1;
 
-// dokimi:provenance sha256:d5b76d20cf71a19c210b20a42360adce5935bb8d15ceb9b61598762c00e5cfa8
+// dokimi:provenance sha256:723841c35b16a13b5fdfc3c01a56ab382c29f8374409ba291ec1325ea4237066

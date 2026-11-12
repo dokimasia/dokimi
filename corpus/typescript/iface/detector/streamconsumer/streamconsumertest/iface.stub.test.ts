@@ -2,12 +2,12 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/streamconsumer/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
 import type { Source, Value } from "../iface";
-import { SourceStub, StreamConsumerStub } from "./iface.stub";
+import { type SourceNextCall, SourceStub, type StreamConsumerIngestCall, StreamConsumerStub } from "./iface.stub";
 
 /** Calls next of double with the samples of its arguments. */
 function sourceStubNext(double: SourceStub): Promise<Value | undefined> {
@@ -21,89 +21,58 @@ function sourceStubNextPin(): Value | undefined {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for next, on a new double that reports to seat. */
+function sourceStubNextSubject(seat: Seat): Subject<SourceNextCall, Value | undefined | undefined> {
+  const double = new SourceStub(seat);
+  return {
+    stub: double.onNext,
+    call: () => sourceStubNext(double),
+    reset: () => double.resetCalls(),
+    result: async () => await sourceStubNext(double),
+    returns: () => {
+      const want = sourceStubNextPin();
+      double.onNext.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onNext.func(() => {
+        seen({} as SourceNextCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => sourceStubNext(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * next alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call next alone.
  */
 function sourceStubInstance(double: SourceStub) {
   return {
     stub: double.onNext,
     call: () => sourceStubNext(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("SourceStub", () => {
   describe("next", () => {
-    const checks = behaviour("Source.next", (seat) => {
-      const double = new SourceStub(seat);
-      return {
-        stub: double.onNext,
-        call: () => sourceStubNext(double),
-        override: (mark) => {
-          double.onNext.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Source.next", sourceStubNextSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new SourceStub(undefined);
-      let seen = 0;
-      double.onNext.onRecord(() => {
-        seen += 1;
-      });
-      await sourceStubNext(double);
-      await sourceStubNext(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of next");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => sourceStubInstance(new SourceStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of next", async () => {
-      const double = new SourceStub(undefined);
-      await sourceStubNext(double);
-      double.resetCalls();
-      expect(double.onNext.callCount).isEqualTo(0, "resetCalls clears the calls of next");
-    });
-
-    it("keeps the result of returns of next", async () => {
-      const double = new SourceStub(undefined);
-      const want = sourceStubNextPin();
-      double.onNext.returns(want);
-      double.resetCalls();
-      expect(await sourceStubNext(double)).isEqualTo(want, "resetCalls keeps the result of next");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => sourceStubInstance(SourceStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails next with its error", async () => {
-      const want = new Error("next-failing");
-      const double = SourceStub.newFailing(undefined, want);
-      const outcome = await settle(() => sourceStubNext(double));
-      const message = "next fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("next", () => {
+      for (const c of resetBehaviour("Source.next", sourceStubNextSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -192,26 +161,6 @@ describe("SourceStub", () => {
   });
 });
 
-describe("SourceNextStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of next", async () => {
-      const double = new SourceStub(undefined);
-      const want = sourceStubNextPin();
-      double.onNext.returns(want);
-      expect(await sourceStubNext(double)).isEqualTo(want, "next returns the result that returns sets");
-    });
-
-    it("configures next for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new SourceStub(failures);
-      double.onNext.strict();
-      double.onNext.returns(undefined as never);
-      await settle(() => sourceStubNext(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of next");
-    });
-  });
-});
-
 /** Returns the samples of the arguments of ingest. An argument without a sample is undefined. */
 function streamConsumerStubIngestArgs(): [Source] {
   let a0 = undefined as unknown as Source;
@@ -231,98 +180,62 @@ function streamConsumerStubIngestPin(): number {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for ingest, on a new double that reports to seat. */
+function streamConsumerStubIngestSubject(seat: Seat): Subject<StreamConsumerIngestCall, number | undefined> {
+  const double = new StreamConsumerStub(seat);
+  return {
+    stub: double.onIngest,
+    call: () => streamConsumerStubIngest(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = streamConsumerStubIngestArgs();
+      check.isEqualTo(s, c.src, args[0], "the call records src");
+    },
+    result: async () => await streamConsumerStubIngest(double),
+    returns: () => {
+      const want = streamConsumerStubIngestPin();
+      double.onIngest.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onIngest.func((...received: unknown[]) => {
+        seen({ src: received[0] } as StreamConsumerIngestCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => streamConsumerStubIngest(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * ingest alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call ingest alone.
  */
 function streamConsumerStubInstance(double: StreamConsumerStub) {
   return {
     stub: double.onIngest,
     call: () => streamConsumerStubIngest(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("StreamConsumerStub", () => {
   describe("ingest", () => {
-    const checks = behaviour("StreamConsumer.ingest", (seat) => {
-      const double = new StreamConsumerStub(seat);
-      return {
-        stub: double.onIngest,
-        call: () => streamConsumerStubIngest(double),
-        override: (mark) => {
-          double.onIngest.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("StreamConsumer.ingest", streamConsumerStubIngestSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new StreamConsumerStub(undefined);
-      await streamConsumerStubIngest(double);
-      expect(double.onIngest.callCount).isEqualTo(1, "ingest records the call");
-      const got = double.onIngest.calls[0];
-      const args = streamConsumerStubIngestArgs();
-      expect(got?.src).isEqualTo(args[0], "the call records src");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new StreamConsumerStub(undefined);
-      let seen = 0;
-      double.onIngest.onRecord(() => {
-        seen += 1;
-      });
-      await streamConsumerStubIngest(double);
-      await streamConsumerStubIngest(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of ingest");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => streamConsumerStubInstance(new StreamConsumerStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of ingest", async () => {
-      const double = new StreamConsumerStub(undefined);
-      await streamConsumerStubIngest(double);
-      double.resetCalls();
-      expect(double.onIngest.callCount).isEqualTo(0, "resetCalls clears the calls of ingest");
-    });
-
-    it("keeps the result of returns of ingest", async () => {
-      const double = new StreamConsumerStub(undefined);
-      const want = streamConsumerStubIngestPin();
-      double.onIngest.returns(want);
-      double.resetCalls();
-      expect(await streamConsumerStubIngest(double)).isEqualTo(want, "resetCalls keeps the result of ingest");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => streamConsumerStubInstance(StreamConsumerStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails ingest with its error", async () => {
-      const want = new Error("ingest-failing");
-      const double = StreamConsumerStub.newFailing(undefined, want);
-      const outcome = await settle(() => streamConsumerStubIngest(double));
-      const message = "ingest fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("ingest", () => {
+      for (const c of resetBehaviour("StreamConsumer.ingest", streamConsumerStubIngestSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -411,38 +324,4 @@ describe("StreamConsumerStub", () => {
   });
 });
 
-describe("StreamConsumerIngestStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of ingest", async () => {
-      const double = new StreamConsumerStub(undefined);
-      const want = streamConsumerStubIngestPin();
-      double.onIngest.returns(want);
-      expect(await streamConsumerStubIngest(double)).isEqualTo(want, "ingest returns the result that returns sets");
-    });
-
-    it("configures ingest for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new StreamConsumerStub(failures);
-      double.onIngest.strict();
-      double.onIngest.returns(undefined as never);
-      await settle(() => streamConsumerStubIngest(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of ingest");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of ingest to the function", async () => {
-      const double = new StreamConsumerStub(undefined);
-      let got: unknown[] = [];
-      double.onIngest.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await streamConsumerStubIngest(double);
-      const args = streamConsumerStubIngestArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:49cc29af652749fe0229d77a1ca28fe628a7de9b01e8c9d418fe7cb5daa939ef
+// dokimi:provenance sha256:00de274686b813094ab48ddd86912aab34d396223f4bed59588250bcdefbebff

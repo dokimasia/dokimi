@@ -2,12 +2,12 @@
 // dokimi:plugin stub
 // dokimi:source iface/composite/paginated-reader/iface.ts
 
-import { Controlled, Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { Controlled, type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
 import type { Page, Value } from "../iface";
-import { PageStub, PaginatedReaderStub } from "./iface.stub";
+import { PageStub, type PaginatedReaderAddCall, type PaginatedReaderFetchCall, PaginatedReaderStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of fetch. An argument without a sample is undefined. */
 function paginatedReaderStubFetchArgs(): [number] {
@@ -29,6 +29,39 @@ function paginatedReaderStubFetchPin(): Page {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for fetch, on a new double that reports to seat. */
+function paginatedReaderStubFetchSubject(seat: Seat): Subject<PaginatedReaderFetchCall, Page | undefined> {
+  const double = new PaginatedReaderStub(seat);
+  return {
+    stub: double.onFetch,
+    call: () => paginatedReaderStubFetch(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = paginatedReaderStubFetchArgs();
+      check.isEqualTo(s, c.cursor, args[0], "the call records cursor");
+    },
+    result: async () => await paginatedReaderStubFetch(double),
+    returns: () => {
+      const want = paginatedReaderStubFetchPin();
+      double.onFetch.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onFetch.func((...received: unknown[]) => {
+        seen({ cursor: received[0] } as PaginatedReaderFetchCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => paginatedReaderStubFetch(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Returns the samples of the arguments of add. An argument without a sample is undefined. */
 function paginatedReaderStubAddArgs(): [Value] {
   let a0 = undefined as unknown as Value;
@@ -42,152 +75,68 @@ function paginatedReaderStubAdd(double: PaginatedReaderStub): Promise<void> {
   return double.add(args[0]);
 }
 
+/** Returns the subject of behaviour and resetBehaviour for add, on a new double that reports to seat. */
+function paginatedReaderStubAddSubject(seat: Seat): Subject<PaginatedReaderAddCall, undefined> {
+  const double = new PaginatedReaderStub(seat);
+  return {
+    stub: double.onAdd,
+    call: () => paginatedReaderStubAdd(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = paginatedReaderStubAddArgs();
+      check.isEqualTo(s, c.v, args[0], "the call records v");
+    },
+    override: (seen) => {
+      double.onAdd.func((...received: unknown[]) => {
+        seen({ v: received[0] } as PaginatedReaderAddCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => paginatedReaderStubAdd(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * fetch alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call fetch alone.
  */
 function paginatedReaderStubInstance(double: PaginatedReaderStub) {
   return {
     stub: double.onFetch,
     call: () => paginatedReaderStubFetch(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("PaginatedReaderStub", () => {
   describe("fetch", () => {
-    const checks = behaviour("PaginatedReader.fetch", (seat) => {
-      const double = new PaginatedReaderStub(seat);
-      return {
-        stub: double.onFetch,
-        call: () => paginatedReaderStubFetch(double),
-        override: (mark) => {
-          double.onFetch.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("PaginatedReader.fetch", paginatedReaderStubFetchSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new PaginatedReaderStub(undefined);
-      await paginatedReaderStubFetch(double);
-      expect(double.onFetch.callCount).isEqualTo(1, "fetch records the call");
-      const got = double.onFetch.calls[0];
-      const args = paginatedReaderStubFetchArgs();
-      expect(got?.cursor).isEqualTo(args[0], "the call records cursor");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new PaginatedReaderStub(undefined);
-      let seen = 0;
-      double.onFetch.onRecord(() => {
-        seen += 1;
-      });
-      await paginatedReaderStubFetch(double);
-      await paginatedReaderStubFetch(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of fetch");
-    });
   });
 
   describe("add", () => {
-    const checks = behaviour("PaginatedReader.add", (seat) => {
-      const double = new PaginatedReaderStub(seat);
-      return {
-        stub: double.onAdd,
-        call: () => paginatedReaderStubAdd(double),
-        override: (mark) => {
-          double.onAdd.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("PaginatedReader.add", paginatedReaderStubAddSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new PaginatedReaderStub(undefined);
-      await paginatedReaderStubAdd(double);
-      expect(double.onAdd.callCount).isEqualTo(1, "add records the call");
-      const got = double.onAdd.calls[0];
-      const args = paginatedReaderStubAddArgs();
-      expect(got?.v).isEqualTo(args[0], "the call records v");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new PaginatedReaderStub(undefined);
-      let seen = 0;
-      double.onAdd.onRecord(() => {
-        seen += 1;
-      });
-      await paginatedReaderStubAdd(double);
-      await paginatedReaderStubAdd(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of add");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => paginatedReaderStubInstance(new PaginatedReaderStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of fetch", async () => {
-      const double = new PaginatedReaderStub(undefined);
-      await paginatedReaderStubFetch(double);
-      double.resetCalls();
-      expect(double.onFetch.callCount).isEqualTo(0, "resetCalls clears the calls of fetch");
+    describe("fetch", () => {
+      for (const c of resetBehaviour("PaginatedReader.fetch", paginatedReaderStubFetchSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("keeps the result of returns of fetch", async () => {
-      const double = new PaginatedReaderStub(undefined);
-      const want = paginatedReaderStubFetchPin();
-      double.onFetch.returns(want);
-      double.resetCalls();
-      expect(await paginatedReaderStubFetch(double)).isEqualTo(want, "resetCalls keeps the result of fetch");
-    });
-
-    it("clears the recorded calls of add", async () => {
-      const double = new PaginatedReaderStub(undefined);
-      await paginatedReaderStubAdd(double);
-      double.resetCalls();
-      expect(double.onAdd.callCount).isEqualTo(0, "resetCalls clears the calls of add");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => paginatedReaderStubInstance(PaginatedReaderStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails fetch with its error", async () => {
-      const want = new Error("fetch-failing");
-      const double = PaginatedReaderStub.newFailing(undefined, want);
-      const outcome = await settle(() => paginatedReaderStubFetch(double));
-      const message = "fetch fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails add with its error", async () => {
-      const want = new Error("add-failing");
-      const double = PaginatedReaderStub.newFailing(undefined, want);
-      const outcome = await settle(() => paginatedReaderStubAdd(double));
-      const message = "add fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("add", () => {
+      for (const c of resetBehaviour("PaginatedReader.add", paginatedReaderStubAddSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -312,56 +261,6 @@ describe("PaginatedReaderStub", () => {
   });
 });
 
-describe("PaginatedReaderFetchStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of fetch", async () => {
-      const double = new PaginatedReaderStub(undefined);
-      const want = paginatedReaderStubFetchPin();
-      double.onFetch.returns(want);
-      expect(await paginatedReaderStubFetch(double)).isEqualTo(want, "fetch returns the result that returns sets");
-    });
-
-    it("configures fetch for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new PaginatedReaderStub(failures);
-      double.onFetch.strict();
-      double.onFetch.returns(undefined as never);
-      await settle(() => paginatedReaderStubFetch(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of fetch");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of fetch to the function", async () => {
-      const double = new PaginatedReaderStub(undefined);
-      let got: unknown[] = [];
-      double.onFetch.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await paginatedReaderStubFetch(double);
-      const args = paginatedReaderStubFetchArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("PaginatedReaderAddStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of add to the function", async () => {
-      const double = new PaginatedReaderStub(undefined);
-      let got: unknown[] = [];
-      double.onAdd.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await paginatedReaderStubAdd(double);
-      const args = paginatedReaderStubAddArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
 /** Assigns the sample of each property of PageStub to double. */
 function pageStubProps(double: PageStub): void {
   double.items = [{ key: "key-a", body: "body-a" }];
@@ -395,10 +294,6 @@ describe("PageStub", () => {
         name: "keeps each property of a double with a latency",
         giveDouble: () => new PageStub(undefined, PageStub.withLatency(1)),
       },
-      {
-        name: "keeps each property of a delayed double",
-        giveDouble: () => PageStub.newDelayed(undefined, 1, new Controlled()),
-      },
     ];
     for (const tt of tests) {
       it(tt.name, () => {
@@ -414,4 +309,4 @@ describe("PageStub", () => {
   });
 });
 
-// dokimi:provenance sha256:b1c020e949250e847c97dde2333c6c54d2e1a2eb8b6ac5ae7ee854a5a51c9415
+// dokimi:provenance sha256:15df1433ff915b15b6dd48fa2787e486feb7a65547c8e880908ecdfd781f7ed3

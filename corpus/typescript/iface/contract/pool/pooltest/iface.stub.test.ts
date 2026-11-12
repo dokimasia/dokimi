@@ -2,12 +2,12 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/pool/iface.ts
 
-import { Controlled, Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { Controlled, type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
 import type { Stats, Value } from "../iface";
-import { ContractStub, StatsStub, ValueStub } from "./iface.stub";
+import { type ContractGetCall, type ContractPutCall, type ContractStatsCall, ContractStub, StatsStub, ValueStub } from "./iface.stub";
 
 /** Calls get of double with the samples of its arguments. */
 function contractStubGet(double: ContractStub): Promise<Value> {
@@ -19,6 +19,35 @@ function contractStubGetPin(): Value {
   let want0: Value;
   want0 = { key: "key-a", body: "body-a" };
   return want0;
+}
+
+/** Returns the subject of behaviour and resetBehaviour for get, on a new double that reports to seat. */
+function contractStubGetSubject(seat: Seat): Subject<ContractGetCall, Value | undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onGet,
+    call: () => contractStubGet(double),
+    reset: () => double.resetCalls(),
+    result: async () => await contractStubGet(double),
+    returns: () => {
+      const want = contractStubGetPin();
+      double.onGet.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onGet.func(() => {
+        seen({} as ContractGetCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubGet(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /** Returns the samples of the arguments of put. An argument without a sample is undefined. */
@@ -34,6 +63,33 @@ function contractStubPut(double: ContractStub): Promise<void> {
   return double.put(args[0]);
 }
 
+/** Returns the subject of behaviour and resetBehaviour for put, on a new double that reports to seat. */
+function contractStubPutSubject(seat: Seat): Subject<ContractPutCall, undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onPut,
+    call: () => contractStubPut(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = contractStubPutArgs();
+      check.isEqualTo(s, c.v, args[0], "the call records v");
+    },
+    override: (seen) => {
+      double.onPut.func((...received: unknown[]) => {
+        seen({ v: received[0] } as ContractPutCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubPut(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Calls stats of double with the samples of its arguments. */
 function contractStubStats(double: ContractStub): Promise<Stats> {
   return double.stats();
@@ -46,196 +102,82 @@ function contractStubStatsPin(): Stats {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for stats, on a new double that reports to seat. */
+function contractStubStatsSubject(seat: Seat): Subject<ContractStatsCall, Stats | undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onStats,
+    call: () => contractStubStats(double),
+    reset: () => double.resetCalls(),
+    result: async () => await contractStubStats(double),
+    returns: () => {
+      const want = contractStubStatsPin();
+      double.onStats.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onStats.func(() => {
+        seen({} as ContractStatsCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubStats(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * get alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call get alone.
  */
 function contractStubInstance(double: ContractStub) {
   return {
     stub: double.onGet,
     call: () => contractStubGet(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("ContractStub", () => {
   describe("get", () => {
-    const checks = behaviour("Contract.get", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onGet,
-        call: () => contractStubGet(double),
-        override: (mark) => {
-          double.onGet.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.get", contractStubGetSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onGet.onRecord(() => {
-        seen += 1;
-      });
-      await contractStubGet(double);
-      await contractStubGet(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of get");
-    });
   });
 
   describe("put", () => {
-    const checks = behaviour("Contract.put", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onPut,
-        call: () => contractStubPut(double),
-        override: (mark) => {
-          double.onPut.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.put", contractStubPutSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubPut(double);
-      expect(double.onPut.callCount).isEqualTo(1, "put records the call");
-      const got = double.onPut.calls[0];
-      const args = contractStubPutArgs();
-      expect(got?.v).isEqualTo(args[0], "the call records v");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onPut.onRecord(() => {
-        seen += 1;
-      });
-      await contractStubPut(double);
-      await contractStubPut(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of put");
-    });
   });
 
   describe("stats", () => {
-    const checks = behaviour("Contract.stats", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onStats,
-        call: () => contractStubStats(double),
-        override: (mark) => {
-          double.onStats.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.stats", contractStubStatsSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onStats.onRecord(() => {
-        seen += 1;
-      });
-      await contractStubStats(double);
-      await contractStubStats(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of stats");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => contractStubInstance(new ContractStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of get", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubGet(double);
-      double.resetCalls();
-      expect(double.onGet.callCount).isEqualTo(0, "resetCalls clears the calls of get");
+    describe("get", () => {
+      for (const c of resetBehaviour("Contract.get", contractStubGetSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("keeps the result of returns of get", async () => {
-      const double = new ContractStub(undefined);
-      const want = contractStubGetPin();
-      double.onGet.returns(want);
-      double.resetCalls();
-      expect(await contractStubGet(double)).isEqualTo(want, "resetCalls keeps the result of get");
+    describe("put", () => {
+      for (const c of resetBehaviour("Contract.put", contractStubPutSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of put", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubPut(double);
-      double.resetCalls();
-      expect(double.onPut.callCount).isEqualTo(0, "resetCalls clears the calls of put");
-    });
-
-    it("clears the recorded calls of stats", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubStats(double);
-      double.resetCalls();
-      expect(double.onStats.callCount).isEqualTo(0, "resetCalls clears the calls of stats");
-    });
-
-    it("keeps the result of returns of stats", async () => {
-      const double = new ContractStub(undefined);
-      const want = contractStubStatsPin();
-      double.onStats.returns(want);
-      double.resetCalls();
-      expect(await contractStubStats(double)).isEqualTo(want, "resetCalls keeps the result of stats");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => contractStubInstance(ContractStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails get with its error", async () => {
-      const want = new Error("get-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubGet(double));
-      const message = "get fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails put with its error", async () => {
-      const want = new Error("put-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubPut(double));
-      const message = "put fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails stats with its error", async () => {
-      const want = new Error("stats-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubStats(double));
-      const message = "stats fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("stats", () => {
+      for (const c of resetBehaviour("Contract.stats", contractStubStatsSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -396,62 +338,6 @@ describe("ContractStub", () => {
   });
 });
 
-describe("ContractGetStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of get", async () => {
-      const double = new ContractStub(undefined);
-      const want = contractStubGetPin();
-      double.onGet.returns(want);
-      expect(await contractStubGet(double)).isEqualTo(want, "get returns the result that returns sets");
-    });
-
-    it("configures get for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new ContractStub(failures);
-      double.onGet.strict();
-      double.onGet.returns(undefined as never);
-      await settle(() => contractStubGet(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of get");
-    });
-  });
-});
-
-describe("ContractPutStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of put to the function", async () => {
-      const double = new ContractStub(undefined);
-      let got: unknown[] = [];
-      double.onPut.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await contractStubPut(double);
-      const args = contractStubPutArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("ContractStatsStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of stats", async () => {
-      const double = new ContractStub(undefined);
-      const want = contractStubStatsPin();
-      double.onStats.returns(want);
-      expect(await contractStubStats(double)).isEqualTo(want, "stats returns the result that returns sets");
-    });
-
-    it("configures stats for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new ContractStub(failures);
-      double.onStats.strict();
-      double.onStats.returns(undefined as never);
-      await settle(() => contractStubStats(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of stats");
-    });
-  });
-});
-
 /** Assigns the sample of each property of ValueStub to double. */
 function valueStubProps(double: ValueStub): void {
   double.key = "key-a";
@@ -484,10 +370,6 @@ describe("ValueStub", () => {
       {
         name: "keeps each property of a double with a latency",
         giveDouble: () => new ValueStub(undefined, ValueStub.withLatency(1)),
-      },
-      {
-        name: "keeps each property of a delayed double",
-        giveDouble: () => ValueStub.newDelayed(undefined, 1, new Controlled()),
       },
     ];
     for (const tt of tests) {
@@ -538,10 +420,6 @@ describe("StatsStub", () => {
         name: "keeps each property of a double with a latency",
         giveDouble: () => new StatsStub(undefined, StatsStub.withLatency(1)),
       },
-      {
-        name: "keeps each property of a delayed double",
-        giveDouble: () => StatsStub.newDelayed(undefined, 1, new Controlled()),
-      },
     ];
     for (const tt of tests) {
       it(tt.name, () => {
@@ -558,4 +436,4 @@ describe("StatsStub", () => {
   });
 });
 
-// dokimi:provenance sha256:3bebad9f2af950ccb26d1c53a3fea05d8ad7221fe1b78709208639f8b0f5e3c7
+// dokimi:provenance sha256:ba98702e691519871d71f949af9c513e5954fbb8cfe154424458905bd53e780a

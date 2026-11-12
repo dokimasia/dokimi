@@ -206,47 +206,6 @@ export class MultiReaderStub implements MultiReader {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: MultiReaderStubOption[]
-  ): MultiReaderStub {
-    return new MultiReaderStub(
-      seat,
-      MultiReaderStub.withClock(clock),
-      MultiReaderStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: MultiReaderStubOption[]
-  ): MultiReaderStub {
-    return new MultiReaderStub(seat, MultiReaderStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -265,4 +224,4 @@ export class MultiReaderStub implements MultiReader {
 
 void compatV1;
 
-// dokimi:provenance sha256:2b1ff30bed221b0db93b9bf91fb71c6f7d0a8bb0409196e4ff2db66a5bdd4b5d
+// dokimi:provenance sha256:169eda927a5e7c0ff01e3fd2ce56146c4bf766d59709f9f10ad3cd84c6735df9

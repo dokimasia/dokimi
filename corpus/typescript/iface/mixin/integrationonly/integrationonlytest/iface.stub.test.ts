@@ -2,11 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/integrationonly/iface.ts
 
-import { Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { MixedStub } from "./iface.stub";
+import { type MixedConnectCall, MixedStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of connect. An argument without a sample is undefined. */
 function mixedStubConnectArgs(): [string] {
@@ -21,90 +21,56 @@ function mixedStubConnect(double: MixedStub): Promise<void> {
   return double.connect(args[0]);
 }
 
+/** Returns the subject of behaviour and resetBehaviour for connect, on a new double that reports to seat. */
+function mixedStubConnectSubject(seat: Seat): Subject<MixedConnectCall, undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onConnect,
+    call: () => mixedStubConnect(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = mixedStubConnectArgs();
+      check.isEqualTo(s, c.dsn, args[0], "the call records dsn");
+    },
+    override: (seen) => {
+      double.onConnect.func((...received: unknown[]) => {
+        seen({ dsn: received[0] } as MixedConnectCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubConnect(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * connect alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call connect alone.
  */
 function mixedStubInstance(double: MixedStub) {
   return {
     stub: double.onConnect,
     call: () => mixedStubConnect(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("MixedStub", () => {
   describe("connect", () => {
-    const checks = behaviour("Mixed.connect", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onConnect,
-        call: () => mixedStubConnect(double),
-        override: (mark) => {
-          double.onConnect.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.connect", mixedStubConnectSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubConnect(double);
-      expect(double.onConnect.callCount).isEqualTo(1, "connect records the call");
-      const got = double.onConnect.calls[0];
-      const args = mixedStubConnectArgs();
-      expect(got?.dsn).isEqualTo(args[0], "the call records dsn");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onConnect.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubConnect(double);
-      await mixedStubConnect(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of connect");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of connect", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubConnect(double);
-      double.resetCalls();
-      expect(double.onConnect.callCount).isEqualTo(0, "resetCalls clears the calls of connect");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails connect with its error", async () => {
-      const want = new Error("connect-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubConnect(double));
-      const message = "connect fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("connect", () => {
+      for (const c of resetBehaviour("Mixed.connect", mixedStubConnectSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -193,20 +159,4 @@ describe("MixedStub", () => {
   });
 });
 
-describe("MixedConnectStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of connect to the function", async () => {
-      const double = new MixedStub(undefined);
-      let got: unknown[] = [];
-      double.onConnect.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await mixedStubConnect(double);
-      const args = mixedStubConnectArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:16235eb28071b9d46b345880299ff85d97e04da80fe2d26b4a88fba551863d74
+// dokimi:provenance sha256:0ed921a708da54caec45b75b5f30bba663bcf2669963f5231068b675ccbf698c

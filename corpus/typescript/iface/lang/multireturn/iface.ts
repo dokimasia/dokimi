@@ -25,9 +25,9 @@
 //dokimi:out path=multireturntest/
 export interface Wide {
   /** Returns the name, the count and the flag of the id, or rejects. */
-  quad(id: string): Promise<[string, number, boolean]>;
+  quad(id: string, signal: AbortSignal): Promise<[string, number, boolean]>;
   /** Returns the name, the count and the flag of the id. */
-  triple(id: string): Promise<[string, number, boolean]>;
+  triple(id: string, signal: AbortSignal): Promise<[string, number, boolean]>;
   /** Returns the name and the count of the id. */
-  noError(id: string): Promise<[string, number]>;
+  noError(id: string, signal: AbortSignal): Promise<[string, number]>;
 }

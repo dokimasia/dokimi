@@ -2,11 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/aggregator/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { AggregatorStub } from "./iface.stub";
+import { type AggregatorCountCall, AggregatorStub } from "./iface.stub";
 
 /** Calls count of double with the samples of its arguments. */
 function aggregatorStubCount(double: AggregatorStub): Promise<number> {
@@ -20,89 +20,58 @@ function aggregatorStubCountPin(): number {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for count, on a new double that reports to seat. */
+function aggregatorStubCountSubject(seat: Seat): Subject<AggregatorCountCall, number | undefined> {
+  const double = new AggregatorStub(seat);
+  return {
+    stub: double.onCount,
+    call: () => aggregatorStubCount(double),
+    reset: () => double.resetCalls(),
+    result: async () => await aggregatorStubCount(double),
+    returns: () => {
+      const want = aggregatorStubCountPin();
+      double.onCount.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onCount.func(() => {
+        seen({} as AggregatorCountCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => aggregatorStubCount(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * count alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call count alone.
  */
 function aggregatorStubInstance(double: AggregatorStub) {
   return {
     stub: double.onCount,
     call: () => aggregatorStubCount(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("AggregatorStub", () => {
   describe("count", () => {
-    const checks = behaviour("Aggregator.count", (seat) => {
-      const double = new AggregatorStub(seat);
-      return {
-        stub: double.onCount,
-        call: () => aggregatorStubCount(double),
-        override: (mark) => {
-          double.onCount.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Aggregator.count", aggregatorStubCountSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new AggregatorStub(undefined);
-      let seen = 0;
-      double.onCount.onRecord(() => {
-        seen += 1;
-      });
-      await aggregatorStubCount(double);
-      await aggregatorStubCount(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of count");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => aggregatorStubInstance(new AggregatorStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of count", async () => {
-      const double = new AggregatorStub(undefined);
-      await aggregatorStubCount(double);
-      double.resetCalls();
-      expect(double.onCount.callCount).isEqualTo(0, "resetCalls clears the calls of count");
-    });
-
-    it("keeps the result of returns of count", async () => {
-      const double = new AggregatorStub(undefined);
-      const want = aggregatorStubCountPin();
-      double.onCount.returns(want);
-      double.resetCalls();
-      expect(await aggregatorStubCount(double)).isEqualTo(want, "resetCalls keeps the result of count");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => aggregatorStubInstance(AggregatorStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails count with its error", async () => {
-      const want = new Error("count-failing");
-      const double = AggregatorStub.newFailing(undefined, want);
-      const outcome = await settle(() => aggregatorStubCount(double));
-      const message = "count fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("count", () => {
+      for (const c of resetBehaviour("Aggregator.count", aggregatorStubCountSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -191,24 +160,4 @@ describe("AggregatorStub", () => {
   });
 });
 
-describe("AggregatorCountStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of count", async () => {
-      const double = new AggregatorStub(undefined);
-      const want = aggregatorStubCountPin();
-      double.onCount.returns(want);
-      expect(await aggregatorStubCount(double)).isEqualTo(want, "count returns the result that returns sets");
-    });
-
-    it("configures count for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new AggregatorStub(failures);
-      double.onCount.strict();
-      double.onCount.returns(undefined as never);
-      await settle(() => aggregatorStubCount(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of count");
-    });
-  });
-});
-
-// dokimi:provenance sha256:e5119fd7aeac9c057c4b917dc8554ef70fed807d6cd3ff8e4a662d3cab53fb0c
+// dokimi:provenance sha256:5a39b22626658cff3068cd49bdc35cfa9b3757e1dff5c1a6f63217bcd1e43f04

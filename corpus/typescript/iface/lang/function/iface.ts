@@ -46,7 +46,7 @@ export interface Value {
  *
  * @throws {@link notFound} for the empty key.
  */
-export function get(key: string): Promise<Value> {
+export function get(key: string, _signal: AbortSignal): Promise<Value> {
   if (key === "") {
     return Promise.reject(notFound);
   }
@@ -61,7 +61,7 @@ export function get(key: string): Promise<Value> {
  * only a method.
  */
 //dokimi:mixin idempotent
-export function put(_v: Value): Promise<void> {
+export function put(_v: Value, _signal: AbortSignal): Promise<void> {
   return Promise.resolve();
 }
 
@@ -74,12 +74,12 @@ export function put(_v: Value): Promise<void> {
  * interface.
  */
 //dokimi:contract lease role=acquire
-export function acquire(_key: string): Promise<void> {
+export function acquire(_key: string, _signal: AbortSignal): Promise<void> {
   return Promise.resolve();
 }
 
 /** Releases the lease of the key, in the release role of the lease contract. */
 //dokimi:contract lease role=release
-export function release(_key: string): Promise<void> {
+export function release(_key: string, _signal: AbortSignal): Promise<void> {
   return Promise.resolve();
 }

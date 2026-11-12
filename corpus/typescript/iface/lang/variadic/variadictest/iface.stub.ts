@@ -12,6 +12,8 @@ import type { Finder } from "../iface";
 
 /** FinderFindCall records one call of Finder.find. */
 export interface FinderFindCall {
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The argument keys. */
   keys: string[];
   /** The result of the call, where it returned one. */
@@ -24,6 +26,8 @@ export interface FinderFindCall {
 export interface FinderFindWithLimitCall {
   /** The argument limit. */
   limit: number;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The argument keys. */
   keys: string[];
   /** The result of the call, where it returned one. */
@@ -37,7 +41,7 @@ export interface FinderFindWithLimitCall {
  * through it takes precedence over the function and the fixed result.
  */
 export class FinderFindStub extends MethodStub<FinderFindCall> {
-  #fn: ((...keys: string[]) => string[] | PromiseLike<string[]>) | undefined;
+  #fn: ((signal: AbortSignal, ...keys: string[]) => string[] | PromiseLike<string[]>) | undefined;
   #fallback: { readonly value: string[] } | undefined;
 
   /**
@@ -59,7 +63,7 @@ export class FinderFindStub extends MethodStub<FinderFindCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (...keys: string[]) => string[] | PromiseLike<string[]>): this {
+  func(fn: (signal: AbortSignal, ...keys: string[]) => string[] | PromiseLike<string[]>): this {
     this.#fn = fn;
     return this;
   }
@@ -67,10 +71,10 @@ export class FinderFindStub extends MethodStub<FinderFindCall> {
   /**
    * Returns the arms of a call of find with its arguments.
    */
-  arms(...keys: string[]): Arms<FinderFindCall, string[], string[] | PromiseLike<string[]>> {
+  arms(signal: AbortSignal, ...keys: string[]): Arms<FinderFindCall, string[], string[] | PromiseLike<string[]>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn(...keys)),
+      invoke: fn && (() => fn(signal, ...keys)),
       fallback: this.#fallback,
       stamp: (call, result) => {
         call.result = result;
@@ -87,7 +91,7 @@ export class FinderFindStub extends MethodStub<FinderFindCall> {
  * through it takes precedence over the function and the fixed result.
  */
 export class FinderFindWithLimitStub extends MethodStub<FinderFindWithLimitCall> {
-  #fn: ((limit: number, ...keys: string[]) => string[] | PromiseLike<string[]>) | undefined;
+  #fn: ((limit: number, signal: AbortSignal, ...keys: string[]) => string[] | PromiseLike<string[]>) | undefined;
   #fallback: { readonly value: string[] } | undefined;
 
   /**
@@ -109,7 +113,7 @@ export class FinderFindWithLimitStub extends MethodStub<FinderFindWithLimitCall>
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (limit: number, ...keys: string[]) => string[] | PromiseLike<string[]>): this {
+  func(fn: (limit: number, signal: AbortSignal, ...keys: string[]) => string[] | PromiseLike<string[]>): this {
     this.#fn = fn;
     return this;
   }
@@ -117,10 +121,10 @@ export class FinderFindWithLimitStub extends MethodStub<FinderFindWithLimitCall>
   /**
    * Returns the arms of a call of findWithLimit with its arguments.
    */
-  arms(limit: number, ...keys: string[]): Arms<FinderFindWithLimitCall, string[], string[] | PromiseLike<string[]>> {
+  arms(limit: number, signal: AbortSignal, ...keys: string[]): Arms<FinderFindWithLimitCall, string[], string[] | PromiseLike<string[]>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn(limit, ...keys)),
+      invoke: fn && (() => fn(limit, signal, ...keys)),
       fallback: this.#fallback,
       stamp: (call, result) => {
         call.result = result;
@@ -266,7 +270,7 @@ export class FinderStub implements Finder {
    * @param fn - The function.
    * @returns The option.
    */
-  static withFinderFind(fn: (...keys: string[]) => string[] | PromiseLike<string[]>): FinderStubOption {
+  static withFinderFind(fn: (signal: AbortSignal, ...keys: string[]) => string[] | PromiseLike<string[]>): FinderStubOption {
     return (double) => {
       double.onFind.func(fn);
     };
@@ -278,51 +282,10 @@ export class FinderStub implements Finder {
    * @param fn - The function.
    * @returns The option.
    */
-  static withFinderFindWithLimit(fn: (limit: number, ...keys: string[]) => string[] | PromiseLike<string[]>): FinderStubOption {
+  static withFinderFindWithLimit(fn: (limit: number, signal: AbortSignal, ...keys: string[]) => string[] | PromiseLike<string[]>): FinderStubOption {
     return (double) => {
       double.onFindWithLimit.func(fn);
     };
-  }
-
-  /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: FinderStubOption[]
-  ): FinderStub {
-    return new FinderStub(
-      seat,
-      FinderStub.withClock(clock),
-      FinderStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: FinderStubOption[]
-  ): FinderStub {
-    return new FinderStub(seat, FinderStub.failing(error), ...options);
   }
 
   /**
@@ -336,20 +299,20 @@ export class FinderStub implements Finder {
   /**
    * Records the call of find and returns its result.
    */
-  find(...keys: string[]): Promise<string[]> {
-    const call: FinderFindCall = { keys };
-    return answerAsync(this.onFind, call, this.onFind.arms(...keys));
+  find(signal: AbortSignal, ...keys: string[]): Promise<string[]> {
+    const call: FinderFindCall = { signal, keys };
+    return answerAsync(this.onFind, call, this.onFind.arms(signal, ...keys));
   }
 
   /**
    * Records the call of findWithLimit and returns its result.
    */
-  findWithLimit(limit: number, ...keys: string[]): Promise<string[]> {
-    const call: FinderFindWithLimitCall = { limit, keys };
-    return answerAsync(this.onFindWithLimit, call, this.onFindWithLimit.arms(limit, ...keys));
+  findWithLimit(limit: number, signal: AbortSignal, ...keys: string[]): Promise<string[]> {
+    const call: FinderFindWithLimitCall = { limit, signal, keys };
+    return answerAsync(this.onFindWithLimit, call, this.onFindWithLimit.arms(limit, signal, ...keys));
   }
 }
 
 void compatV1;
 
-// dokimi:provenance sha256:fab5d726876f9806be28f25366d2c10ce04c171c391ea1b22ce56c7a5d8fa59c
+// dokimi:provenance sha256:ccfd04ed61f630da7e65a35fed95d105e3195e1db96a3fd9e0027598d4be95bb

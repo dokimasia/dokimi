@@ -204,47 +204,6 @@ export class MultiAggregatorStub implements MultiAggregator {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: MultiAggregatorStubOption[]
-  ): MultiAggregatorStub {
-    return new MultiAggregatorStub(
-      seat,
-      MultiAggregatorStub.withClock(clock),
-      MultiAggregatorStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: MultiAggregatorStubOption[]
-  ): MultiAggregatorStub {
-    return new MultiAggregatorStub(seat, MultiAggregatorStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -263,4 +222,4 @@ export class MultiAggregatorStub implements MultiAggregator {
 
 void compatV1;
 
-// dokimi:provenance sha256:9dbf1b23badfa99227e82629924e46e6fd43b0cfbe73f1c4803b815363a58c8d
+// dokimi:provenance sha256:607c89619c5608ecb0ca4f9002258ca22645a612733bb7c01329de95dcde2ccb

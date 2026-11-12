@@ -2,20 +2,66 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/leader-election/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { ContractStub } from "./iface.stub";
+import { type ContractCampaignCall, type ContractIsLeaderCall, type ContractResignCall, ContractStub } from "./iface.stub";
 
 /** Calls campaign of double with the samples of its arguments. */
 function contractStubCampaign(double: ContractStub): Promise<void> {
   return double.campaign();
 }
 
+/** Returns the subject of behaviour and resetBehaviour for campaign, on a new double that reports to seat. */
+function contractStubCampaignSubject(seat: Seat): Subject<ContractCampaignCall, undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onCampaign,
+    call: () => contractStubCampaign(double),
+    reset: () => double.resetCalls(),
+    override: (seen) => {
+      double.onCampaign.func(() => {
+        seen({} as ContractCampaignCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubCampaign(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Calls resign of double with the samples of its arguments. */
 function contractStubResign(double: ContractStub): Promise<void> {
   return double.resign();
+}
+
+/** Returns the subject of behaviour and resetBehaviour for resign, on a new double that reports to seat. */
+function contractStubResignSubject(seat: Seat): Subject<ContractResignCall, undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onResign,
+    call: () => contractStubResign(double),
+    reset: () => double.resetCalls(),
+    override: (seen) => {
+      double.onResign.func(() => {
+        seen({} as ContractResignCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubResign(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /** Calls isLeader of double with the samples of its arguments. */
@@ -30,179 +76,82 @@ function contractStubIsLeaderPin(): boolean {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for isLeader, on a new double that reports to seat. */
+function contractStubIsLeaderSubject(seat: Seat): Subject<ContractIsLeaderCall, boolean | undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onIsLeader,
+    call: () => contractStubIsLeader(double),
+    reset: () => double.resetCalls(),
+    result: async () => await contractStubIsLeader(double),
+    returns: () => {
+      const want = contractStubIsLeaderPin();
+      double.onIsLeader.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onIsLeader.func(() => {
+        seen({} as ContractIsLeaderCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubIsLeader(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * campaign alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call campaign alone.
  */
 function contractStubInstance(double: ContractStub) {
   return {
     stub: double.onCampaign,
     call: () => contractStubCampaign(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("ContractStub", () => {
   describe("campaign", () => {
-    const checks = behaviour("Contract.campaign", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onCampaign,
-        call: () => contractStubCampaign(double),
-        override: (mark) => {
-          double.onCampaign.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.campaign", contractStubCampaignSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onCampaign.onRecord(() => {
-        seen += 1;
-      });
-      await contractStubCampaign(double);
-      await contractStubCampaign(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of campaign");
-    });
   });
 
   describe("resign", () => {
-    const checks = behaviour("Contract.resign", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onResign,
-        call: () => contractStubResign(double),
-        override: (mark) => {
-          double.onResign.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.resign", contractStubResignSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onResign.onRecord(() => {
-        seen += 1;
-      });
-      await contractStubResign(double);
-      await contractStubResign(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of resign");
-    });
   });
 
   describe("isLeader", () => {
-    const checks = behaviour("Contract.isLeader", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onIsLeader,
-        call: () => contractStubIsLeader(double),
-        override: (mark) => {
-          double.onIsLeader.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.isLeader", contractStubIsLeaderSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onIsLeader.onRecord(() => {
-        seen += 1;
-      });
-      await contractStubIsLeader(double);
-      await contractStubIsLeader(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of isLeader");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => contractStubInstance(new ContractStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of campaign", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubCampaign(double);
-      double.resetCalls();
-      expect(double.onCampaign.callCount).isEqualTo(0, "resetCalls clears the calls of campaign");
+    describe("campaign", () => {
+      for (const c of resetBehaviour("Contract.campaign", contractStubCampaignSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of resign", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubResign(double);
-      double.resetCalls();
-      expect(double.onResign.callCount).isEqualTo(0, "resetCalls clears the calls of resign");
+    describe("resign", () => {
+      for (const c of resetBehaviour("Contract.resign", contractStubResignSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of isLeader", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubIsLeader(double);
-      double.resetCalls();
-      expect(double.onIsLeader.callCount).isEqualTo(0, "resetCalls clears the calls of isLeader");
-    });
-
-    it("keeps the result of returns of isLeader", async () => {
-      const double = new ContractStub(undefined);
-      const want = contractStubIsLeaderPin();
-      double.onIsLeader.returns(want);
-      double.resetCalls();
-      expect(await contractStubIsLeader(double)).isEqualTo(want, "resetCalls keeps the result of isLeader");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => contractStubInstance(ContractStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails campaign with its error", async () => {
-      const want = new Error("campaign-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubCampaign(double));
-      const message = "campaign fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails resign with its error", async () => {
-      const want = new Error("resign-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubResign(double));
-      const message = "resign fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails isLeader with its error", async () => {
-      const want = new Error("isLeader-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubIsLeader(double));
-      const message = "isLeader fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("isLeader", () => {
+      for (const c of resetBehaviour("Contract.isLeader", contractStubIsLeaderSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -363,24 +312,4 @@ describe("ContractStub", () => {
   });
 });
 
-describe("ContractIsLeaderStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of isLeader", async () => {
-      const double = new ContractStub(undefined);
-      const want = contractStubIsLeaderPin();
-      double.onIsLeader.returns(want);
-      expect(await contractStubIsLeader(double)).isEqualTo(want, "isLeader returns the result that returns sets");
-    });
-
-    it("configures isLeader for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new ContractStub(failures);
-      double.onIsLeader.strict();
-      double.onIsLeader.returns(undefined as never);
-      await settle(() => contractStubIsLeader(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of isLeader");
-    });
-  });
-});
-
-// dokimi:provenance sha256:cb807506ee78e31ac47fe0303d392887275a5ac8ec2a570aab42c7cadb6dd912
+// dokimi:provenance sha256:2e8ee0558934d72e9e672fe8967a807347f3bbdb10523671448c05ede84289e7

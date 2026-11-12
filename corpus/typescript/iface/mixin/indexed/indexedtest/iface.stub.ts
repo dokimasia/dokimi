@@ -339,47 +339,6 @@ export class RankedStub implements Ranked {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: RankedStubOption[]
-  ): RankedStub {
-    return new RankedStub(
-      seat,
-      RankedStub.withClock(clock),
-      RankedStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: RankedStubOption[]
-  ): RankedStub {
-    return new RankedStub(seat, RankedStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -513,30 +472,6 @@ export class ValueStub implements Value {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: ValueStubOption[]
-  ): ValueStub {
-    return new ValueStub(
-      seat,
-      ValueStub.withClock(clock),
-      ValueStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -547,4 +482,4 @@ export class ValueStub implements Value {
 
 void compatV1;
 
-// dokimi:provenance sha256:486cd605231b6e7a09bfcfe99a53b80cbbd490df2954f19fe691392def83f806
+// dokimi:provenance sha256:02028c23ded786890271ada60ff1b8f8f8ea51062281bf28077a6b8505dd5df2

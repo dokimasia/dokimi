@@ -2,11 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/singleflight/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { ContractStub } from "./iface.stub";
+import { type ContractFlightsCall, type ContractRunCall, ContractStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of run. An argument without a sample is undefined. */
 function contractStubRunArgs(): [string, () => string] {
@@ -29,6 +29,40 @@ function contractStubRunPin(): string {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for run, on a new double that reports to seat. */
+function contractStubRunSubject(seat: Seat): Subject<ContractRunCall, string | undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onRun,
+    call: () => contractStubRun(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = contractStubRunArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+      check.isEqualTo(s, c.compute, args[1], "the call records compute");
+    },
+    result: async () => await contractStubRun(double),
+    returns: () => {
+      const want = contractStubRunPin();
+      double.onRun.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onRun.func((...received: unknown[]) => {
+        seen({ key: received[0], compute: received[1] } as ContractRunCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubRun(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Calls flights of double with the samples of its arguments. */
 function contractStubFlights(double: ContractStub): Promise<number> {
   return double.flights();
@@ -41,152 +75,70 @@ function contractStubFlightsPin(): number {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for flights, on a new double that reports to seat. */
+function contractStubFlightsSubject(seat: Seat): Subject<ContractFlightsCall, number | undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onFlights,
+    call: () => contractStubFlights(double),
+    reset: () => double.resetCalls(),
+    result: async () => await contractStubFlights(double),
+    returns: () => {
+      const want = contractStubFlightsPin();
+      double.onFlights.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onFlights.func(() => {
+        seen({} as ContractFlightsCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubFlights(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * run alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call run alone.
  */
 function contractStubInstance(double: ContractStub) {
   return {
     stub: double.onRun,
     call: () => contractStubRun(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("ContractStub", () => {
   describe("run", () => {
-    const checks = behaviour("Contract.run", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onRun,
-        call: () => contractStubRun(double),
-        override: (mark) => {
-          double.onRun.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.run", contractStubRunSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubRun(double);
-      expect(double.onRun.callCount).isEqualTo(1, "run records the call");
-      const got = double.onRun.calls[0];
-      const args = contractStubRunArgs();
-      expect.soft(got?.key).isEqualTo(args[0], "the call records key");
-      expect.soft(got?.compute).isEqualTo(args[1], "the call records compute");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onRun.onRecord(() => {
-        seen += 1;
-      });
-      await contractStubRun(double);
-      await contractStubRun(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of run");
-    });
   });
 
   describe("flights", () => {
-    const checks = behaviour("Contract.flights", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onFlights,
-        call: () => contractStubFlights(double),
-        override: (mark) => {
-          double.onFlights.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.flights", contractStubFlightsSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onFlights.onRecord(() => {
-        seen += 1;
-      });
-      await contractStubFlights(double);
-      await contractStubFlights(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of flights");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => contractStubInstance(new ContractStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of run", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubRun(double);
-      double.resetCalls();
-      expect(double.onRun.callCount).isEqualTo(0, "resetCalls clears the calls of run");
+    describe("run", () => {
+      for (const c of resetBehaviour("Contract.run", contractStubRunSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("keeps the result of returns of run", async () => {
-      const double = new ContractStub(undefined);
-      const want = contractStubRunPin();
-      double.onRun.returns(want);
-      double.resetCalls();
-      expect(await contractStubRun(double)).isEqualTo(want, "resetCalls keeps the result of run");
-    });
-
-    it("clears the recorded calls of flights", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubFlights(double);
-      double.resetCalls();
-      expect(double.onFlights.callCount).isEqualTo(0, "resetCalls clears the calls of flights");
-    });
-
-    it("keeps the result of returns of flights", async () => {
-      const double = new ContractStub(undefined);
-      const want = contractStubFlightsPin();
-      double.onFlights.returns(want);
-      double.resetCalls();
-      expect(await contractStubFlights(double)).isEqualTo(want, "resetCalls keeps the result of flights");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => contractStubInstance(ContractStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails run with its error", async () => {
-      const want = new Error("run-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubRun(double));
-      const message = "run fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails flights with its error", async () => {
-      const want = new Error("flights-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubFlights(double));
-      const message = "flights fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("flights", () => {
+      for (const c of resetBehaviour("Contract.flights", contractStubFlightsSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -311,58 +263,4 @@ describe("ContractStub", () => {
   });
 });
 
-describe("ContractRunStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of run", async () => {
-      const double = new ContractStub(undefined);
-      const want = contractStubRunPin();
-      double.onRun.returns(want);
-      expect(await contractStubRun(double)).isEqualTo(want, "run returns the result that returns sets");
-    });
-
-    it("configures run for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new ContractStub(failures);
-      double.onRun.strict();
-      double.onRun.returns(undefined as never);
-      await settle(() => contractStubRun(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of run");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of run to the function", async () => {
-      const double = new ContractStub(undefined);
-      let got: unknown[] = [];
-      double.onRun.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await contractStubRun(double);
-      const args = contractStubRunArgs();
-      expect(got).isEqualTo([args[0], args[1]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("ContractFlightsStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of flights", async () => {
-      const double = new ContractStub(undefined);
-      const want = contractStubFlightsPin();
-      double.onFlights.returns(want);
-      expect(await contractStubFlights(double)).isEqualTo(want, "flights returns the result that returns sets");
-    });
-
-    it("configures flights for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new ContractStub(failures);
-      double.onFlights.strict();
-      double.onFlights.returns(undefined as never);
-      await settle(() => contractStubFlights(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of flights");
-    });
-  });
-});
-
-// dokimi:provenance sha256:12a298efea0f2dfe3d7c24200850a5a41f4b00f82c9f409182ee38a0a37bcb89
+// dokimi:provenance sha256:206637d2ce5116325af59d73800c56109430f68ca5d282cf5af369ed8ccb5102

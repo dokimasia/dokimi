@@ -12,6 +12,8 @@ import type { Base, Closer, Composed } from "../iface";
 
 /** BasePingCall records one call of Base.ping. */
 export interface BasePingCall {
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -21,7 +23,7 @@ export interface BasePingCall {
  * through it takes precedence over the function and the fixed result.
  */
 export class BasePingStub extends MethodStub<BasePingCall> {
-  #fn: (() => void | PromiseLike<void>) | undefined;
+  #fn: ((signal: AbortSignal) => void | PromiseLike<void>) | undefined;
 
   /**
    * Sets the function that computes the result of ping from its
@@ -30,7 +32,7 @@ export class BasePingStub extends MethodStub<BasePingCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: () => void | PromiseLike<void>): this {
+  func(fn: (signal: AbortSignal) => void | PromiseLike<void>): this {
     this.#fn = fn;
     return this;
   }
@@ -38,10 +40,10 @@ export class BasePingStub extends MethodStub<BasePingCall> {
   /**
    * Returns the arms of a call of ping with its arguments.
    */
-  arms(): Arms<BasePingCall, void, void | PromiseLike<void>> {
+  arms(signal: AbortSignal): Arms<BasePingCall, void, void | PromiseLike<void>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn()),
+      invoke: fn && (() => fn(signal)),
       fail: (call, error) => {
         call.error = error;
       },
@@ -178,51 +180,10 @@ export class BaseStub implements Base {
    * @param fn - The function.
    * @returns The option.
    */
-  static withBasePing(fn: () => void | PromiseLike<void>): BaseStubOption {
+  static withBasePing(fn: (signal: AbortSignal) => void | PromiseLike<void>): BaseStubOption {
     return (double) => {
       double.onPing.func(fn);
     };
-  }
-
-  /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: BaseStubOption[]
-  ): BaseStub {
-    return new BaseStub(
-      seat,
-      BaseStub.withClock(clock),
-      BaseStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: BaseStubOption[]
-  ): BaseStub {
-    return new BaseStub(seat, BaseStub.failing(error), ...options);
   }
 
   /**
@@ -236,14 +197,16 @@ export class BaseStub implements Base {
   /**
    * Records the call of ping and returns its result.
    */
-  ping(): Promise<void> {
-    const call: BasePingCall = {};
-    return answerAsync(this.onPing, call, this.onPing.arms());
+  ping(signal: AbortSignal): Promise<void> {
+    const call: BasePingCall = { signal };
+    return answerAsync(this.onPing, call, this.onPing.arms(signal));
   }
 }
 
 /** CloserCloseCall records one call of Closer.close. */
 export interface CloserCloseCall {
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -253,7 +216,7 @@ export interface CloserCloseCall {
  * through it takes precedence over the function and the fixed result.
  */
 export class CloserCloseStub extends MethodStub<CloserCloseCall> {
-  #fn: (() => void | PromiseLike<void>) | undefined;
+  #fn: ((signal: AbortSignal) => void | PromiseLike<void>) | undefined;
 
   /**
    * Sets the function that computes the result of close from its
@@ -262,7 +225,7 @@ export class CloserCloseStub extends MethodStub<CloserCloseCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: () => void | PromiseLike<void>): this {
+  func(fn: (signal: AbortSignal) => void | PromiseLike<void>): this {
     this.#fn = fn;
     return this;
   }
@@ -270,10 +233,10 @@ export class CloserCloseStub extends MethodStub<CloserCloseCall> {
   /**
    * Returns the arms of a call of close with its arguments.
    */
-  arms(): Arms<CloserCloseCall, void, void | PromiseLike<void>> {
+  arms(signal: AbortSignal): Arms<CloserCloseCall, void, void | PromiseLike<void>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn()),
+      invoke: fn && (() => fn(signal)),
       fail: (call, error) => {
         call.error = error;
       },
@@ -410,51 +373,10 @@ export class CloserStub implements Closer {
    * @param fn - The function.
    * @returns The option.
    */
-  static withCloserClose(fn: () => void | PromiseLike<void>): CloserStubOption {
+  static withCloserClose(fn: (signal: AbortSignal) => void | PromiseLike<void>): CloserStubOption {
     return (double) => {
       double.onClose.func(fn);
     };
-  }
-
-  /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: CloserStubOption[]
-  ): CloserStub {
-    return new CloserStub(
-      seat,
-      CloserStub.withClock(clock),
-      CloserStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: CloserStubOption[]
-  ): CloserStub {
-    return new CloserStub(seat, CloserStub.failing(error), ...options);
   }
 
   /**
@@ -468,9 +390,9 @@ export class CloserStub implements Closer {
   /**
    * Records the call of close and returns its result.
    */
-  close(): Promise<void> {
-    const call: CloserCloseCall = {};
-    return answerAsync(this.onClose, call, this.onClose.arms());
+  close(signal: AbortSignal): Promise<void> {
+    const call: CloserCloseCall = { signal };
+    return answerAsync(this.onClose, call, this.onClose.arms(signal));
   }
 }
 
@@ -478,6 +400,8 @@ export class CloserStub implements Closer {
 export interface ComposedGetCall {
   /** The argument key. */
   key: string;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The result of the call, where it returned one. */
   result?: string | undefined;
   /** The error that failed the call, where one did. */
@@ -486,12 +410,16 @@ export interface ComposedGetCall {
 
 /** ComposedPingCall records one call of Composed.ping. */
 export interface ComposedPingCall {
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
 
 /** ComposedCloseCall records one call of Composed.close. */
 export interface ComposedCloseCall {
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -501,7 +429,7 @@ export interface ComposedCloseCall {
  * through it takes precedence over the function and the fixed result.
  */
 export class ComposedGetStub extends MethodStub<ComposedGetCall> {
-  #fn: ((key: string) => string | PromiseLike<string>) | undefined;
+  #fn: ((key: string, signal: AbortSignal) => string | PromiseLike<string>) | undefined;
   #fallback: { readonly value: string } | undefined;
 
   /**
@@ -523,7 +451,7 @@ export class ComposedGetStub extends MethodStub<ComposedGetCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (key: string) => string | PromiseLike<string>): this {
+  func(fn: (key: string, signal: AbortSignal) => string | PromiseLike<string>): this {
     this.#fn = fn;
     return this;
   }
@@ -531,10 +459,10 @@ export class ComposedGetStub extends MethodStub<ComposedGetCall> {
   /**
    * Returns the arms of a call of get with its arguments.
    */
-  arms(key: string): Arms<ComposedGetCall, string, string | PromiseLike<string>> {
+  arms(key: string, signal: AbortSignal): Arms<ComposedGetCall, string, string | PromiseLike<string>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn(key)),
+      invoke: fn && (() => fn(key, signal)),
       fallback: this.#fallback,
       stamp: (call, result) => {
         call.result = result;
@@ -551,7 +479,7 @@ export class ComposedGetStub extends MethodStub<ComposedGetCall> {
  * through it takes precedence over the function and the fixed result.
  */
 export class ComposedPingStub extends MethodStub<ComposedPingCall> {
-  #fn: (() => void | PromiseLike<void>) | undefined;
+  #fn: ((signal: AbortSignal) => void | PromiseLike<void>) | undefined;
 
   /**
    * Sets the function that computes the result of ping from its
@@ -560,7 +488,7 @@ export class ComposedPingStub extends MethodStub<ComposedPingCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: () => void | PromiseLike<void>): this {
+  func(fn: (signal: AbortSignal) => void | PromiseLike<void>): this {
     this.#fn = fn;
     return this;
   }
@@ -568,10 +496,10 @@ export class ComposedPingStub extends MethodStub<ComposedPingCall> {
   /**
    * Returns the arms of a call of ping with its arguments.
    */
-  arms(): Arms<ComposedPingCall, void, void | PromiseLike<void>> {
+  arms(signal: AbortSignal): Arms<ComposedPingCall, void, void | PromiseLike<void>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn()),
+      invoke: fn && (() => fn(signal)),
       fail: (call, error) => {
         call.error = error;
       },
@@ -584,7 +512,7 @@ export class ComposedPingStub extends MethodStub<ComposedPingCall> {
  * through it takes precedence over the function and the fixed result.
  */
 export class ComposedCloseStub extends MethodStub<ComposedCloseCall> {
-  #fn: (() => void | PromiseLike<void>) | undefined;
+  #fn: ((signal: AbortSignal) => void | PromiseLike<void>) | undefined;
 
   /**
    * Sets the function that computes the result of close from its
@@ -593,7 +521,7 @@ export class ComposedCloseStub extends MethodStub<ComposedCloseCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: () => void | PromiseLike<void>): this {
+  func(fn: (signal: AbortSignal) => void | PromiseLike<void>): this {
     this.#fn = fn;
     return this;
   }
@@ -601,10 +529,10 @@ export class ComposedCloseStub extends MethodStub<ComposedCloseCall> {
   /**
    * Returns the arms of a call of close with its arguments.
    */
-  arms(): Arms<ComposedCloseCall, void, void | PromiseLike<void>> {
+  arms(signal: AbortSignal): Arms<ComposedCloseCall, void, void | PromiseLike<void>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn()),
+      invoke: fn && (() => fn(signal)),
       fail: (call, error) => {
         call.error = error;
       },
@@ -751,7 +679,7 @@ export class ComposedStub implements Composed {
    * @param fn - The function.
    * @returns The option.
    */
-  static withComposedGet(fn: (key: string) => string | PromiseLike<string>): ComposedStubOption {
+  static withComposedGet(fn: (key: string, signal: AbortSignal) => string | PromiseLike<string>): ComposedStubOption {
     return (double) => {
       double.onGet.func(fn);
     };
@@ -763,7 +691,7 @@ export class ComposedStub implements Composed {
    * @param fn - The function.
    * @returns The option.
    */
-  static withComposedPing(fn: () => void | PromiseLike<void>): ComposedStubOption {
+  static withComposedPing(fn: (signal: AbortSignal) => void | PromiseLike<void>): ComposedStubOption {
     return (double) => {
       double.onPing.func(fn);
     };
@@ -775,51 +703,10 @@ export class ComposedStub implements Composed {
    * @param fn - The function.
    * @returns The option.
    */
-  static withComposedClose(fn: () => void | PromiseLike<void>): ComposedStubOption {
+  static withComposedClose(fn: (signal: AbortSignal) => void | PromiseLike<void>): ComposedStubOption {
     return (double) => {
       double.onClose.func(fn);
     };
-  }
-
-  /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: ComposedStubOption[]
-  ): ComposedStub {
-    return new ComposedStub(
-      seat,
-      ComposedStub.withClock(clock),
-      ComposedStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: ComposedStubOption[]
-  ): ComposedStub {
-    return new ComposedStub(seat, ComposedStub.failing(error), ...options);
   }
 
   /**
@@ -833,28 +720,28 @@ export class ComposedStub implements Composed {
   /**
    * Records the call of get and returns its result.
    */
-  get(key: string): Promise<string> {
-    const call: ComposedGetCall = { key };
-    return answerAsync(this.onGet, call, this.onGet.arms(key));
+  get(key: string, signal: AbortSignal): Promise<string> {
+    const call: ComposedGetCall = { key, signal };
+    return answerAsync(this.onGet, call, this.onGet.arms(key, signal));
   }
 
   /**
    * Records the call of ping and returns its result.
    */
-  ping(): Promise<void> {
-    const call: ComposedPingCall = {};
-    return answerAsync(this.onPing, call, this.onPing.arms());
+  ping(signal: AbortSignal): Promise<void> {
+    const call: ComposedPingCall = { signal };
+    return answerAsync(this.onPing, call, this.onPing.arms(signal));
   }
 
   /**
    * Records the call of close and returns its result.
    */
-  close(): Promise<void> {
-    const call: ComposedCloseCall = {};
-    return answerAsync(this.onClose, call, this.onClose.arms());
+  close(signal: AbortSignal): Promise<void> {
+    const call: ComposedCloseCall = { signal };
+    return answerAsync(this.onClose, call, this.onClose.arms(signal));
   }
 }
 
 void compatV1;
 
-// dokimi:provenance sha256:61db2d22368ba5461ed6abc3f566c574c949c5deffe69011ae2bed5428a549d0
+// dokimi:provenance sha256:2f02ae7a182587dc1ee5aa0db35335c92e417ca03910d8dcbd46b6fbe277df9f

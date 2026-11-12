@@ -2,12 +2,12 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/publisher-redeliver/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
 import type { Value } from "../iface";
-import { ContractStub } from "./iface.stub";
+import { type ContractPublishCall, type ContractRepublishCall, ContractStub, type ContractSubscribeCall } from "./iface.stub";
 
 /** Returns the samples of the arguments of publish. An argument without a sample is undefined. */
 function contractStubPublishArgs(): [Value] {
@@ -20,6 +20,33 @@ function contractStubPublishArgs(): [Value] {
 function contractStubPublish(double: ContractStub): Promise<void> {
   const args = contractStubPublishArgs();
   return double.publish(args[0]);
+}
+
+/** Returns the subject of behaviour and resetBehaviour for publish, on a new double that reports to seat. */
+function contractStubPublishSubject(seat: Seat): Subject<ContractPublishCall, undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onPublish,
+    call: () => contractStubPublish(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = contractStubPublishArgs();
+      check.isEqualTo(s, c.v, args[0], "the call records v");
+    },
+    override: (seen) => {
+      double.onPublish.func((...received: unknown[]) => {
+        seen({ v: received[0] } as ContractPublishCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubPublish(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /** Returns the samples of the arguments of republish. An argument without a sample is undefined. */
@@ -35,194 +62,109 @@ function contractStubRepublish(double: ContractStub): Promise<void> {
   return double.republish(args[0]);
 }
 
+/** Returns the subject of behaviour and resetBehaviour for republish, on a new double that reports to seat. */
+function contractStubRepublishSubject(seat: Seat): Subject<ContractRepublishCall, undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onRepublish,
+    call: () => contractStubRepublish(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = contractStubRepublishArgs();
+      check.isEqualTo(s, c.v, args[0], "the call records v");
+    },
+    override: (seen) => {
+      double.onRepublish.func((...received: unknown[]) => {
+        seen({ v: received[0] } as ContractRepublishCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubRepublish(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Calls subscribe of double with the samples of its arguments. */
 function contractStubSubscribe(double: ContractStub): AsyncIterable<Value> {
   return double.subscribe();
 }
 
+/** Returns the subject of behaviour and resetBehaviour for subscribe, on a new double that reports to seat. */
+function contractStubSubscribeSubject(seat: Seat): Subject<ContractSubscribeCall, AsyncIterable<Value> | undefined> {
+  const double = new ContractStub(seat);
+  return {
+    stub: double.onSubscribe,
+    call: () => contractStubSubscribe(double),
+    reset: () => double.resetCalls(),
+    result: async () => contractStubSubscribe(double),
+    override: (seen) => {
+      double.onSubscribe.func(() => {
+        seen({} as ContractSubscribeCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => contractStubSubscribe(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * publish alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call publish alone.
  */
 function contractStubInstance(double: ContractStub) {
   return {
     stub: double.onPublish,
     call: () => contractStubPublish(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("ContractStub", () => {
   describe("publish", () => {
-    const checks = behaviour("Contract.publish", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onPublish,
-        call: () => contractStubPublish(double),
-        override: (mark) => {
-          double.onPublish.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.publish", contractStubPublishSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubPublish(double);
-      expect(double.onPublish.callCount).isEqualTo(1, "publish records the call");
-      const got = double.onPublish.calls[0];
-      const args = contractStubPublishArgs();
-      expect(got?.v).isEqualTo(args[0], "the call records v");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onPublish.onRecord(() => {
-        seen += 1;
-      });
-      await contractStubPublish(double);
-      await contractStubPublish(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of publish");
-    });
   });
 
   describe("republish", () => {
-    const checks = behaviour("Contract.republish", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onRepublish,
-        call: () => contractStubRepublish(double),
-        override: (mark) => {
-          double.onRepublish.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.republish", contractStubRepublishSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubRepublish(double);
-      expect(double.onRepublish.callCount).isEqualTo(1, "republish records the call");
-      const got = double.onRepublish.calls[0];
-      const args = contractStubRepublishArgs();
-      expect(got?.v).isEqualTo(args[0], "the call records v");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onRepublish.onRecord(() => {
-        seen += 1;
-      });
-      await contractStubRepublish(double);
-      await contractStubRepublish(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of republish");
-    });
   });
 
   describe("subscribe", () => {
-    const checks = behaviour("Contract.subscribe", (seat) => {
-      const double = new ContractStub(seat);
-      return {
-        stub: double.onSubscribe,
-        call: () => contractStubSubscribe(double),
-        override: (mark) => {
-          double.onSubscribe.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Contract.subscribe", contractStubSubscribeSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ContractStub(undefined);
-      let seen = 0;
-      double.onSubscribe.onRecord(() => {
-        seen += 1;
-      });
-      contractStubSubscribe(double);
-      contractStubSubscribe(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of subscribe");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => contractStubInstance(new ContractStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of publish", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubPublish(double);
-      double.resetCalls();
-      expect(double.onPublish.callCount).isEqualTo(0, "resetCalls clears the calls of publish");
+    describe("publish", () => {
+      for (const c of resetBehaviour("Contract.publish", contractStubPublishSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of republish", async () => {
-      const double = new ContractStub(undefined);
-      await contractStubRepublish(double);
-      double.resetCalls();
-      expect(double.onRepublish.callCount).isEqualTo(0, "resetCalls clears the calls of republish");
+    describe("republish", () => {
+      for (const c of resetBehaviour("Contract.republish", contractStubRepublishSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of subscribe", async () => {
-      const double = new ContractStub(undefined);
-      contractStubSubscribe(double);
-      double.resetCalls();
-      expect(double.onSubscribe.callCount).isEqualTo(0, "resetCalls clears the calls of subscribe");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => contractStubInstance(ContractStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails publish with its error", async () => {
-      const want = new Error("publish-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubPublish(double));
-      const message = "publish fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails republish with its error", async () => {
-      const want = new Error("republish-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubRepublish(double));
-      const message = "republish fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails subscribe with its error", async () => {
-      const want = new Error("subscribe-failing");
-      const double = ContractStub.newFailing(undefined, want);
-      const outcome = await settle(() => contractStubSubscribe(double));
-      const message = "subscribe fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("subscribe", () => {
+      for (const c of resetBehaviour("Contract.subscribe", contractStubSubscribeSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -383,50 +325,7 @@ describe("ContractStub", () => {
   });
 });
 
-describe("ContractPublishStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of publish to the function", async () => {
-      const double = new ContractStub(undefined);
-      let got: unknown[] = [];
-      double.onPublish.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await contractStubPublish(double);
-      const args = contractStubPublishArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("ContractRepublishStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of republish to the function", async () => {
-      const double = new ContractStub(undefined);
-      let got: unknown[] = [];
-      double.onRepublish.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await contractStubRepublish(double);
-      const args = contractStubRepublishArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
 describe("ContractSubscribeStub", () => {
-  describe("returns", () => {
-    it("configures subscribe for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new ContractStub(failures);
-      double.onSubscribe.strict();
-      double.onSubscribe.returns(undefined as never);
-      await settle(() => contractStubSubscribe(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of subscribe");
-    });
-  });
-
   describe("yields", () => {
     it("yields each item", async () => {
       const double = new ContractStub(undefined);
@@ -451,4 +350,4 @@ describe("ContractSubscribeStub", () => {
   });
 });
 
-// dokimi:provenance sha256:79f88762636dc1b88e1b6632bde308f60d26719367161c15f10dceb2684e610c
+// dokimi:provenance sha256:ff694b6312f824aced4d8b70211439c422d9e2a68a0603ed96f27f81a5701fcb

@@ -2,11 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/lang/embeddedforeign/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { FailureStub } from "./iface.stub";
+import { type FailureRetryableCall, FailureStub } from "./iface.stub";
 
 /** Calls retryable of double with the samples of its arguments. */
 function failureStubRetryable(double: FailureStub): boolean {
@@ -20,89 +20,58 @@ function failureStubRetryablePin(): boolean {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for retryable, on a new double that reports to seat. */
+function failureStubRetryableSubject(seat: Seat): Subject<FailureRetryableCall, boolean | undefined> {
+  const double = new FailureStub(seat);
+  return {
+    stub: double.onRetryable,
+    call: () => failureStubRetryable(double),
+    reset: () => double.resetCalls(),
+    result: async () => failureStubRetryable(double),
+    returns: () => {
+      const want = failureStubRetryablePin();
+      double.onRetryable.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onRetryable.func(() => {
+        seen({} as FailureRetryableCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => failureStubRetryable(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * retryable alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call retryable alone.
  */
 function failureStubInstance(double: FailureStub) {
   return {
     stub: double.onRetryable,
     call: () => failureStubRetryable(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("FailureStub", () => {
   describe("retryable", () => {
-    const checks = behaviour("Failure.retryable", (seat) => {
-      const double = new FailureStub(seat);
-      return {
-        stub: double.onRetryable,
-        call: () => failureStubRetryable(double),
-        override: (mark) => {
-          double.onRetryable.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Failure.retryable", failureStubRetryableSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new FailureStub(undefined);
-      let seen = 0;
-      double.onRetryable.onRecord(() => {
-        seen += 1;
-      });
-      failureStubRetryable(double);
-      failureStubRetryable(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of retryable");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => failureStubInstance(new FailureStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of retryable", async () => {
-      const double = new FailureStub(undefined);
-      failureStubRetryable(double);
-      double.resetCalls();
-      expect(double.onRetryable.callCount).isEqualTo(0, "resetCalls clears the calls of retryable");
-    });
-
-    it("keeps the result of returns of retryable", async () => {
-      const double = new FailureStub(undefined);
-      const want = failureStubRetryablePin();
-      double.onRetryable.returns(want);
-      double.resetCalls();
-      expect(failureStubRetryable(double)).isEqualTo(want, "resetCalls keeps the result of retryable");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => failureStubInstance(FailureStub.newDelayed(seat, duration, clock)),
-      false,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails retryable with its error", async () => {
-      const want = new Error("retryable-failing");
-      const double = FailureStub.newFailing(undefined, want);
-      const outcome = await settle(() => failureStubRetryable(double));
-      const message = "retryable fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("retryable", () => {
+      for (const c of resetBehaviour("Failure.retryable", failureStubRetryableSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -191,24 +160,4 @@ describe("FailureStub", () => {
   });
 });
 
-describe("FailureRetryableStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of retryable", async () => {
-      const double = new FailureStub(undefined);
-      const want = failureStubRetryablePin();
-      double.onRetryable.returns(want);
-      expect(failureStubRetryable(double)).isEqualTo(want, "retryable returns the result that returns sets");
-    });
-
-    it("configures retryable for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new FailureStub(failures);
-      double.onRetryable.strict();
-      double.onRetryable.returns(undefined as never);
-      await settle(() => failureStubRetryable(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of retryable");
-    });
-  });
-});
-
-// dokimi:provenance sha256:a815ca14ff56f744dfa3775c3071e4c8a4576f72ff4cd4f8f35fb02aeec7dfa3
+// dokimi:provenance sha256:2cfd4da9f7612c57983df3ae6d6a5db3eebaa87795f3b55b281b25a26d0ad080

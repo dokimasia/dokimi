@@ -2,12 +2,12 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/batchreader/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
 import type { Value } from "../iface";
-import { BatchReaderStub } from "./iface.stub";
+import { type BatchReaderGetAllCall, BatchReaderStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of getAll. An argument without a sample is undefined. */
 function batchReaderStubGetAllArgs(): [string[]] {
@@ -28,98 +28,62 @@ function batchReaderStubGetAllPin(): Value[] {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for getAll, on a new double that reports to seat. */
+function batchReaderStubGetAllSubject(seat: Seat): Subject<BatchReaderGetAllCall, Value[] | undefined> {
+  const double = new BatchReaderStub(seat);
+  return {
+    stub: double.onGetAll,
+    call: () => batchReaderStubGetAll(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = batchReaderStubGetAllArgs();
+      check.isEqualTo(s, c.keys, args[0], "the call records keys");
+    },
+    result: async () => await batchReaderStubGetAll(double),
+    returns: () => {
+      const want = batchReaderStubGetAllPin();
+      double.onGetAll.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onGetAll.func((...received: unknown[]) => {
+        seen({ keys: received.slice(0) } as BatchReaderGetAllCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => batchReaderStubGetAll(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * getAll alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call getAll alone.
  */
 function batchReaderStubInstance(double: BatchReaderStub) {
   return {
     stub: double.onGetAll,
     call: () => batchReaderStubGetAll(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("BatchReaderStub", () => {
   describe("getAll", () => {
-    const checks = behaviour("BatchReader.getAll", (seat) => {
-      const double = new BatchReaderStub(seat);
-      return {
-        stub: double.onGetAll,
-        call: () => batchReaderStubGetAll(double),
-        override: (mark) => {
-          double.onGetAll.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("BatchReader.getAll", batchReaderStubGetAllSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new BatchReaderStub(undefined);
-      await batchReaderStubGetAll(double);
-      expect(double.onGetAll.callCount).isEqualTo(1, "getAll records the call");
-      const got = double.onGetAll.calls[0];
-      const args = batchReaderStubGetAllArgs();
-      expect(got?.keys).isEqualTo(args[0], "the call records keys");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new BatchReaderStub(undefined);
-      let seen = 0;
-      double.onGetAll.onRecord(() => {
-        seen += 1;
-      });
-      await batchReaderStubGetAll(double);
-      await batchReaderStubGetAll(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of getAll");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => batchReaderStubInstance(new BatchReaderStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of getAll", async () => {
-      const double = new BatchReaderStub(undefined);
-      await batchReaderStubGetAll(double);
-      double.resetCalls();
-      expect(double.onGetAll.callCount).isEqualTo(0, "resetCalls clears the calls of getAll");
-    });
-
-    it("keeps the result of returns of getAll", async () => {
-      const double = new BatchReaderStub(undefined);
-      const want = batchReaderStubGetAllPin();
-      double.onGetAll.returns(want);
-      double.resetCalls();
-      expect(await batchReaderStubGetAll(double)).isEqualTo(want, "resetCalls keeps the result of getAll");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => batchReaderStubInstance(BatchReaderStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails getAll with its error", async () => {
-      const want = new Error("getAll-failing");
-      const double = BatchReaderStub.newFailing(undefined, want);
-      const outcome = await settle(() => batchReaderStubGetAll(double));
-      const message = "getAll fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("getAll", () => {
+      for (const c of resetBehaviour("BatchReader.getAll", batchReaderStubGetAllSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -208,38 +172,4 @@ describe("BatchReaderStub", () => {
   });
 });
 
-describe("BatchReaderGetAllStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of getAll", async () => {
-      const double = new BatchReaderStub(undefined);
-      const want = batchReaderStubGetAllPin();
-      double.onGetAll.returns(want);
-      expect(await batchReaderStubGetAll(double)).isEqualTo(want, "getAll returns the result that returns sets");
-    });
-
-    it("configures getAll for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new BatchReaderStub(failures);
-      double.onGetAll.strict();
-      double.onGetAll.returns(undefined as never);
-      await settle(() => batchReaderStubGetAll(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of getAll");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of getAll to the function", async () => {
-      const double = new BatchReaderStub(undefined);
-      let got: unknown[] = [];
-      double.onGetAll.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await batchReaderStubGetAll(double);
-      const args = batchReaderStubGetAllArgs();
-      expect(got).isEqualTo([...args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:272d0acd8eb5a6f495285fa2cc01334f16df18afb73ccf7e614035e5b72cf99f
+// dokimi:provenance sha256:5e3a3029a89199fd92977c2da5e2d5afea263497808adc0c14bb80fc24ab6910

@@ -596,47 +596,6 @@ export class LedgerStub implements Ledger {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: LedgerStubOption[]
-  ): LedgerStub {
-    return new LedgerStub(
-      seat,
-      LedgerStub.withClock(clock),
-      LedgerStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: LedgerStubOption[]
-  ): LedgerStub {
-    return new LedgerStub(seat, LedgerStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -695,4 +654,4 @@ export class LedgerStub implements Ledger {
 
 void compatV1;
 
-// dokimi:provenance sha256:547478cd952fb218391b1bfec43fef4344ebac0cf8d1ee9f81a79c49ad1f35b8
+// dokimi:provenance sha256:14deeea866700d160e6733b8c3fbf227458a557d3636f8eca0f6ce15e2bcb3e4

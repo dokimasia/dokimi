@@ -2,11 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/total/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { MixedStub } from "./iface.stub";
+import { type MixedClassifyCall, type MixedNormalizeCall, MixedStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of classify. An argument without a sample is undefined. */
 function mixedStubClassifyArgs(): [string] {
@@ -26,6 +26,39 @@ function mixedStubClassifyPin(): string {
   let want0: string;
   want0 = "classify-a";
   return want0;
+}
+
+/** Returns the subject of behaviour and resetBehaviour for classify, on a new double that reports to seat. */
+function mixedStubClassifySubject(seat: Seat): Subject<MixedClassifyCall, string | undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onClassify,
+    call: () => mixedStubClassify(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = mixedStubClassifyArgs();
+      check.isEqualTo(s, c.input, args[0], "the call records input");
+    },
+    result: async () => await mixedStubClassify(double),
+    returns: () => {
+      const want = mixedStubClassifyPin();
+      double.onClassify.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onClassify.func((...received: unknown[]) => {
+        seen({ input: received[0] } as MixedClassifyCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubClassify(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /** Returns the samples of the arguments of normalize. An argument without a sample is undefined. */
@@ -48,160 +81,74 @@ function mixedStubNormalizePin(): string {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for normalize, on a new double that reports to seat. */
+function mixedStubNormalizeSubject(seat: Seat): Subject<MixedNormalizeCall, string | undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onNormalize,
+    call: () => mixedStubNormalize(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = mixedStubNormalizeArgs();
+      check.isEqualTo(s, c.input, args[0], "the call records input");
+    },
+    result: async () => mixedStubNormalize(double),
+    returns: () => {
+      const want = mixedStubNormalizePin();
+      double.onNormalize.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onNormalize.func((...received: unknown[]) => {
+        seen({ input: received[0] } as MixedNormalizeCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubNormalize(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * classify alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call classify alone.
  */
 function mixedStubInstance(double: MixedStub) {
   return {
     stub: double.onClassify,
     call: () => mixedStubClassify(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("MixedStub", () => {
   describe("classify", () => {
-    const checks = behaviour("Mixed.classify", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onClassify,
-        call: () => mixedStubClassify(double),
-        override: (mark) => {
-          double.onClassify.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.classify", mixedStubClassifySubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubClassify(double);
-      expect(double.onClassify.callCount).isEqualTo(1, "classify records the call");
-      const got = double.onClassify.calls[0];
-      const args = mixedStubClassifyArgs();
-      expect(got?.input).isEqualTo(args[0], "the call records input");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onClassify.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubClassify(double);
-      await mixedStubClassify(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of classify");
-    });
   });
 
   describe("normalize", () => {
-    const checks = behaviour("Mixed.normalize", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onNormalize,
-        call: () => mixedStubNormalize(double),
-        override: (mark) => {
-          double.onNormalize.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.normalize", mixedStubNormalizeSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MixedStub(undefined);
-      mixedStubNormalize(double);
-      expect(double.onNormalize.callCount).isEqualTo(1, "normalize records the call");
-      const got = double.onNormalize.calls[0];
-      const args = mixedStubNormalizeArgs();
-      expect(got?.input).isEqualTo(args[0], "the call records input");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onNormalize.onRecord(() => {
-        seen += 1;
-      });
-      mixedStubNormalize(double);
-      mixedStubNormalize(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of normalize");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of classify", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubClassify(double);
-      double.resetCalls();
-      expect(double.onClassify.callCount).isEqualTo(0, "resetCalls clears the calls of classify");
+    describe("classify", () => {
+      for (const c of resetBehaviour("Mixed.classify", mixedStubClassifySubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("keeps the result of returns of classify", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubClassifyPin();
-      double.onClassify.returns(want);
-      double.resetCalls();
-      expect(await mixedStubClassify(double)).isEqualTo(want, "resetCalls keeps the result of classify");
-    });
-
-    it("clears the recorded calls of normalize", async () => {
-      const double = new MixedStub(undefined);
-      mixedStubNormalize(double);
-      double.resetCalls();
-      expect(double.onNormalize.callCount).isEqualTo(0, "resetCalls clears the calls of normalize");
-    });
-
-    it("keeps the result of returns of normalize", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubNormalizePin();
-      double.onNormalize.returns(want);
-      double.resetCalls();
-      expect(mixedStubNormalize(double)).isEqualTo(want, "resetCalls keeps the result of normalize");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails classify with its error", async () => {
-      const want = new Error("classify-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubClassify(double));
-      const message = "classify fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails normalize with its error", async () => {
-      const want = new Error("normalize-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubNormalize(double));
-      const message = "normalize fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("normalize", () => {
+      for (const c of resetBehaviour("Mixed.normalize", mixedStubNormalizeSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -326,72 +273,4 @@ describe("MixedStub", () => {
   });
 });
 
-describe("MixedClassifyStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of classify", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubClassifyPin();
-      double.onClassify.returns(want);
-      expect(await mixedStubClassify(double)).isEqualTo(want, "classify returns the result that returns sets");
-    });
-
-    it("configures classify for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new MixedStub(failures);
-      double.onClassify.strict();
-      double.onClassify.returns(undefined as never);
-      await settle(() => mixedStubClassify(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of classify");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of classify to the function", async () => {
-      const double = new MixedStub(undefined);
-      let got: unknown[] = [];
-      double.onClassify.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await mixedStubClassify(double);
-      const args = mixedStubClassifyArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("MixedNormalizeStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of normalize", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubNormalizePin();
-      double.onNormalize.returns(want);
-      expect(mixedStubNormalize(double)).isEqualTo(want, "normalize returns the result that returns sets");
-    });
-
-    it("configures normalize for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new MixedStub(failures);
-      double.onNormalize.strict();
-      double.onNormalize.returns(undefined as never);
-      await settle(() => mixedStubNormalize(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of normalize");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of normalize to the function", async () => {
-      const double = new MixedStub(undefined);
-      let got: unknown[] = [];
-      double.onNormalize.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      mixedStubNormalize(double);
-      const args = mixedStubNormalizeArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:4b79e2b1ab1ba0451de83f22fdd5404ee563294a34357b82e22a114faaf5b805
+// dokimi:provenance sha256:ad080013b8affd03b526332d7d2131c571c85ff782b6e558c52947ea7dc7c740

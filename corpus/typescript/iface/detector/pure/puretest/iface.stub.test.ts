@@ -2,11 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/pure/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { PureStub } from "./iface.stub";
+import { type PureDescribeCall, PureStub } from "./iface.stub";
 
 /** Calls describe of double with the samples of its arguments. */
 function pureStubDescribe(double: PureStub): string {
@@ -20,89 +20,58 @@ function pureStubDescribePin(): string {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for describe, on a new double that reports to seat. */
+function pureStubDescribeSubject(seat: Seat): Subject<PureDescribeCall, string | undefined> {
+  const double = new PureStub(seat);
+  return {
+    stub: double.onDescribe,
+    call: () => pureStubDescribe(double),
+    reset: () => double.resetCalls(),
+    result: async () => pureStubDescribe(double),
+    returns: () => {
+      const want = pureStubDescribePin();
+      double.onDescribe.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onDescribe.func(() => {
+        seen({} as PureDescribeCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => pureStubDescribe(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * describe alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call describe alone.
  */
 function pureStubInstance(double: PureStub) {
   return {
     stub: double.onDescribe,
     call: () => pureStubDescribe(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("PureStub", () => {
   describe("describe", () => {
-    const checks = behaviour("Pure.describe", (seat) => {
-      const double = new PureStub(seat);
-      return {
-        stub: double.onDescribe,
-        call: () => pureStubDescribe(double),
-        override: (mark) => {
-          double.onDescribe.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Pure.describe", pureStubDescribeSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new PureStub(undefined);
-      let seen = 0;
-      double.onDescribe.onRecord(() => {
-        seen += 1;
-      });
-      pureStubDescribe(double);
-      pureStubDescribe(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of describe");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => pureStubInstance(new PureStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of describe", async () => {
-      const double = new PureStub(undefined);
-      pureStubDescribe(double);
-      double.resetCalls();
-      expect(double.onDescribe.callCount).isEqualTo(0, "resetCalls clears the calls of describe");
-    });
-
-    it("keeps the result of returns of describe", async () => {
-      const double = new PureStub(undefined);
-      const want = pureStubDescribePin();
-      double.onDescribe.returns(want);
-      double.resetCalls();
-      expect(pureStubDescribe(double)).isEqualTo(want, "resetCalls keeps the result of describe");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => pureStubInstance(PureStub.newDelayed(seat, duration, clock)),
-      false,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails describe with its error", async () => {
-      const want = new Error("describe-failing");
-      const double = PureStub.newFailing(undefined, want);
-      const outcome = await settle(() => pureStubDescribe(double));
-      const message = "describe fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("describe", () => {
+      for (const c of resetBehaviour("Pure.describe", pureStubDescribeSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -191,24 +160,4 @@ describe("PureStub", () => {
   });
 });
 
-describe("PureDescribeStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of describe", async () => {
-      const double = new PureStub(undefined);
-      const want = pureStubDescribePin();
-      double.onDescribe.returns(want);
-      expect(pureStubDescribe(double)).isEqualTo(want, "describe returns the result that returns sets");
-    });
-
-    it("configures describe for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new PureStub(failures);
-      double.onDescribe.strict();
-      double.onDescribe.returns(undefined as never);
-      await settle(() => pureStubDescribe(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of describe");
-    });
-  });
-});
-
-// dokimi:provenance sha256:74a1ffa8b5ea92e62ca367f85eb9a84c8b66564d5c6899cba6c1bb920414cbce
+// dokimi:provenance sha256:12963cc2479207b916dc773053aeead056a99d76f2abae3c19943f7ee5e14bc6

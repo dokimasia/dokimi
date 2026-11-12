@@ -2,15 +2,39 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/streamreflectsmutations/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { MixedStub } from "./iface.stub";
+import { type MixedAddCall, type MixedRemoveCall, type MixedStreamCall, MixedStub } from "./iface.stub";
 
 /** Calls stream of double with the samples of its arguments. */
 function mixedStubStream(double: MixedStub): AsyncIterable<string> {
   return double.stream();
+}
+
+/** Returns the subject of behaviour and resetBehaviour for stream, on a new double that reports to seat. */
+function mixedStubStreamSubject(seat: Seat): Subject<MixedStreamCall, AsyncIterable<string> | undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onStream,
+    call: () => mixedStubStream(double),
+    reset: () => double.resetCalls(),
+    result: async () => mixedStubStream(double),
+    override: (seen) => {
+      double.onStream.func(() => {
+        seen({} as MixedStreamCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubStream(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /** Returns the samples of the arguments of add. An argument without a sample is undefined. */
@@ -26,6 +50,33 @@ function mixedStubAdd(double: MixedStub): Promise<void> {
   return double.add(args[0]);
 }
 
+/** Returns the subject of behaviour and resetBehaviour for add, on a new double that reports to seat. */
+function mixedStubAddSubject(seat: Seat): Subject<MixedAddCall, undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onAdd,
+    call: () => mixedStubAdd(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = mixedStubAddArgs();
+      check.isEqualTo(s, c.item, args[0], "the call records item");
+    },
+    override: (seen) => {
+      double.onAdd.func((...received: unknown[]) => {
+        seen({ item: received[0] } as MixedAddCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubAdd(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Returns the samples of the arguments of remove. An argument without a sample is undefined. */
 function mixedStubRemoveArgs(): [string] {
   let a0 = undefined as unknown as string;
@@ -39,189 +90,80 @@ function mixedStubRemove(double: MixedStub): Promise<void> {
   return double.remove(args[0]);
 }
 
+/** Returns the subject of behaviour and resetBehaviour for remove, on a new double that reports to seat. */
+function mixedStubRemoveSubject(seat: Seat): Subject<MixedRemoveCall, undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onRemove,
+    call: () => mixedStubRemove(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = mixedStubRemoveArgs();
+      check.isEqualTo(s, c.item, args[0], "the call records item");
+    },
+    override: (seen) => {
+      double.onRemove.func((...received: unknown[]) => {
+        seen({ item: received[0] } as MixedRemoveCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubRemove(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * add alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call add alone.
  */
 function mixedStubInstance(double: MixedStub) {
   return {
     stub: double.onAdd,
     call: () => mixedStubAdd(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("MixedStub", () => {
   describe("stream", () => {
-    const checks = behaviour("Mixed.stream", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onStream,
-        call: () => mixedStubStream(double),
-        override: (mark) => {
-          double.onStream.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.stream", mixedStubStreamSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onStream.onRecord(() => {
-        seen += 1;
-      });
-      mixedStubStream(double);
-      mixedStubStream(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of stream");
-    });
   });
 
   describe("add", () => {
-    const checks = behaviour("Mixed.add", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onAdd,
-        call: () => mixedStubAdd(double),
-        override: (mark) => {
-          double.onAdd.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.add", mixedStubAddSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubAdd(double);
-      expect(double.onAdd.callCount).isEqualTo(1, "add records the call");
-      const got = double.onAdd.calls[0];
-      const args = mixedStubAddArgs();
-      expect(got?.item).isEqualTo(args[0], "the call records item");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onAdd.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubAdd(double);
-      await mixedStubAdd(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of add");
-    });
   });
 
   describe("remove", () => {
-    const checks = behaviour("Mixed.remove", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onRemove,
-        call: () => mixedStubRemove(double),
-        override: (mark) => {
-          double.onRemove.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.remove", mixedStubRemoveSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubRemove(double);
-      expect(double.onRemove.callCount).isEqualTo(1, "remove records the call");
-      const got = double.onRemove.calls[0];
-      const args = mixedStubRemoveArgs();
-      expect(got?.item).isEqualTo(args[0], "the call records item");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onRemove.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubRemove(double);
-      await mixedStubRemove(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of remove");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of stream", async () => {
-      const double = new MixedStub(undefined);
-      mixedStubStream(double);
-      double.resetCalls();
-      expect(double.onStream.callCount).isEqualTo(0, "resetCalls clears the calls of stream");
+    describe("stream", () => {
+      for (const c of resetBehaviour("Mixed.stream", mixedStubStreamSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of add", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubAdd(double);
-      double.resetCalls();
-      expect(double.onAdd.callCount).isEqualTo(0, "resetCalls clears the calls of add");
+    describe("add", () => {
+      for (const c of resetBehaviour("Mixed.add", mixedStubAddSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of remove", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubRemove(double);
-      double.resetCalls();
-      expect(double.onRemove.callCount).isEqualTo(0, "resetCalls clears the calls of remove");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails stream with its error", async () => {
-      const want = new Error("stream-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubStream(double));
-      const message = "stream fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails add with its error", async () => {
-      const want = new Error("add-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubAdd(double));
-      const message = "add fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails remove with its error", async () => {
-      const want = new Error("remove-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubRemove(double));
-      const message = "remove fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("remove", () => {
+      for (const c of resetBehaviour("Mixed.remove", mixedStubRemoveSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -383,17 +325,6 @@ describe("MixedStub", () => {
 });
 
 describe("MixedStreamStub", () => {
-  describe("returns", () => {
-    it("configures stream for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new MixedStub(failures);
-      double.onStream.strict();
-      double.onStream.returns(undefined as never);
-      await settle(() => mixedStubStream(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of stream");
-    });
-  });
-
   describe("yields", () => {
     it("yields each item", async () => {
       const double = new MixedStub(undefined);
@@ -418,36 +349,4 @@ describe("MixedStreamStub", () => {
   });
 });
 
-describe("MixedAddStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of add to the function", async () => {
-      const double = new MixedStub(undefined);
-      let got: unknown[] = [];
-      double.onAdd.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await mixedStubAdd(double);
-      const args = mixedStubAddArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("MixedRemoveStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of remove to the function", async () => {
-      const double = new MixedStub(undefined);
-      let got: unknown[] = [];
-      double.onRemove.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await mixedStubRemove(double);
-      const args = mixedStubRemoveArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:698a9885a00e3e7e7853bd276adefd96e6b054b04b0ef6cfa605ad542fb05305
+// dokimi:provenance sha256:c2c9c7a654eb9eb171bfc4c25fcde95c27c243f661834b626b25f3669351a4b7

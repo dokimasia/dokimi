@@ -16,6 +16,8 @@ export interface LabellerApplyCall {
   tag: Tag;
   /** The argument level. */
   level: Level;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -25,7 +27,7 @@ export interface LabellerApplyCall {
  * through it takes precedence over the function and the fixed result.
  */
 export class LabellerApplyStub extends MethodStub<LabellerApplyCall> {
-  #fn: ((tag: Tag, level: Level) => void | PromiseLike<void>) | undefined;
+  #fn: ((tag: Tag, level: Level, signal: AbortSignal) => void | PromiseLike<void>) | undefined;
 
   /**
    * Sets the function that computes the result of apply from its
@@ -34,7 +36,7 @@ export class LabellerApplyStub extends MethodStub<LabellerApplyCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (tag: Tag, level: Level) => void | PromiseLike<void>): this {
+  func(fn: (tag: Tag, level: Level, signal: AbortSignal) => void | PromiseLike<void>): this {
     this.#fn = fn;
     return this;
   }
@@ -42,10 +44,10 @@ export class LabellerApplyStub extends MethodStub<LabellerApplyCall> {
   /**
    * Returns the arms of a call of apply with its arguments.
    */
-  arms(tag: Tag, level: Level): Arms<LabellerApplyCall, void, void | PromiseLike<void>> {
+  arms(tag: Tag, level: Level, signal: AbortSignal): Arms<LabellerApplyCall, void, void | PromiseLike<void>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn(tag, level)),
+      invoke: fn && (() => fn(tag, level, signal)),
       fail: (call, error) => {
         call.error = error;
       },
@@ -182,51 +184,10 @@ export class LabellerStub implements Labeller {
    * @param fn - The function.
    * @returns The option.
    */
-  static withLabellerApply(fn: (tag: Tag, level: Level) => void | PromiseLike<void>): LabellerStubOption {
+  static withLabellerApply(fn: (tag: Tag, level: Level, signal: AbortSignal) => void | PromiseLike<void>): LabellerStubOption {
     return (double) => {
       double.onApply.func(fn);
     };
-  }
-
-  /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: LabellerStubOption[]
-  ): LabellerStub {
-    return new LabellerStub(
-      seat,
-      LabellerStub.withClock(clock),
-      LabellerStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: LabellerStubOption[]
-  ): LabellerStub {
-    return new LabellerStub(seat, LabellerStub.failing(error), ...options);
   }
 
   /**
@@ -240,12 +201,12 @@ export class LabellerStub implements Labeller {
   /**
    * Records the call of apply and returns its result.
    */
-  apply(tag: Tag, level: Level): Promise<void> {
-    const call: LabellerApplyCall = { tag, level };
-    return answerAsync(this.onApply, call, this.onApply.arms(tag, level));
+  apply(tag: Tag, level: Level, signal: AbortSignal): Promise<void> {
+    const call: LabellerApplyCall = { tag, level, signal };
+    return answerAsync(this.onApply, call, this.onApply.arms(tag, level, signal));
   }
 }
 
 void compatV1;
 
-// dokimi:provenance sha256:bb4623c377e05ef539c4fab13bbd985dc723e44bf3a2fb31d6adac76944045f2
+// dokimi:provenance sha256:818af44a8a2384161f2f21c0376902b4b484c31087909483d78e405ad04b3cc3

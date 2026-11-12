@@ -204,47 +204,6 @@ export class PoisonAccessorStub implements PoisonAccessor {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: PoisonAccessorStubOption[]
-  ): PoisonAccessorStub {
-    return new PoisonAccessorStub(
-      seat,
-      PoisonAccessorStub.withClock(clock),
-      PoisonAccessorStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: PoisonAccessorStubOption[]
-  ): PoisonAccessorStub {
-    return new PoisonAccessorStub(seat, PoisonAccessorStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -263,4 +222,4 @@ export class PoisonAccessorStub implements PoisonAccessor {
 
 void compatV1;
 
-// dokimi:provenance sha256:45478fbb6f7beee3cb4bc2e1fe0e92b134687575b9d532d1b68b3cf6c2cfaa53
+// dokimi:provenance sha256:aab754c8b2c20c5dbedbe6d41822824cfa3725dbb6bb97bba08049a90a68cb9a

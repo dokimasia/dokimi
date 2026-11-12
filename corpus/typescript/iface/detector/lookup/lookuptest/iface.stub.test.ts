@@ -2,12 +2,12 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/lookup/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
 import type { Meta, Value } from "../iface";
-import { LookupStub } from "./iface.stub";
+import { type LookupInspectCall, LookupStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of inspect. An argument without a sample is undefined. */
 function lookupStubInspectArgs(): [string] {
@@ -29,98 +29,62 @@ function lookupStubInspectPin(): [Value, Meta] | undefined {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for inspect, on a new double that reports to seat. */
+function lookupStubInspectSubject(seat: Seat): Subject<LookupInspectCall, [Value, Meta] | undefined | undefined> {
+  const double = new LookupStub(seat);
+  return {
+    stub: double.onInspect,
+    call: () => lookupStubInspect(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = lookupStubInspectArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    result: async () => lookupStubInspect(double),
+    returns: () => {
+      const want = lookupStubInspectPin();
+      double.onInspect.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onInspect.func((...received: unknown[]) => {
+        seen({ key: received[0] } as LookupInspectCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => lookupStubInspect(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * inspect alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call inspect alone.
  */
 function lookupStubInstance(double: LookupStub) {
   return {
     stub: double.onInspect,
     call: () => lookupStubInspect(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("LookupStub", () => {
   describe("inspect", () => {
-    const checks = behaviour("Lookup.inspect", (seat) => {
-      const double = new LookupStub(seat);
-      return {
-        stub: double.onInspect,
-        call: () => lookupStubInspect(double),
-        override: (mark) => {
-          double.onInspect.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Lookup.inspect", lookupStubInspectSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new LookupStub(undefined);
-      lookupStubInspect(double);
-      expect(double.onInspect.callCount).isEqualTo(1, "inspect records the call");
-      const got = double.onInspect.calls[0];
-      const args = lookupStubInspectArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new LookupStub(undefined);
-      let seen = 0;
-      double.onInspect.onRecord(() => {
-        seen += 1;
-      });
-      lookupStubInspect(double);
-      lookupStubInspect(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of inspect");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => lookupStubInstance(new LookupStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of inspect", async () => {
-      const double = new LookupStub(undefined);
-      lookupStubInspect(double);
-      double.resetCalls();
-      expect(double.onInspect.callCount).isEqualTo(0, "resetCalls clears the calls of inspect");
-    });
-
-    it("keeps the result of returns of inspect", async () => {
-      const double = new LookupStub(undefined);
-      const want = lookupStubInspectPin();
-      double.onInspect.returns(want);
-      double.resetCalls();
-      expect(lookupStubInspect(double)).isEqualTo(want, "resetCalls keeps the result of inspect");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => lookupStubInstance(LookupStub.newDelayed(seat, duration, clock)),
-      false,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails inspect with its error", async () => {
-      const want = new Error("inspect-failing");
-      const double = LookupStub.newFailing(undefined, want);
-      const outcome = await settle(() => lookupStubInspect(double));
-      const message = "inspect fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("inspect", () => {
+      for (const c of resetBehaviour("Lookup.inspect", lookupStubInspectSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -209,38 +173,4 @@ describe("LookupStub", () => {
   });
 });
 
-describe("LookupInspectStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of inspect", async () => {
-      const double = new LookupStub(undefined);
-      const want = lookupStubInspectPin();
-      double.onInspect.returns(want);
-      expect(lookupStubInspect(double)).isEqualTo(want, "inspect returns the result that returns sets");
-    });
-
-    it("configures inspect for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new LookupStub(failures);
-      double.onInspect.strict();
-      double.onInspect.returns(undefined as never);
-      await settle(() => lookupStubInspect(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of inspect");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of inspect to the function", async () => {
-      const double = new LookupStub(undefined);
-      let got: unknown[] = [];
-      double.onInspect.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      lookupStubInspect(double);
-      const args = lookupStubInspectArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:e15af5bfdd070c2138d19cc3706ef4b69d70dc2766e0ba2ddea3d9656141674e
+// dokimi:provenance sha256:afdb5e134339d72e5d36d0fc527e8aafb01c42bf728dab3987d83e794d92b507

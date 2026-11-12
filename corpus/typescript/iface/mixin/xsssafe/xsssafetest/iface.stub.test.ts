@@ -2,11 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/xsssafe/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { MixedStub } from "./iface.stub";
+import { type MixedRenderCall, MixedStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of render. An argument without a sample is undefined. */
 function mixedStubRenderArgs(): [string] {
@@ -28,98 +28,62 @@ function mixedStubRenderPin(): string {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for render, on a new double that reports to seat. */
+function mixedStubRenderSubject(seat: Seat): Subject<MixedRenderCall, string | undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onRender,
+    call: () => mixedStubRender(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = mixedStubRenderArgs();
+      check.isEqualTo(s, c.input, args[0], "the call records input");
+    },
+    result: async () => await mixedStubRender(double),
+    returns: () => {
+      const want = mixedStubRenderPin();
+      double.onRender.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onRender.func((...received: unknown[]) => {
+        seen({ input: received[0] } as MixedRenderCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubRender(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * render alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call render alone.
  */
 function mixedStubInstance(double: MixedStub) {
   return {
     stub: double.onRender,
     call: () => mixedStubRender(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("MixedStub", () => {
   describe("render", () => {
-    const checks = behaviour("Mixed.render", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onRender,
-        call: () => mixedStubRender(double),
-        override: (mark) => {
-          double.onRender.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.render", mixedStubRenderSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubRender(double);
-      expect(double.onRender.callCount).isEqualTo(1, "render records the call");
-      const got = double.onRender.calls[0];
-      const args = mixedStubRenderArgs();
-      expect(got?.input).isEqualTo(args[0], "the call records input");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onRender.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubRender(double);
-      await mixedStubRender(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of render");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of render", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubRender(double);
-      double.resetCalls();
-      expect(double.onRender.callCount).isEqualTo(0, "resetCalls clears the calls of render");
-    });
-
-    it("keeps the result of returns of render", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubRenderPin();
-      double.onRender.returns(want);
-      double.resetCalls();
-      expect(await mixedStubRender(double)).isEqualTo(want, "resetCalls keeps the result of render");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails render with its error", async () => {
-      const want = new Error("render-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubRender(double));
-      const message = "render fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("render", () => {
+      for (const c of resetBehaviour("Mixed.render", mixedStubRenderSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -208,38 +172,4 @@ describe("MixedStub", () => {
   });
 });
 
-describe("MixedRenderStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of render", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubRenderPin();
-      double.onRender.returns(want);
-      expect(await mixedStubRender(double)).isEqualTo(want, "render returns the result that returns sets");
-    });
-
-    it("configures render for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new MixedStub(failures);
-      double.onRender.strict();
-      double.onRender.returns(undefined as never);
-      await settle(() => mixedStubRender(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of render");
-    });
-  });
-
-  describe("func", () => {
-    it("passes the arguments of each call of render to the function", async () => {
-      const double = new MixedStub(undefined);
-      let got: unknown[] = [];
-      double.onRender.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await mixedStubRender(double);
-      const args = mixedStubRenderArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:5156cedc5644d3b8dd033ba3431dcb14799b309f5e82fec7894c8d8681da64d7
+// dokimi:provenance sha256:112ce3498aaada4ae6975bd8c5788c1d2619e130c811a1b55498a67602809be5

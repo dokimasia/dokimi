@@ -185,47 +185,6 @@ export class LifecycleStub implements Lifecycle {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: LifecycleStubOption[]
-  ): LifecycleStub {
-    return new LifecycleStub(
-      seat,
-      LifecycleStub.withClock(clock),
-      LifecycleStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: LifecycleStubOption[]
-  ): LifecycleStub {
-    return new LifecycleStub(seat, LifecycleStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -244,4 +203,4 @@ export class LifecycleStub implements Lifecycle {
 
 void compatV1;
 
-// dokimi:provenance sha256:8d73a2ac1609250a4a795b0e0e3352bdeae640e6603eb956819ec2f291b2fcb5
+// dokimi:provenance sha256:7944b10b99388acfc324dd73f4e00a9a72baf310fb696ea8610969e0c57bc157

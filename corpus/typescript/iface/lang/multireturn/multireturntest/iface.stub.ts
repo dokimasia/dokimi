@@ -14,6 +14,8 @@ import type { Wide } from "../iface";
 export interface WideQuadCall {
   /** The argument id. */
   id: string;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The result of the call, where it returned one. */
   result?: [string, number, boolean] | undefined;
   /** The error that failed the call, where one did. */
@@ -24,6 +26,8 @@ export interface WideQuadCall {
 export interface WideTripleCall {
   /** The argument id. */
   id: string;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The result of the call, where it returned one. */
   result?: [string, number, boolean] | undefined;
   /** The error that failed the call, where one did. */
@@ -34,6 +38,8 @@ export interface WideTripleCall {
 export interface WideNoErrorCall {
   /** The argument id. */
   id: string;
+  /** The argument signal. */
+  signal: AbortSignal;
   /** The result of the call, where it returned one. */
   result?: [string, number] | undefined;
   /** The error that failed the call, where one did. */
@@ -45,7 +51,7 @@ export interface WideNoErrorCall {
  * through it takes precedence over the function and the fixed result.
  */
 export class WideQuadStub extends MethodStub<WideQuadCall> {
-  #fn: ((id: string) => [string, number, boolean] | PromiseLike<[string, number, boolean]>) | undefined;
+  #fn: ((id: string, signal: AbortSignal) => [string, number, boolean] | PromiseLike<[string, number, boolean]>) | undefined;
   #fallback: { readonly value: [string, number, boolean] } | undefined;
 
   /**
@@ -67,7 +73,7 @@ export class WideQuadStub extends MethodStub<WideQuadCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (id: string) => [string, number, boolean] | PromiseLike<[string, number, boolean]>): this {
+  func(fn: (id: string, signal: AbortSignal) => [string, number, boolean] | PromiseLike<[string, number, boolean]>): this {
     this.#fn = fn;
     return this;
   }
@@ -75,10 +81,10 @@ export class WideQuadStub extends MethodStub<WideQuadCall> {
   /**
    * Returns the arms of a call of quad with its arguments.
    */
-  arms(id: string): Arms<WideQuadCall, [string, number, boolean], [string, number, boolean] | PromiseLike<[string, number, boolean]>> {
+  arms(id: string, signal: AbortSignal): Arms<WideQuadCall, [string, number, boolean], [string, number, boolean] | PromiseLike<[string, number, boolean]>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn(id)),
+      invoke: fn && (() => fn(id, signal)),
       fallback: this.#fallback,
       stamp: (call, result) => {
         call.result = result;
@@ -95,7 +101,7 @@ export class WideQuadStub extends MethodStub<WideQuadCall> {
  * through it takes precedence over the function and the fixed result.
  */
 export class WideTripleStub extends MethodStub<WideTripleCall> {
-  #fn: ((id: string) => [string, number, boolean] | PromiseLike<[string, number, boolean]>) | undefined;
+  #fn: ((id: string, signal: AbortSignal) => [string, number, boolean] | PromiseLike<[string, number, boolean]>) | undefined;
   #fallback: { readonly value: [string, number, boolean] } | undefined;
 
   /**
@@ -117,7 +123,7 @@ export class WideTripleStub extends MethodStub<WideTripleCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (id: string) => [string, number, boolean] | PromiseLike<[string, number, boolean]>): this {
+  func(fn: (id: string, signal: AbortSignal) => [string, number, boolean] | PromiseLike<[string, number, boolean]>): this {
     this.#fn = fn;
     return this;
   }
@@ -125,10 +131,10 @@ export class WideTripleStub extends MethodStub<WideTripleCall> {
   /**
    * Returns the arms of a call of triple with its arguments.
    */
-  arms(id: string): Arms<WideTripleCall, [string, number, boolean], [string, number, boolean] | PromiseLike<[string, number, boolean]>> {
+  arms(id: string, signal: AbortSignal): Arms<WideTripleCall, [string, number, boolean], [string, number, boolean] | PromiseLike<[string, number, boolean]>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn(id)),
+      invoke: fn && (() => fn(id, signal)),
       fallback: this.#fallback,
       stamp: (call, result) => {
         call.result = result;
@@ -145,7 +151,7 @@ export class WideTripleStub extends MethodStub<WideTripleCall> {
  * through it takes precedence over the function and the fixed result.
  */
 export class WideNoErrorStub extends MethodStub<WideNoErrorCall> {
-  #fn: ((id: string) => [string, number] | PromiseLike<[string, number]>) | undefined;
+  #fn: ((id: string, signal: AbortSignal) => [string, number] | PromiseLike<[string, number]>) | undefined;
   #fallback: { readonly value: [string, number] } | undefined;
 
   /**
@@ -167,7 +173,7 @@ export class WideNoErrorStub extends MethodStub<WideNoErrorCall> {
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (id: string) => [string, number] | PromiseLike<[string, number]>): this {
+  func(fn: (id: string, signal: AbortSignal) => [string, number] | PromiseLike<[string, number]>): this {
     this.#fn = fn;
     return this;
   }
@@ -175,10 +181,10 @@ export class WideNoErrorStub extends MethodStub<WideNoErrorCall> {
   /**
    * Returns the arms of a call of noError with its arguments.
    */
-  arms(id: string): Arms<WideNoErrorCall, [string, number], [string, number] | PromiseLike<[string, number]>> {
+  arms(id: string, signal: AbortSignal): Arms<WideNoErrorCall, [string, number], [string, number] | PromiseLike<[string, number]>> {
     const fn = this.#fn;
     return {
-      invoke: fn && (() => fn(id)),
+      invoke: fn && (() => fn(id, signal)),
       fallback: this.#fallback,
       stamp: (call, result) => {
         call.result = result;
@@ -329,7 +335,7 @@ export class WideStub implements Wide {
    * @param fn - The function.
    * @returns The option.
    */
-  static withWideQuad(fn: (id: string) => [string, number, boolean] | PromiseLike<[string, number, boolean]>): WideStubOption {
+  static withWideQuad(fn: (id: string, signal: AbortSignal) => [string, number, boolean] | PromiseLike<[string, number, boolean]>): WideStubOption {
     return (double) => {
       double.onQuad.func(fn);
     };
@@ -341,7 +347,7 @@ export class WideStub implements Wide {
    * @param fn - The function.
    * @returns The option.
    */
-  static withWideTriple(fn: (id: string) => [string, number, boolean] | PromiseLike<[string, number, boolean]>): WideStubOption {
+  static withWideTriple(fn: (id: string, signal: AbortSignal) => [string, number, boolean] | PromiseLike<[string, number, boolean]>): WideStubOption {
     return (double) => {
       double.onTriple.func(fn);
     };
@@ -353,51 +359,10 @@ export class WideStub implements Wide {
    * @param fn - The function.
    * @returns The option.
    */
-  static withWideNoError(fn: (id: string) => [string, number] | PromiseLike<[string, number]>): WideStubOption {
+  static withWideNoError(fn: (id: string, signal: AbortSignal) => [string, number] | PromiseLike<[string, number]>): WideStubOption {
     return (double) => {
       double.onNoError.func(fn);
     };
-  }
-
-  /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: WideStubOption[]
-  ): WideStub {
-    return new WideStub(
-      seat,
-      WideStub.withClock(clock),
-      WideStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: WideStubOption[]
-  ): WideStub {
-    return new WideStub(seat, WideStub.failing(error), ...options);
   }
 
   /**
@@ -411,28 +376,28 @@ export class WideStub implements Wide {
   /**
    * Records the call of quad and returns its result.
    */
-  quad(id: string): Promise<[string, number, boolean]> {
-    const call: WideQuadCall = { id };
-    return answerAsync(this.onQuad, call, this.onQuad.arms(id));
+  quad(id: string, signal: AbortSignal): Promise<[string, number, boolean]> {
+    const call: WideQuadCall = { id, signal };
+    return answerAsync(this.onQuad, call, this.onQuad.arms(id, signal));
   }
 
   /**
    * Records the call of triple and returns its result.
    */
-  triple(id: string): Promise<[string, number, boolean]> {
-    const call: WideTripleCall = { id };
-    return answerAsync(this.onTriple, call, this.onTriple.arms(id));
+  triple(id: string, signal: AbortSignal): Promise<[string, number, boolean]> {
+    const call: WideTripleCall = { id, signal };
+    return answerAsync(this.onTriple, call, this.onTriple.arms(id, signal));
   }
 
   /**
    * Records the call of noError and returns its result.
    */
-  noError(id: string): Promise<[string, number]> {
-    const call: WideNoErrorCall = { id };
-    return answerAsync(this.onNoError, call, this.onNoError.arms(id));
+  noError(id: string, signal: AbortSignal): Promise<[string, number]> {
+    const call: WideNoErrorCall = { id, signal };
+    return answerAsync(this.onNoError, call, this.onNoError.arms(id, signal));
   }
 }
 
 void compatV1;
 
-// dokimi:provenance sha256:47a198cae911b11c9c0facb523217e967226647e0238a0e1e4731bc14ca771d6
+// dokimi:provenance sha256:a146b9048a285fd9b24c0282ffb3ecccff10a7489926ec99a187bd4e4fea1495

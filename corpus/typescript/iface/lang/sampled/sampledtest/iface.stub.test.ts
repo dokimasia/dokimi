@@ -2,113 +2,81 @@
 // dokimi:plugin stub
 // dokimi:source iface/lang/sampled/iface.ts
 
-import { Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
 import { type Level, type Tag, newTestLevel, newTestTag } from "../iface";
-import { LabellerStub } from "./iface.stub";
+import { type LabellerApplyCall, LabellerStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of apply. An argument without a sample is undefined. */
-function labellerStubApplyArgs(): [Tag, Level] {
+function labellerStubApplyArgs(): [Tag, Level, AbortSignal] {
   let a0 = undefined as unknown as Tag;
   let a1 = undefined as unknown as Level;
+  let a2 = undefined as unknown as AbortSignal;
   a0 = newTestTag();
   a1 = newTestLevel();
-  return [a0, a1];
+  return [a0, a1, a2];
 }
 
 /** Calls apply of double with the samples of its arguments. */
 function labellerStubApply(double: LabellerStub): Promise<void> {
   const args = labellerStubApplyArgs();
-  return double.apply(args[0], args[1]);
+  return double.apply(args[0], args[1], args[2]);
+}
+
+/** Returns the subject of behaviour and resetBehaviour for apply, on a new double that reports to seat. */
+function labellerStubApplySubject(seat: Seat): Subject<LabellerApplyCall, undefined> {
+  const double = new LabellerStub(seat);
+  return {
+    stub: double.onApply,
+    call: () => labellerStubApply(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = labellerStubApplyArgs();
+      check.isEqualTo(s, c.tag, args[0], "the call records tag");
+      check.isEqualTo(s, c.level, args[1], "the call records level");
+      check.isEqualTo(s, c.signal, args[2], "the call records signal");
+    },
+    override: (seen) => {
+      double.onApply.func((...received: unknown[]) => {
+        seen({ tag: received[0], level: received[1], signal: received[2] } as LabellerApplyCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => labellerStubApply(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * apply alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call apply alone.
  */
 function labellerStubInstance(double: LabellerStub) {
   return {
     stub: double.onApply,
     call: () => labellerStubApply(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("LabellerStub", () => {
   describe("apply", () => {
-    const checks = behaviour("Labeller.apply", (seat) => {
-      const double = new LabellerStub(seat);
-      return {
-        stub: double.onApply,
-        call: () => labellerStubApply(double),
-        override: (mark) => {
-          double.onApply.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Labeller.apply", labellerStubApplySubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new LabellerStub(undefined);
-      await labellerStubApply(double);
-      expect(double.onApply.callCount).isEqualTo(1, "apply records the call");
-      const got = double.onApply.calls[0];
-      const args = labellerStubApplyArgs();
-      expect.soft(got?.tag).isEqualTo(args[0], "the call records tag");
-      expect.soft(got?.level).isEqualTo(args[1], "the call records level");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new LabellerStub(undefined);
-      let seen = 0;
-      double.onApply.onRecord(() => {
-        seen += 1;
-      });
-      await labellerStubApply(double);
-      await labellerStubApply(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of apply");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => labellerStubInstance(new LabellerStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of apply", async () => {
-      const double = new LabellerStub(undefined);
-      await labellerStubApply(double);
-      double.resetCalls();
-      expect(double.onApply.callCount).isEqualTo(0, "resetCalls clears the calls of apply");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => labellerStubInstance(LabellerStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails apply with its error", async () => {
-      const want = new Error("apply-failing");
-      const double = LabellerStub.newFailing(undefined, want);
-      const outcome = await settle(() => labellerStubApply(double));
-      const message = "apply fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("apply", () => {
+      for (const c of resetBehaviour("Labeller.apply", labellerStubApplySubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -197,20 +165,4 @@ describe("LabellerStub", () => {
   });
 });
 
-describe("LabellerApplyStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of apply to the function", async () => {
-      const double = new LabellerStub(undefined);
-      let got: unknown[] = [];
-      double.onApply.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await labellerStubApply(double);
-      const args = labellerStubApplyArgs();
-      expect(got).isEqualTo([args[0], args[1]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-// dokimi:provenance sha256:7171249972875e6b452c16c6e9c15cc4eccd6e2c3634d896b451f8065dad97b2
+// dokimi:provenance sha256:09af16fcf1ff39ec18311614005187ce1fc83897960fc3b0606f7f2d07efde20

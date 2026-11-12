@@ -264,47 +264,6 @@ export class PaginatedReaderStub implements PaginatedReader {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: PaginatedReaderStubOption[]
-  ): PaginatedReaderStub {
-    return new PaginatedReaderStub(
-      seat,
-      PaginatedReaderStub.withClock(clock),
-      PaginatedReaderStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: PaginatedReaderStubOption[]
-  ): PaginatedReaderStub {
-    return new PaginatedReaderStub(seat, PaginatedReaderStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -430,30 +389,6 @@ export class PageStub implements Page {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: PageStubOption[]
-  ): PageStub {
-    return new PageStub(
-      seat,
-      PageStub.withClock(clock),
-      PageStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -464,4 +399,4 @@ export class PageStub implements Page {
 
 void compatV1;
 
-// dokimi:provenance sha256:f3d62c0e898d15eeb4916d22d53908d593860135cbf5b559d6608f934ace8c3f
+// dokimi:provenance sha256:f210943d849c66cb3c9e1a97e9f23e4ec6417571f5d8ce3f1b7bbe23c9b35b90

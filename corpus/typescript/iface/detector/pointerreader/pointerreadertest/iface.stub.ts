@@ -206,47 +206,6 @@ export class PointerReaderStub implements PointerReader {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: PointerReaderStubOption[]
-  ): PointerReaderStub {
-    return new PointerReaderStub(
-      seat,
-      PointerReaderStub.withClock(clock),
-      PointerReaderStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: PointerReaderStubOption[]
-  ): PointerReaderStub {
-    return new PointerReaderStub(seat, PointerReaderStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -265,4 +224,4 @@ export class PointerReaderStub implements PointerReader {
 
 void compatV1;
 
-// dokimi:provenance sha256:be57449c26257b4365a6c9366af2e3449f268ce39ffa1f2dcd1549f5bc30f7d9
+// dokimi:provenance sha256:b852406c658aca10de68309726949b8d9d3ba1f7121f82aaa912f2d3cea627a8

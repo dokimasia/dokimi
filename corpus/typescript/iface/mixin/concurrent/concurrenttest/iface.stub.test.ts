@@ -2,11 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/concurrent/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { MixedStub } from "./iface.stub";
+import { type MixedBumpCall, type MixedCountCall, MixedStub } from "./iface.stub";
 
 /** Returns the samples of the arguments of bump. An argument without a sample is undefined. */
 function mixedStubBumpArgs(): [string] {
@@ -21,6 +21,33 @@ function mixedStubBump(double: MixedStub): Promise<void> {
   return double.bump(args[0]);
 }
 
+/** Returns the subject of behaviour and resetBehaviour for bump, on a new double that reports to seat. */
+function mixedStubBumpSubject(seat: Seat): Subject<MixedBumpCall, undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onBump,
+    call: () => mixedStubBump(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = mixedStubBumpArgs();
+      check.isEqualTo(s, c.key, args[0], "the call records key");
+    },
+    override: (seen) => {
+      double.onBump.func((...received: unknown[]) => {
+        seen({ key: received[0] } as MixedBumpCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubBump(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Calls count of double with the samples of its arguments. */
 function mixedStubCount(double: MixedStub): Promise<number> {
   return double.count();
@@ -33,143 +60,70 @@ function mixedStubCountPin(): number {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for count, on a new double that reports to seat. */
+function mixedStubCountSubject(seat: Seat): Subject<MixedCountCall, number | undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onCount,
+    call: () => mixedStubCount(double),
+    reset: () => double.resetCalls(),
+    result: async () => await mixedStubCount(double),
+    returns: () => {
+      const want = mixedStubCountPin();
+      double.onCount.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onCount.func(() => {
+        seen({} as MixedCountCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubCount(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * bump alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call bump alone.
  */
 function mixedStubInstance(double: MixedStub) {
   return {
     stub: double.onBump,
     call: () => mixedStubBump(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("MixedStub", () => {
   describe("bump", () => {
-    const checks = behaviour("Mixed.bump", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onBump,
-        call: () => mixedStubBump(double),
-        override: (mark) => {
-          double.onBump.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.bump", mixedStubBumpSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubBump(double);
-      expect(double.onBump.callCount).isEqualTo(1, "bump records the call");
-      const got = double.onBump.calls[0];
-      const args = mixedStubBumpArgs();
-      expect(got?.key).isEqualTo(args[0], "the call records key");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onBump.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubBump(double);
-      await mixedStubBump(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of bump");
-    });
   });
 
   describe("count", () => {
-    const checks = behaviour("Mixed.count", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onCount,
-        call: () => mixedStubCount(double),
-        override: (mark) => {
-          double.onCount.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.count", mixedStubCountSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onCount.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubCount(double);
-      await mixedStubCount(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of count");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of bump", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubBump(double);
-      double.resetCalls();
-      expect(double.onBump.callCount).isEqualTo(0, "resetCalls clears the calls of bump");
+    describe("bump", () => {
+      for (const c of resetBehaviour("Mixed.bump", mixedStubBumpSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of count", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubCount(double);
-      double.resetCalls();
-      expect(double.onCount.callCount).isEqualTo(0, "resetCalls clears the calls of count");
-    });
-
-    it("keeps the result of returns of count", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubCountPin();
-      double.onCount.returns(want);
-      double.resetCalls();
-      expect(await mixedStubCount(double)).isEqualTo(want, "resetCalls keeps the result of count");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails bump with its error", async () => {
-      const want = new Error("bump-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubBump(double));
-      const message = "bump fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails count with its error", async () => {
-      const want = new Error("count-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubCount(double));
-      const message = "count fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("count", () => {
+      for (const c of resetBehaviour("Mixed.count", mixedStubCountSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -294,40 +248,4 @@ describe("MixedStub", () => {
   });
 });
 
-describe("MixedBumpStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of bump to the function", async () => {
-      const double = new MixedStub(undefined);
-      let got: unknown[] = [];
-      double.onBump.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      await mixedStubBump(double);
-      const args = mixedStubBumpArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("MixedCountStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of count", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubCountPin();
-      double.onCount.returns(want);
-      expect(await mixedStubCount(double)).isEqualTo(want, "count returns the result that returns sets");
-    });
-
-    it("configures count for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new MixedStub(failures);
-      double.onCount.strict();
-      double.onCount.returns(undefined as never);
-      await settle(() => mixedStubCount(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of count");
-    });
-  });
-});
-
-// dokimi:provenance sha256:2158dfdd7534eb8f3c937f70ea7cf783a8878c14724b1b7c3861087e1b944c8d
+// dokimi:provenance sha256:e4edfb0f2a91c9754992fb0bd1963472b3b99e7425d598db3e13c3e9709972cb

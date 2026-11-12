@@ -2,11 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/monotonic/iface.ts
 
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { MixedStub } from "./iface.stub";
+import { type MixedAdvanceCall, MixedStub, type MixedVersionCall } from "./iface.stub";
 
 /** Calls version of double with the samples of its arguments. */
 function mixedStubVersion(double: MixedStub): Promise<number> {
@@ -20,139 +20,98 @@ function mixedStubVersionPin(): number {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for version, on a new double that reports to seat. */
+function mixedStubVersionSubject(seat: Seat): Subject<MixedVersionCall, number | undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onVersion,
+    call: () => mixedStubVersion(double),
+    reset: () => double.resetCalls(),
+    result: async () => await mixedStubVersion(double),
+    returns: () => {
+      const want = mixedStubVersionPin();
+      double.onVersion.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onVersion.func(() => {
+        seen({} as MixedVersionCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubVersion(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Calls advance of double with the samples of its arguments. */
 function mixedStubAdvance(double: MixedStub): Promise<void> {
   return double.advance();
 }
 
+/** Returns the subject of behaviour and resetBehaviour for advance, on a new double that reports to seat. */
+function mixedStubAdvanceSubject(seat: Seat): Subject<MixedAdvanceCall, undefined> {
+  const double = new MixedStub(seat);
+  return {
+    stub: double.onAdvance,
+    call: () => mixedStubAdvance(double),
+    reset: () => double.resetCalls(),
+    override: (seen) => {
+      double.onAdvance.func(() => {
+        seen({} as MixedAdvanceCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => mixedStubAdvance(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * version alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call version alone.
  */
 function mixedStubInstance(double: MixedStub) {
   return {
     stub: double.onVersion,
     call: () => mixedStubVersion(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("MixedStub", () => {
   describe("version", () => {
-    const checks = behaviour("Mixed.version", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onVersion,
-        call: () => mixedStubVersion(double),
-        override: (mark) => {
-          double.onVersion.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.version", mixedStubVersionSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onVersion.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubVersion(double);
-      await mixedStubVersion(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of version");
-    });
   });
 
   describe("advance", () => {
-    const checks = behaviour("Mixed.advance", (seat) => {
-      const double = new MixedStub(seat);
-      return {
-        stub: double.onAdvance,
-        call: () => mixedStubAdvance(double),
-        override: (mark) => {
-          double.onAdvance.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Mixed.advance", mixedStubAdvanceSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new MixedStub(undefined);
-      let seen = 0;
-      double.onAdvance.onRecord(() => {
-        seen += 1;
-      });
-      await mixedStubAdvance(double);
-      await mixedStubAdvance(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of advance");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of version", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubVersion(double);
-      double.resetCalls();
-      expect(double.onVersion.callCount).isEqualTo(0, "resetCalls clears the calls of version");
+    describe("version", () => {
+      for (const c of resetBehaviour("Mixed.version", mixedStubVersionSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("keeps the result of returns of version", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubVersionPin();
-      double.onVersion.returns(want);
-      double.resetCalls();
-      expect(await mixedStubVersion(double)).isEqualTo(want, "resetCalls keeps the result of version");
-    });
-
-    it("clears the recorded calls of advance", async () => {
-      const double = new MixedStub(undefined);
-      await mixedStubAdvance(double);
-      double.resetCalls();
-      expect(double.onAdvance.callCount).isEqualTo(0, "resetCalls clears the calls of advance");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails version with its error", async () => {
-      const want = new Error("version-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubVersion(double));
-      const message = "version fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails advance with its error", async () => {
-      const want = new Error("advance-failing");
-      const double = MixedStub.newFailing(undefined, want);
-      const outcome = await settle(() => mixedStubAdvance(double));
-      const message = "advance fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("advance", () => {
+      for (const c of resetBehaviour("Mixed.advance", mixedStubAdvanceSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -277,24 +236,4 @@ describe("MixedStub", () => {
   });
 });
 
-describe("MixedVersionStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of version", async () => {
-      const double = new MixedStub(undefined);
-      const want = mixedStubVersionPin();
-      double.onVersion.returns(want);
-      expect(await mixedStubVersion(double)).isEqualTo(want, "version returns the result that returns sets");
-    });
-
-    it("configures version for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new MixedStub(failures);
-      double.onVersion.strict();
-      double.onVersion.returns(undefined as never);
-      await settle(() => mixedStubVersion(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of version");
-    });
-  });
-});
-
-// dokimi:provenance sha256:e24661d79379ea3bb64d4c98207c264d5d19a8bc6c246226c12500c226bfd092
+// dokimi:provenance sha256:5e4bf7d3e1504e8e30cf5b4f76b46a3744bbd00b6b0078f3d3ac72cd4c61c87b

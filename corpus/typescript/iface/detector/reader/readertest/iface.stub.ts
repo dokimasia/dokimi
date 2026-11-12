@@ -254,47 +254,6 @@ export class ReaderStub implements Reader {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: ReaderStubOption[]
-  ): ReaderStub {
-    return new ReaderStub(
-      seat,
-      ReaderStub.withClock(clock),
-      ReaderStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: ReaderStubOption[]
-  ): ReaderStub {
-    return new ReaderStub(seat, ReaderStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -412,30 +371,6 @@ export class ValueStub implements Value {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: ValueStubOption[]
-  ): ValueStub {
-    return new ValueStub(
-      seat,
-      ValueStub.withClock(clock),
-      ValueStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -446,4 +381,4 @@ export class ValueStub implements Value {
 
 void compatV1;
 
-// dokimi:provenance sha256:42d622afd2ff67fb4d767dca8933e91249f3997de05bf10a927cc597cf5376eb
+// dokimi:provenance sha256:dd202d5629145f3b9328e11ed9cb0b4f1016cd5824aa038fc8de4911ec2f331d

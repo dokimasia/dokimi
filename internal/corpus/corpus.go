@@ -127,8 +127,9 @@ type Overlay struct {
 // a fixture. Expect is the expected kind of the key, and Actual is the kind
 // of the language with its gate or its stance: check, authored, ceiling,
 // refused, unclaimed or absent. An entry with the stance blocked and no key
-// declares that the language cannot state the fixture. Why is the reason
-// why the language differs.
+// declares that the language cannot state the fixture. An entry with the
+// actual kind absent and the stance blocked declares a key that the runtime
+// of the language cannot check. Why is the reason why the language differs.
 type Entry struct {
 	Fixture string        `yaml:"fixture"`
 	Key     string        `yaml:"key,omitempty"`

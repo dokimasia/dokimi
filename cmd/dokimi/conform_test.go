@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -127,6 +128,112 @@ func runConform(t *testing.T, dir string, env []string, args ...string) (stdout,
 // standalone is the environment of a corpus outside every workspace of Go.
 var standalone = []string{"GOWORK=off"}
 
+// The test binary stands in for Vitest where its first argument is vitestArg,
+// and a run of conform calls it in place of Vitest where the environment has
+// vitestReportVar. The stand-in writes the file of vitestReportVar to the path
+// of its --outputFile, writes its filters to the file of vitestArgsVar, one
+// on each line, and exits with the status of vitestStatusVar.
+const (
+	vitestArg       = "-dokimi.test.vitest"
+	vitestReportVar = "DOKIMI_TEST_VITEST_REPORT"
+	vitestArgsVar   = "DOKIMI_TEST_VITEST_ARGS"
+	vitestStatusVar = "DOKIMI_TEST_VITEST_STATUS"
+)
+
+// standInVitest runs the stand-in of Vitest with the arguments that follow
+// vitestArg and returns its exit status.
+func standInVitest(args []string) int {
+	report, err := os.ReadFile(os.Getenv(vitestReportVar))
+	var filters []string
+	for _, a := range args {
+		out, isOutput := strings.CutPrefix(a, "--outputFile=")
+		switch {
+		case isOutput && err == nil:
+			err = os.WriteFile(out, report, 0o600)
+		case !isOutput && a != "run" && a != "--reporter=json":
+			filters = append(filters, a)
+		}
+	}
+	if f := os.Getenv(vitestArgsVar); f != "" && err == nil {
+		err = os.WriteFile(f, []byte(strings.Join(filters, "\n")), 0o600)
+	}
+	status, _ := strconv.Atoi(os.Getenv(vitestStatusVar))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	return status
+}
+
+// The files of a corpus of TypeScript: the overlay of TypeScript, the report
+// of the run of the stand-in of Vitest, and the file of its filters.
+const (
+	tsOverlay = "corpus/typescript/overlay.yaml"
+	tsReport  = "report.json"
+	tsFilters = "filters.txt"
+)
+
+// typescriptCorpusOf returns the tree of a repository whose corpus of
+// TypeScript has the fixture enum/x with the expected outcomes, and the report
+// that the stand-in of Vitest writes.
+func typescriptCorpusOf(report, expected string) files.Tree {
+	return files.Tree{
+		"corpus/typescript/package.json": files.Text(
+			"{\n  \"name\": \"corpus\",\n  \"private\": true,\n  \"type\": \"module\"\n}\n"),
+		"corpus/typescript/tsconfig.json": files.Text("{}\n"),
+		"corpus/typescript/.dokimi.yaml":  files.Text("version: 1\n"),
+		tsOverlay:                         files.Text("language: typescript\nlevel: 4\ndiverge: []\n"),
+		"corpus/typescript/enum/x/x.ts": files.Text(
+			"/** Returns one. */\nexport function one(): number {\n  return 1;\n}\n"),
+		corpusExpected: files.Text(expected),
+		tsReport:       files.Text(report),
+	}
+}
+
+// vitestReportOf returns the JSON report of Vitest with one test of the file
+// of the fixture enum/x, whose meta has the records under the key
+// dokimi.suite, and with the status of the test and its messages.
+func vitestReportOf(status string, messages []string, records ...spec.SuiteRecord) string {
+	data, _ := json.Marshal(map[string]any{"testResults": []any{map[string]any{
+		"name": "/corpus/typescript/enum/x/x.suite.test.ts", "status": status, "message": "",
+		"assertionResults": []any{map[string]any{
+			"fullName": "xSuite suite records", "status": status, "failureMessages": messages,
+			"meta": map[string]any{"dokimi.suite": records},
+		}},
+	}}})
+	return string(data)
+}
+
+// typescriptRecording returns the falsification record of the TypeScript
+// suite of X in the module enum/x/x with the check x.get/cancel, with the
+// result and the reason code of its probe.
+func typescriptRecording(result spec.Result, reason spec.ReasonID) spec.SuiteRecord {
+	return spec.SuiteRecord{
+		Spec:        "1.0.0",
+		Suite:       spec.RecordSuite{Language: "typescript", Package: "enum/x/x", Declaration: "X"},
+		Generator:   spec.RecordTool{Name: "dokimi", Version: "0.1.0"},
+		Runtime:     spec.RecordTool{Name: "@dokimi/runtime", Version: "0.1.0"},
+		Seed:        "0x0000000000000001",
+		Application: spec.Falsification,
+		Checks: []spec.CheckRecord{{
+			Identity: "X.get/cancel", Key: "x.get/cancel", Claim: spec.Cancel, Law: spec.CancelledContextIsReported,
+			Result: result, Reason: reason,
+		}},
+		Refusals:  []spec.RefusalRecord{},
+		Unclaimed: []spec.UnclaimedRecord{},
+	}
+}
+
+// vitestEnv returns the environment of a run of conform in dir that calls the
+// stand-in of Vitest with the report of the tree and the status.
+func vitestEnv(dir string, status int) []string {
+	return []string{
+		vitestReportVar + "=" + filepath.Join(dir, tsReport),
+		vitestArgsVar + "=" + filepath.Join(dir, tsFilters),
+		vitestStatusVar + "=" + strconv.Itoa(status),
+	}
+}
+
 func TestConform(t *testing.T) {
 	t.Parallel()
 
@@ -205,7 +312,8 @@ func TestConform(t *testing.T) {
 			_, stderr, status := runConform(t, dir, standalone, "--lang", "go")
 
 			assert.Equal(t, status, 1, "a failed test fails the gate")
-			assert.Contains(t, stderr, "the tests of the corpus failed: exit status 1", "the gate names the failure")
+			assert.Contains(t, stderr, "the tests of the corpus failed: go test: exit status 1",
+				"the gate names the failure")
 			assert.Contains(t, stderr, " TestX\n", "the gate names the test that failed")
 			assert.Contains(t, stderr, "the fixture fails", "the gate writes the output of the test that failed")
 		})
@@ -367,10 +475,107 @@ func TestConform(t *testing.T) {
 		t.Run("refuses a language without a binding", func(t *testing.T) {
 			t.Parallel()
 
-			_, stderr, status := runConform(t, t.TempDir(), standalone, "--lang", "typescript")
+			_, stderr, status := runConform(t, t.TempDir(), standalone, "--lang", "rust")
 
 			assert.Equal(t, status, 64, "a language without a binding is a usage error")
-			assert.Contains(t, stderr, "has no binding of typescript", "the error names the language")
+			assert.Contains(t, stderr, "has no binding of rust", "the error names the language")
+		})
+
+		t.Run("refuses an update of the expected outcomes from the corpus of TypeScript", func(t *testing.T) {
+			t.Parallel()
+
+			_, stderr, status := runConform(t, t.TempDir(), standalone, "--lang", "typescript", "--update")
+
+			assert.Equal(t, status, 64, "an update from another corpus than the corpus of Go is a usage error")
+			assert.Contains(t, stderr, "from the corpus of go alone", "the error names the corpus of the update")
+		})
+
+		t.Run("passes a corpus of TypeScript whose outcomes meet their expectations", func(t *testing.T) {
+			t.Parallel()
+			dir := files.Workspace(t, typescriptCorpusOf(vitestReportOf("passed", []string{}), noOutcomes))
+
+			stdout, stderr, status := runConform(t, dir, vitestEnv(dir, 0), "--lang", "typescript")
+
+			assert.Equal(t, status, 0, "the corpus conforms: "+stderr)
+			assert.Contains(t, stdout, "typescript: level 4, 1 fixtures, 1 conformant, 0 declared differences\n",
+				"the summary counts the fixtures of TypeScript")
+		})
+
+		t.Run("fails a planted difference of TypeScript under the fixture of the directory of its module",
+			func(t *testing.T) {
+				t.Parallel()
+				report := vitestReportOf(
+					"passed",
+					[]string{},
+					typescriptRecording(spec.WrongReason, spec.ValueBesideError),
+				)
+				dir := files.Workspace(t, typescriptCorpusOf(report, cancelled))
+
+				stdout, _, status := runConform(t, dir, vitestEnv(dir, 0), "--lang", "typescript")
+
+				assert.Equal(t, status, 1, "a finding fails the gate")
+				assert.Contains(t, stdout, "enum/x\n"+
+					"  generation     FAIL  x.get/cancel: want check of cancel, got absent\n"+
+					"  falsification  FAIL  x.get/cancel: want proven by ignored-cancel, got wrong-reason by value-beside-error\n"+
+					"typescript: level 4, 1 fixtures, 0 conformant, 0 declared differences\n",
+					"the gate writes each finding of the module enum/x/x under the fixture enum/x")
+			})
+
+		t.Run("declares a difference of TypeScript that an entry of its overlay states", func(t *testing.T) {
+			t.Parallel()
+			tree := typescriptCorpusOf(vitestReportOf("passed", []string{}), cancelled)
+			tree[tsOverlay] = files.Text("language: typescript\nlevel: 4\ndiverge:\n" +
+				"  - fixture: enum/x\n    key: x.get/cancel\n    expect: check\n    actual: absent\n" +
+				"    why: The function one takes no signal\n")
+			dir := files.Workspace(t, tree)
+
+			stdout, stderr, status := runConform(t, dir, vitestEnv(dir, 0), "--lang", "typescript")
+
+			assert.Equal(t, status, 0, "the entry declares the check that the lock lacks: "+stdout+stderr)
+			assert.Contains(t, stdout, "typescript: level 4, 1 fixtures, 1 conformant, 1 declared differences\n",
+				"the summary counts the declared difference")
+		})
+
+		t.Run("runs the tests of the fixtures at the level of the overlay alone", func(t *testing.T) {
+			t.Parallel()
+			tree := typescriptCorpusOf(vitestReportOf("passed", []string{}), noOutcomes)
+			tree[tsOverlay] = files.Text("language: typescript\nlevel: 3\ndiverge: []\n")
+			tree["corpus/typescript/enum/y/y.ts"] = files.Text("/** Returns two. */\nexport const two = 2;\n")
+			tree["corpus/expect/enum/y.yaml"] = files.Text(
+				conformHeader + "fixture: enum/y\nlevel: 4\nsubjects: []\ncontrols: []\ndeclarations: {}\n")
+			dir := files.Workspace(t, tree)
+
+			_, stderr, status := runConform(t, dir, vitestEnv(dir, 0), "--lang", "typescript")
+
+			assert.Equal(t, status, 0, "the corpus conforms at level 3: "+stderr)
+			files.HasContent(t, filepath.Join(dir, tsFilters), "enum/x/",
+				"Vitest runs the test files of enum/x and leaves out enum/y at level 4")
+		})
+
+		t.Run("fails a corpus of TypeScript whose tests fail", func(t *testing.T) {
+			t.Parallel()
+			report := vitestReportOf("failed", []string{"AssertionFailed: the fixture fails"})
+			dir := files.Workspace(t, typescriptCorpusOf(report, noOutcomes))
+
+			_, stderr, status := runConform(t, dir, vitestEnv(dir, 1), "--lang", "typescript")
+
+			assert.Equal(t, status, 1, "a failed test fails the gate")
+			assert.Contains(t, stderr, "the tests of the corpus failed: vitest: exit status 1",
+				"the gate names the failure")
+			assert.Contains(t, stderr, "xSuite suite records\nAssertionFailed: the fixture fails",
+				"the gate writes the test that failed with its message")
+		})
+
+		t.Run("returns the error of a report of Vitest that the run does not write", func(t *testing.T) {
+			t.Parallel()
+			dir := files.Workspace(t, typescriptCorpusOf(vitestReportOf("passed", []string{}), noOutcomes))
+			env := vitestEnv(dir, 0)
+			env[0] = vitestReportVar + "=" + filepath.Join(dir, "missing.json")
+
+			_, stderr, status := runConform(t, dir, env, "--lang", "typescript")
+
+			assert.Equal(t, status, 1, "the gate fails")
+			assert.Contains(t, stderr, "read the report of Vitest", "the error names the step")
 		})
 
 		t.Run("refuses a working directory that does not exist", func(t *testing.T) {

@@ -138,6 +138,43 @@ const (
 	stateDir = ".dokimi"
 )
 
+// The module of the TypeScript shop, which keeps its items and its values
+// under two suites, and the file of the lock of the plan typescript.
+const (
+	catalogFile   = "catalog.ts"
+	tsLockFile    = "dokimi.typescript.lock"
+	catalogSource = `/** Represents an item of the shop. */
+export interface Item {
+  /** Contains the identity of the item. */
+  id: string;
+}
+
+/** Represents the items of the shop by key. */
+//dokimi:suite
+export interface Store {
+  /** Returns the item under the key. */
+  get(key: string, signal: AbortSignal): Promise<Item>;
+}
+
+/** Represents the values of the shop by key. */
+//dokimi:suite
+export interface Index {
+  /** Returns the value under the key. */
+  find(key: string, signal: AbortSignal): Promise<string>;
+}
+`
+)
+
+// tsShop returns the tree of a TypeScript package with the module catalog of
+// source.
+func tsShop(source string) files.Tree {
+	return files.Tree{
+		"package.json": files.Text(`{"name": "shop", "type": "module"}` + "\n"),
+		".dokimi.yaml": files.Text("version: 1\n"),
+		catalogFile:    files.Text(source),
+	}
+}
+
 // shop returns the tree of a module with the package store of source.
 func shop(source string) files.Tree {
 	return files.Tree{
@@ -162,7 +199,13 @@ func dokimiRun(t *testing.T, bin, dir string, args ...string) (string, int) {
 }
 
 func TestMain(m *testing.M) {
+	if len(os.Args) > 1 && os.Args[1] == vitestArg {
+		os.Exit(standInVitest(os.Args[2:]))
+	}
 	if os.Getenv(childVar) != "" {
+		if os.Getenv(vitestReportVar) != "" {
+			vitest = []string{os.Args[0], vitestArg}
+		}
 		main()
 	}
 	os.Exit(m.Run())
@@ -299,6 +342,35 @@ func TestDokimi(t *testing.T) {
 				}
 			})
 		}
+
+		t.Run("fails --check with LostCheck for each check of a TypeScript suite without its directive",
+			func(t *testing.T) {
+				t.Parallel()
+				dir := files.Workspace(t, tsShop(catalogSource))
+				out, status := dokimiRun(t, bin, dir, "run")
+				assert.Equal(t, status, 0, "the first run writes the lock: "+out)
+				expect.Contains(
+					t,
+					files.Read(t, filepath.Join(dir, tsLockFile)),
+					"catalog\tindex.find/smoke\tsmoke\tcheck\t-\n",
+					"the lock of the plan typescript lists the checks of Index",
+				)
+				unsuited := strings.Replace(
+					catalogSource,
+					"//dokimi:suite\nexport interface Index",
+					"export interface Index",
+					1,
+				)
+				files.Write(t, dir, files.Tree{catalogFile: files.Text(unsuited)})
+
+				out, status = dokimiRun(t, bin, dir, "run", "--check")
+
+				assert.Equal(t, status, 1, "the check fails")
+				for _, lost := range []string{"index.find/smoke (smoke)", "index.find/cancel (cancel)"} {
+					expect.Contains(t, out, lost+" of catalog is no longer generated as the lock states",
+						"the check names the lost check")
+				}
+			})
 
 		t.Run("fails --check with the lock out of date where no suite of the plan remains", func(t *testing.T) {
 			t.Parallel()

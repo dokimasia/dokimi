@@ -30,15 +30,17 @@
 //
 // # The command report
 //
-// dokimi report reads the files of go test -json, and prints what each suite
-// claimed, proved, refused and found vacuous, from the suite records of the
-// run. --json writes one JSON document of every suite. The command exits with
-// the status 1 for a suite record that does not validate against the schema
-// of the spec, for a check whose falsification result is not proven, and for
-// an application that problems ended before its checks:
+// dokimi report reads the events of go test -json and the JSON reports of
+// Vitest, and prints what each suite claimed, proved, refused and found
+// vacuous, from the suite records of the run. --json writes one JSON document
+// of every suite. The command exits with the status 1 for a suite record that
+// does not validate against the schema of the spec, for a check whose
+// falsification result is not proven, and for an application that problems
+// ended before its checks:
 //
 //	go test -json ./... > run.json
-//	dokimi report run.json
+//	vitest run --reporter=json --outputFile=vitest.json
+//	dokimi report run.json vitest.json
 //
 // # Dependency position
 //

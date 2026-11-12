@@ -18,14 +18,14 @@ import (
 // The name and the help text of the command report.
 const (
 	reportName = "report"
-	reportHelp = "Prints what each suite of a run of go test -json claimed, proved, refused and found vacuous, " +
-		"and the dead and the subsumed checks of mutation records."
+	reportHelp = "Prints what each suite of a run of go test -json or Vitest claimed, proved, refused and found " +
+		"vacuous, and the dead and the subsumed checks of mutation records."
 )
 
 // reportOptions are the options of the command report.
 type reportOptions struct {
-	// Files are the files of go test -json.
-	Files []gocli.InputFile `arg:"" help:"The files of go test -json, or - for the standard input."`
+	// Files are the files of go test -json and of the JSON reports of Vitest.
+	Files []gocli.InputFile `arg:"" help:"The files of go test -json or of the JSON report of Vitest, or - for the standard input."`
 
 	// Mutation are the files of the records of mutation runs of mutate-spec.
 	Mutation []gocli.InputFile `help:"The records of mutation runs whose mutants the report attributes to the checks."`

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package report reads the suite records of a run from the events of
-// go test -json, and prints what each suite claimed, proved, refused and
-// found vacuous.
+// go test -json or from the JSON report of Vitest, and prints what each suite
+// claimed, proved, refused and found vacuous.
 package report
 
 import (
@@ -19,15 +19,19 @@ import (
 	"go.dokimi.dev/spec"
 )
 
+// kind is the kind of a suite record. A Vitest test writes its suite records
+// into the array under the key kind of its meta.
+const kind = "dokimi.suite"
+
 // keyPrefix starts the key of each attribute event of a suite record, which
 // ends with the number of the record in its test.
-const keyPrefix = "dokimi.suite."
+const keyPrefix = kind + "."
 
 // maxLine is the longest line of an event that Read reads.
 const maxLine = 1 << 20
 
-// Record is one suite record of a run, with the package and the test of
-// go test that wrote it.
+// Record is one suite record of a run, with the package and the test that
+// wrote it. The package of a Vitest report is the path of the test file.
 type Record struct {
 	Package string `json:"package"`
 	Test    string `json:"test"`
@@ -78,20 +82,35 @@ func scan(r io.Reader, visit func(e *event)) error {
 	return nil
 }
 
-// Read reads the events of go test -json from r, and returns the suite
-// records in the order of their first events. It joins the values of the
-// attribute events of one key of one test into one record. It skips a line
-// that is no JSON object, such as the output of a build that failed.
+// Read reads the suite records of a run from r. r contains the events of
+// go test -json or the JSON report of Vitest. A Vitest report is one JSON
+// object with the key testResults, so Read tells the two forms apart by the
+// first JSON value of r.
+//
+// Read joins the values of the attribute events of one key of one test of
+// go test -json into one record, and returns the records in the order of their
+// first events. It skips a line that is no JSON object, such as the output of
+// a build that failed. The records of a Vitest report are the elements of the
+// array under the key dokimi.suite in the meta of each test, in the order of
+// the report.
 //
 // Read returns an error that names the line for an event that does not
-// decode, and an error that names the package, the test and the key of each
-// record that does not validate against the schema of the suite record. It
-// returns the records that validate beside the second error.
+// decode, and an error for a Vitest report that does not decode. It returns
+// an error that names the package, the test and the key of each record that
+// does not validate against the schema of the suite record, beside the
+// records that validate.
 func Read(r io.Reader) ([]Record, error) {
+	report, events, err := vitestOf(r)
+	if err != nil {
+		return nil, err
+	}
+	if report != nil {
+		return report.records()
+	}
 	type part struct{ pkg, test, key string }
 	var order []part
 	values := map[part]*strings.Builder{}
-	err := scan(r, func(e *event) {
+	err = scan(events, func(e *event) {
 		if !strings.HasPrefix(e.Key, keyPrefix) {
 			return
 		}
@@ -110,36 +129,65 @@ func Read(r io.Reader) ([]Record, error) {
 	var records []Record
 	var errs []error
 	for _, p := range order {
-		data := []byte(values[p].String())
-		if err := spec.ValidateSuiteRecord(data); err != nil {
-			errs = append(errs, fmt.Errorf("%s %s %s: %w", p.pkg, p.test, p.key, err))
+		r, err := decodeRecord(p.pkg, p.test, p.key, []byte(values[p].String()))
+		if err != nil {
+			errs = append(errs, err)
 			continue
 		}
-		r := Record{Package: p.pkg, Test: p.test}
-		_ = json.Unmarshal(data, &r.SuiteRecord)
 		records = append(records, r)
 	}
 	return records, errors.Join(errs...)
 }
 
-// Failure is a test of go test that failed: its package, its name and the
-// output that it wrote. A package that failed without a test that failed,
-// such as a package that does not build, has no test.
+// decodeRecord returns the suite record data with the package and the test
+// that wrote it. It returns an error that names the package, the test and the
+// key of a record that does not validate against the schema of the suite
+// record.
+func decodeRecord(pkg, test, key string, data []byte) (Record, error) {
+	if err := spec.ValidateSuiteRecord(data); err != nil {
+		return Record{}, fmt.Errorf("%s %s %s: %w", pkg, test, key, err)
+	}
+	r := Record{Package: pkg, Test: test}
+	// A record that validates decodes.
+	_ = json.Unmarshal(data, &r.SuiteRecord)
+	return r, nil
+}
+
+// Failure is a test that failed: its package, its name and the output that
+// it wrote. The package of a Vitest report is the path of the test file, and
+// the output of its test is the messages of its failures. A package that
+// failed without a test that failed, such as a package that does not build,
+// has no test.
 type Failure struct {
 	Package string
 	Test    string
 	Output  string
 }
 
-// Failed reads the events of go test -json from r, and returns each test
-// that failed without a subtest that failed, in the order of the failures,
-// with its output. It returns each package that failed without a test that
-// failed as well. The output of such a package also has the output of each of
-// its tests that neither passed nor skipped, in the order of the events,
-// because go test gives the last words of a test binary that ends in the
-// middle of a test to that test. It returns an error that names the line of
-// an event that does not decode.
+// Failed reads the failures of a run from r, which contains the events of
+// go test -json or the JSON report of Vitest, as Read reads them.
+//
+// For go test -json, Failed returns each test that failed without a subtest
+// that failed, in the order of the failures, with its output. It returns each
+// package that failed without a test that failed as well. The output of such a
+// package also has the output of each of its tests that neither passed nor
+// skipped, in the order of the events, because go test gives the last words
+// of a test binary that ends in the middle of a test to that test.
+//
+// For a Vitest report, Failed returns each test that failed, with the
+// messages of its failures, and each test file that failed without a test
+// that failed, with the message of its error, in the order of the report.
+//
+// Failed returns an error that names the line of an event that does not
+// decode, and an error for a Vitest report that does not decode.
 func Failed(r io.Reader) ([]Failure, error) {
+	report, events, err := vitestOf(r)
+	if err != nil {
+		return nil, err
+	}
+	if report != nil {
+		return report.failures(), nil
+	}
 	type test struct{ pkg, name string }
 	type output struct {
 		of   test
@@ -148,7 +196,7 @@ func Failed(r io.Reader) ([]Failure, error) {
 	var outputs []output
 	ended := map[test]bool{}
 	var failed []test
-	err := scan(r, func(e *event) {
+	err = scan(events, func(e *event) {
 		t := test{e.Package, e.Test}
 		switch e.Action {
 		case actionOutput:

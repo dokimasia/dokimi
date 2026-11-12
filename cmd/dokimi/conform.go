@@ -12,7 +12,9 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"go.dokimi.dev/eidos/cli"
@@ -30,34 +32,72 @@ const (
 	conformHelp = "Judges the corpus of a language by the expected outcomes of its fixtures."
 )
 
-// conformLang is the language whose binding the gate judges.
+// conformLang is the language whose corpus the expected outcomes come from.
 const conformLang = "go"
 
 // conformOptions are the options of the command conform.
 type conformOptions struct {
 	// Lang is the language of the corpus under corpus/<language>.
-	Lang string `help:"The language of the corpus, such as go." required:""`
+	Lang string `help:"The language of the corpus, such as go or typescript." required:""`
 
 	// Update rewrites the declarations of the expected outcomes.
 	Update bool `help:"Rewrite the declarations of the expected outcomes from the lock and the records of the run."`
 }
 
+// binding is the binding of the gate to the corpus of one language under
+// corpus/<language>. tests runs the tests of the fixtures in the directory of
+// the corpus and returns their report, beside the error of a run whose tests
+// failed. module returns the module path of the corpus, and lock is the file
+// of the lock of the plan of the language. fixtureOf returns the package of
+// the fixture of a package of a line of the lock or of a record.
+type binding struct {
+	tests     func(ctx context.Context, dir string, fixtures []string, stderr io.Writer) ([]byte, error)
+	module    func(dir string) (string, error)
+	fixtureOf func(pkg string) string
+	lock      string
+}
+
+// bindings are the bindings of the gate by language. A package of Go is a
+// directory, and a module of TypeScript is a file of the directory of its
+// package.
+var bindings = map[string]binding{
+	conformLang: {
+		tests: goTests, module: goModule, fixtureOf: func(pkg string) string { return pkg },
+		lock: "dokimi." + dokimi.GoPlan + ".lock",
+	},
+	dokimi.TypeScriptPlan: {
+		tests: vitestTests, module: func(string) (string, error) { return "", nil }, fixtureOf: path.Dir,
+		lock: "dokimi." + dokimi.TypeScriptPlan + ".lock",
+	},
+}
+
+// vitest is the command that runs Vitest in the corpus of TypeScript.
+var vitest = []string{"pnpm", "exec", "vitest"}
+
 // conformRun judges the corpus of a language under the directory corpus of
 // the working directory. It checks that the generated files of the corpus are
-// up to date with dokimi run --check, runs go test -count=1 -json in the
-// corpus, and judges the lock of the plan go and the suite records of the run
-// by the expected outcomes under corpus/expect and by the overlay of the
-// language. It writes each finding and a summary to the standard output.
-// Under --update it rewrites the declarations of each file of expected
-// outcomes from the run in place of the judgement.
+// up to date with dokimi run --check, runs the tests of the fixtures at the
+// level of the overlay of the language and below it, and judges the lock of
+// the plan of the language and the suite records of the run by the expected
+// outcomes under corpus/expect and by the overlay. The tests of Go run with
+// go test -count=1 -json in the corpus, and the tests of TypeScript with
+// Vitest and its JSON report. It writes each finding and a summary to the
+// standard output. Under --update it rewrites the declarations of each file
+// of expected outcomes from the run of the corpus of Go in place of the
+// judgement.
 //
 // conformRun exits with the status of the generation when the generated files
 // are out of date, and with the status 1 when a test fails, a record does not
 // validate, or a finding remains.
 func conformRun(ctx context.Context, run *gocli.Run[cli.Global, conformOptions]) error {
 	lang := run.Config().Lang
-	if lang != conformLang {
-		return &cli.UsageError{Err: fmt.Errorf("the gate judges the corpus of go and has no binding of %s", lang)}
+	b, bound := bindings[lang]
+	if !bound {
+		return &cli.UsageError{Err: fmt.Errorf("the gate has no binding of %s", lang)}
+	}
+	if run.Config().Update && lang != conformLang {
+		return &cli.UsageError{Err: fmt.Errorf("the gate updates the expected outcomes from the corpus of %s alone",
+			conformLang)}
 	}
 	stdio, err := cli.IOOf(run)
 	if err != nil {
@@ -79,7 +119,7 @@ func conformRun(ctx context.Context, run *gocli.Run[cli.Global, conformOptions])
 	if err != nil {
 		return fmt.Errorf("read the overlay: %w", err)
 	}
-	mod, err := os.ReadFile(filepath.Join(dir, "go.mod"))
+	module, err := b.module(dir)
 	if err != nil {
 		return fmt.Errorf("read the module of the corpus: %w", err)
 	}
@@ -88,27 +128,44 @@ func conformRun(ctx context.Context, run *gocli.Run[cli.Global, conformOptions])
 	if status := cli.Run(ctx, cli.New(help, dokimi.Compose), dokimi.Compose, &env); status != cli.StatusOK {
 		return cli.ExitError{Code: status}
 	}
-	var events bytes.Buffer
-	test := exec.CommandContext(ctx, "go", "test", "-count=1", "-json", "./...")
-	test.Dir, test.Stdout, test.Stderr = dir, &events, run.Stderr()
+	var judged []string
+	for i := range expected {
+		if expected[i].Level <= overlay.Level {
+			judged = append(judged, expected[i].Fixture)
+		}
+	}
+	events, failed := b.tests(ctx, dir, judged, run.Stderr())
 	var errs []error
-	if failed := test.Run(); failed != nil {
+	if failed != nil {
 		errs = append(errs, fmt.Errorf("the tests of the corpus failed: %w", failed))
 		// Read reports an event that does not decode, so the error of Failed
 		// repeats it.
-		failures, _ := report.Failed(bytes.NewReader(events.Bytes()))
+		failures, _ := report.Failed(bytes.NewReader(events))
 		for _, f := range failures {
 			fmt.Fprintf(run.Stderr(), "%s\n%s", strings.TrimSpace(f.Package+" "+f.Test), f.Output)
 		}
 	}
-	records, err := report.Read(&events)
+	records, err := report.Read(bytes.NewReader(events))
 	errs = append(errs, err)
 	// A corpus without a suite has no lock.
-	lock, err := os.ReadFile(filepath.Join(dir, "dokimi.go.lock"))
+	lock, err := os.ReadFile(filepath.Join(dir, b.lock))
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("read the lock: %w", err)
 	}
-	outcomes := corpus.Outcomes(modfile.ModulePath(mod), fixtures, strings.Split(string(lock), "\n"), records)
+	lines := strings.Split(string(lock), "\n")
+	for i, text := range lines {
+		if pkg, rest, tabbed := strings.Cut(text, "\t"); tabbed && !strings.HasPrefix(text, "#") {
+			lines[i] = b.fixtureOf(pkg) + "\t" + rest
+		}
+	}
+	for i := range records {
+		r := &records[i]
+		r.Suite.Package = b.fixtureOf(r.Suite.Package)
+		if at := strings.LastIndex(r.Subject, "."); at >= 0 {
+			r.Subject = b.fixtureOf(r.Subject[:at]) + r.Subject[at:]
+		}
+	}
+	outcomes := corpus.Outcomes(module, fixtures, lines, records)
 	if run.Config().Update {
 		updated := corpus.Update(expected, outcomes)
 		for i := range updated {
@@ -129,6 +186,54 @@ func conformRun(ctx context.Context, run *gocli.Run[cli.Global, conformOptions])
 		return cli.ExitError{Code: cli.StatusFailed}
 	}
 	return nil
+}
+
+// goTests runs go test -count=1 -json over every package of the corpus of Go
+// in dir and returns its events. The level of the overlay judges the fixtures,
+// and every test of the corpus runs.
+func goTests(ctx context.Context, dir string, _ []string, stderr io.Writer) ([]byte, error) {
+	var events bytes.Buffer
+	test := exec.CommandContext(ctx, "go", "test", "-count=1", "-json", "./...")
+	test.Dir, test.Stdout, test.Stderr = dir, &events, stderr
+	if err := test.Run(); err != nil {
+		return events.Bytes(), fmt.Errorf("go test: %w", err)
+	}
+	return events.Bytes(), nil
+}
+
+// goModule returns the module path of the go.mod of the corpus in dir.
+func goModule(dir string) (string, error) {
+	mod, err := os.ReadFile(filepath.Join(dir, "go.mod"))
+	return modfile.ModulePath(mod), err
+}
+
+// vitestTests runs Vitest in the corpus of TypeScript in dir over the test
+// files of fixtures, and returns its JSON report. A filter of Vitest selects
+// the files whose path contains it, so each filter is the path of a fixture
+// with a slash, which iface/lang/genericbound does not contain for
+// iface/lang/generic. Vitest writes its own output to stderr.
+func vitestTests(ctx context.Context, dir string, fixtures []string, stderr io.Writer) ([]byte, error) {
+	out, err := os.MkdirTemp("", "dokimi-conform-")
+	if err != nil {
+		return nil, fmt.Errorf("make the directory of the report of Vitest: %w", err)
+	}
+	defer func() { _ = os.RemoveAll(out) }()
+	file := filepath.Join(out, "vitest.json")
+	args := append(slices.Clone(vitest[1:]), "run", "--reporter=json", "--outputFile="+file)
+	for _, f := range fixtures {
+		args = append(args, f+"/")
+	}
+	test := exec.CommandContext(ctx, vitest[0], args...)
+	test.Dir, test.Stdout, test.Stderr = dir, stderr, stderr
+	var failed error
+	if ran := test.Run(); ran != nil {
+		failed = fmt.Errorf("vitest: %w", ran)
+	}
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return nil, errors.Join(failed, fmt.Errorf("read the report of Vitest: %w", err))
+	}
+	return data, failed
 }
 
 // printJudgement writes the findings of each fixture under the path of the

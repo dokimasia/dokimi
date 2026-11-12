@@ -17,6 +17,7 @@ import (
 const (
 	lineCancel  = 1
 	lineExpires = 2
+	lineCeiling = 4
 )
 
 // The positions of the records of [outcome].
@@ -165,6 +166,57 @@ func TestJudge(t *testing.T) {
 					}}
 				},
 				wantDeclared: 1,
+			},
+			{
+				name: "declares a ceiling that the lock lacks through an entry with the stance blocked",
+				give: func(_ *corpus.Expectation, o *corpus.Outcome, overlay *corpus.Overlay) {
+					o.Lock = slices.Delete(o.Lock, lineCeiling, lineCeiling+1)
+					overlay.Diverge = []corpus.Entry{{
+						Fixture: ttl, Key: "mixed.read/latency-budget", Expect: "ceiling", Actual: "absent",
+						Stance: spec.Blocked, Why: "the runtime of the language has no clock",
+					}}
+				},
+				wantDeclared: 1,
+			},
+			{
+				name: "reports a ceiling that the lock lacks whose entry has another stance",
+				give: func(_ *corpus.Expectation, o *corpus.Outcome, overlay *corpus.Overlay) {
+					o.Lock = slices.Delete(o.Lock, lineCeiling, lineCeiling+1)
+					overlay.Diverge = []corpus.Entry{{
+						Fixture: ttl, Key: "mixed.read/latency-budget", Expect: "ceiling", Actual: "absent",
+						Stance: spec.Gap, Why: "the runtime of the language has no clock",
+					}}
+				},
+				want: []corpus.Finding{
+					{
+						Fixture: ttl, Phase: corpus.PhaseGeneration, Key: "mixed.read/latency-budget",
+						Want: "ceiling", Got: "absent",
+					},
+					{
+						Fixture: ttl, Phase: corpus.PhaseDeclaration, Key: "mixed.read/latency-budget",
+						Want: "the declared difference from ceiling to absent", Got: "none",
+					},
+				},
+			},
+			{
+				name: "reports a refusal whose entry has the stance blocked",
+				give: func(_ *corpus.Expectation, o *corpus.Outcome, overlay *corpus.Overlay) {
+					refuseCancel(o, spec.Cancellation)
+					overlay.Diverge = []corpus.Entry{{
+						Fixture: ttl, Key: "mixed.read/cancel", Expect: "check", Actual: "refused",
+						Gate: spec.Cancellation, Stance: spec.Blocked, Why: "a call of the language takes no context",
+					}}
+				},
+				want: []corpus.Finding{
+					{
+						Fixture: ttl, Phase: corpus.PhaseGeneration, Key: "mixed.read/cancel",
+						Want: "check of cancel", Got: "refused by cancellation",
+					},
+					{
+						Fixture: ttl, Phase: corpus.PhaseDeclaration, Key: "mixed.read/cancel",
+						Want: "the declared difference from check to refused by cancellation", Got: "none",
+					},
+				},
 			},
 			{
 				name: "reports an entry whose outcome meets the expectation",

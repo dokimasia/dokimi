@@ -77,7 +77,9 @@ type difference struct {
 }
 
 // declares reports whether e declares the difference d of fixture. An entry
-// with the stance blocked and no key declares the missing fixture.
+// with the stance blocked and no key declares the missing fixture. An entry
+// with the actual outcome absent and the stance blocked declares a missing
+// key, such as a ceiling that the runtime of the language cannot check.
 func (e *Entry) declares(fixture string, d *difference) bool {
 	if e.Fixture != fixture || e.Key != d.key {
 		return false
@@ -85,7 +87,9 @@ func (e *Entry) declares(fixture string, d *difference) bool {
 	if d.key == "" {
 		return e.Stance == spec.Blocked
 	}
-	return e.Expect == d.want.kind && e.Actual == d.got.kind && e.Gate == d.got.gate && e.Stance == d.got.stance
+	blocked := d.got.kind == kindAbsent && e.Stance == spec.Blocked
+	return e.Expect == d.want.kind && e.Actual == d.got.kind && e.Gate == d.got.gate &&
+		(e.Stance == d.got.stance || blocked)
 }
 
 // Judge returns the findings of each fixture of expected whose level is at

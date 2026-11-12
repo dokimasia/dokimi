@@ -35,10 +35,6 @@ describe("PointStub", () => {
         name: "keeps each property of a double with a latency",
         giveDouble: () => new PointStub(undefined, PointStub.withLatency(1)),
       },
-      {
-        name: "keeps each property of a delayed double",
-        giveDouble: () => PointStub.newDelayed(undefined, 1, new Controlled()),
-      },
     ];
     for (const tt of tests) {
       it(tt.name, () => {
@@ -80,10 +76,6 @@ describe("BoxStub", () => {
       {
         name: "keeps each property of a double with a latency",
         giveDouble: () => new BoxStub<unknown>(undefined, BoxStub.withLatency<unknown>(1)),
-      },
-      {
-        name: "keeps each property of a delayed double",
-        giveDouble: () => BoxStub.newDelayed<unknown>(undefined, 1, new Controlled()),
       },
     ];
     for (const tt of tests) {

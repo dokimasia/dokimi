@@ -1,8 +1,8 @@
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity, check } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { ClockStub } from "./clock.stub";
+import { type ClockEveryCall, type ClockNowCall, type ClockStopperCall, ClockStub } from "./clock.stub";
 
 /** Calls now of double with the samples of its arguments. */
 function clockStubNow(double: ClockStub): number {
@@ -14,6 +14,35 @@ function clockStubNowPin(): number {
   let want0: number;
   want0 = 1.5;
   return want0;
+}
+
+/** Returns the subject of behaviour and resetBehaviour for now, on a new double that reports to seat. */
+function clockStubNowSubject(seat: Seat): Subject<ClockNowCall, number | undefined> {
+  const double = new ClockStub(seat);
+  return {
+    stub: double.onNow,
+    call: () => clockStubNow(double),
+    reset: () => double.resetCalls(),
+    result: async () => clockStubNow(double),
+    returns: () => {
+      const want = clockStubNowPin();
+      double.onNow.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onNow.func(() => {
+        seen({} as ClockNowCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => clockStubNow(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /** Returns the samples of the arguments of every. An argument without a sample is undefined. */
@@ -28,193 +57,109 @@ function clockStubEvery(double: ClockStub): void {
   return double.every(args[0]);
 }
 
+/** Returns the subject of behaviour and resetBehaviour for every, on a new double that reports to seat. */
+function clockStubEverySubject(seat: Seat): Subject<ClockEveryCall, undefined> {
+  const double = new ClockStub(seat);
+  return {
+    stub: double.onEvery,
+    call: () => clockStubEvery(double),
+    reset: () => double.resetCalls(),
+    arguments: (s, c) => {
+      const args = clockStubEveryArgs();
+      check.isEqualTo(s, c.fn, args[0], "the call records fn");
+    },
+    override: (seen) => {
+      double.onEvery.func((...received: unknown[]) => {
+        seen({ fn: received[0] } as ClockEveryCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => clockStubEvery(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Calls stopper of double with the samples of its arguments. */
 function clockStubStopper(double: ClockStub): () => void {
   return double.stopper();
 }
 
+/** Returns the subject of behaviour and resetBehaviour for stopper, on a new double that reports to seat. */
+function clockStubStopperSubject(seat: Seat): Subject<ClockStopperCall, (() => void) | undefined> {
+  const double = new ClockStub(seat);
+  return {
+    stub: double.onStopper,
+    call: () => clockStubStopper(double),
+    reset: () => double.resetCalls(),
+    result: async () => clockStubStopper(double),
+    override: (seen) => {
+      double.onStopper.func(() => {
+        seen({} as ClockStopperCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => clockStubStopper(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * now alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call now alone.
  */
 function clockStubInstance(double: ClockStub) {
   return {
     stub: double.onNow,
     call: () => clockStubNow(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("ClockStub", () => {
   describe("now", () => {
-    const checks = behaviour("Clock.now", (seat) => {
-      const double = new ClockStub(seat);
-      return {
-        stub: double.onNow,
-        call: () => clockStubNow(double),
-        override: (mark) => {
-          double.onNow.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Clock.now", clockStubNowSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ClockStub(undefined);
-      let seen = 0;
-      double.onNow.onRecord(() => {
-        seen += 1;
-      });
-      clockStubNow(double);
-      clockStubNow(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of now");
-    });
   });
 
   describe("every", () => {
-    const checks = behaviour("Clock.every", (seat) => {
-      const double = new ClockStub(seat);
-      return {
-        stub: double.onEvery,
-        call: () => clockStubEvery(double),
-        override: (mark) => {
-          double.onEvery.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Clock.every", clockStubEverySubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("records the arguments of the call", async () => {
-      const double = new ClockStub(undefined);
-      clockStubEvery(double);
-      expect(double.onEvery.callCount).isEqualTo(1, "every records the call");
-      const got = double.onEvery.calls[0];
-      const args = clockStubEveryArgs();
-      expect(got?.fn).isEqualTo(args[0], "the call records fn");
-    });
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ClockStub(undefined);
-      let seen = 0;
-      double.onEvery.onRecord(() => {
-        seen += 1;
-      });
-      clockStubEvery(double);
-      clockStubEvery(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of every");
-    });
   });
 
   describe("stopper", () => {
-    const checks = behaviour("Clock.stopper", (seat) => {
-      const double = new ClockStub(seat);
-      return {
-        stub: double.onStopper,
-        call: () => clockStubStopper(double),
-        override: (mark) => {
-          double.onStopper.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Clock.stopper", clockStubStopperSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ClockStub(undefined);
-      let seen = 0;
-      double.onStopper.onRecord(() => {
-        seen += 1;
-      });
-      clockStubStopper(double);
-      clockStubStopper(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of stopper");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => clockStubInstance(new ClockStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of now", async () => {
-      const double = new ClockStub(undefined);
-      clockStubNow(double);
-      double.resetCalls();
-      expect(double.onNow.callCount).isEqualTo(0, "resetCalls clears the calls of now");
+    describe("now", () => {
+      for (const c of resetBehaviour("Clock.now", clockStubNowSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("keeps the result of returns of now", async () => {
-      const double = new ClockStub(undefined);
-      const want = clockStubNowPin();
-      double.onNow.returns(want);
-      double.resetCalls();
-      expect(clockStubNow(double)).isEqualTo(want, "resetCalls keeps the result of now");
+    describe("every", () => {
+      for (const c of resetBehaviour("Clock.every", clockStubEverySubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of every", async () => {
-      const double = new ClockStub(undefined);
-      clockStubEvery(double);
-      double.resetCalls();
-      expect(double.onEvery.callCount).isEqualTo(0, "resetCalls clears the calls of every");
-    });
-
-    it("clears the recorded calls of stopper", async () => {
-      const double = new ClockStub(undefined);
-      clockStubStopper(double);
-      double.resetCalls();
-      expect(double.onStopper.callCount).isEqualTo(0, "resetCalls clears the calls of stopper");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => clockStubInstance(ClockStub.newDelayed(seat, duration, clock)),
-      false,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails now with its error", async () => {
-      const want = new Error("now-failing");
-      const double = ClockStub.newFailing(undefined, want);
-      const outcome = await settle(() => clockStubNow(double));
-      const message = "now fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails every with its error", async () => {
-      const want = new Error("every-failing");
-      const double = ClockStub.newFailing(undefined, want);
-      const outcome = await settle(() => clockStubEvery(double));
-      const message = "every fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails stopper with its error", async () => {
-      const want = new Error("stopper-failing");
-      const double = ClockStub.newFailing(undefined, want);
-      const outcome = await settle(() => clockStubStopper(double));
-      const message = "stopper fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("stopper", () => {
+      for (const c of resetBehaviour("Clock.stopper", clockStubStopperSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -371,55 +316,6 @@ describe("ClockStub", () => {
       });
       clockStubStopper(new ClockStub(undefined, option));
       expect(called).isTrue("withClockStopper sets the function of stopper");
-    });
-  });
-});
-
-describe("ClockNowStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of now", async () => {
-      const double = new ClockStub(undefined);
-      const want = clockStubNowPin();
-      double.onNow.returns(want);
-      expect(clockStubNow(double)).isEqualTo(want, "now returns the result that returns sets");
-    });
-
-    it("configures now for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new ClockStub(failures);
-      double.onNow.strict();
-      double.onNow.returns(undefined as never);
-      await settle(() => clockStubNow(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of now");
-    });
-  });
-});
-
-describe("ClockEveryStub", () => {
-  describe("func", () => {
-    it("passes the arguments of each call of every to the function", async () => {
-      const double = new ClockStub(undefined);
-      let got: unknown[] = [];
-      double.onEvery.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      clockStubEvery(double);
-      const args = clockStubEveryArgs();
-      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
-    });
-  });
-});
-
-describe("ClockStopperStub", () => {
-  describe("returns", () => {
-    it("configures stopper for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new ClockStub(failures);
-      double.onStopper.strict();
-      double.onStopper.returns(undefined as never);
-      await settle(() => clockStubStopper(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of stopper");
     });
   });
 });

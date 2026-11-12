@@ -14,9 +14,14 @@ The test imports each double from the module of its file without the suffix
 {{- $double := printf "%s%s" $stub $wa}}
 {{- use $module $stub}}
 {{- if $c.Methods}}{{use "@dokimi/assert" "byIdentity"}}{{use "@dokimi/assert" "Standard"}}
-{{- use "@dokimi/runtime/stub/behaviour" "behaviour"}}{{use "@dokimi/runtime/stub/behaviour" "settle"}}
+{{- use "@dokimi/runtime/stub/behaviour" "behaviour"}}{{use "@dokimi/runtime/stub/behaviour" "resetBehaviour"}}
+{{- use "@dokimi/runtime/stub/behaviour" "settle"}}
+{{- $seat := spell (stubType "Seat" "@dokimi/assert")}}
+{{- $subject := spell (stubType "Subject" "@dokimi/runtime/stub/behaviour")}}
 {{- range $i, $m := $c.Methods}}
 {{- $helper := printf "%s%s" (stubCamel $stub) (stubPascal $m.Name)}}
+{{- $call := printf "%s%s" (spell (stubType $m.Call $module)) (typeargs $m.TypeParams)}}
+{{- $result := "undefined"}}{{with $m.Returns}}{{$result = spell (stubOptional (index . 0).Type)}}{{end}}
 {{- if $m.Params}}
 
 /** Returns the samples of the arguments of {{$m.Name}}. An argument without a sample is undefined. */
@@ -47,6 +52,52 @@ function {{$helper}}Pin(): {{spell (index $m.Returns 0).Type}} {
 {{body (index $t.Methods.Items $m.Pins)}}  return want0;
 }
 {{- end}}
+
+/** Returns the subject of behaviour and resetBehaviour for {{$m.Name}}, on a new double that reports to seat. */
+function {{$helper}}Subject{{$tp}}(seat: {{$seat}}): {{$subject}}<{{$call}}, {{$result}}> {
+  const double = new {{$stub}}{{$ta}}(seat);
+  return {
+    stub: double.{{$m.Field}},
+    call: () => {{$helper}}(double),
+    reset: () => double.resetCalls(),
+{{- if $m.Params}}{{use "@dokimi/assert" "check"}}
+    arguments: (s, c) => {
+      const args = {{$helper}}Args{{typeargs $m.ArgTypeParams}}();
+{{- range $j, $p := $m.Params}}
+      check.isEqualTo(s, c.{{$p.Field}}, args[{{$j}}], "the call records {{$p.Field}}");
+{{- end}}
+    },
+{{- end}}
+{{- if $m.Returns}}
+    result: async () => {{if $m.Async}}await {{end}}{{$helper}}(double),
+{{- with (index $m.Returns 0).Default}}
+    default: () => {{spellvalue (stubRef $t .Ref)}}.{{.Seed}}{{typeargs .Args}}().build(),
+{{- end}}
+{{- if $m.Pinnable}}
+    returns: () => {
+      const want = {{$helper}}Pin();
+      double.{{$m.Field}}.returns(want);
+      return want;
+    },
+{{- end}}
+{{- end}}
+    override: (seen) => {
+      double.{{$m.Field}}.func({{if $m.Params}}(...received: unknown[]){{else}}(){{end}} => {
+        seen({ {{- range $j, $p := $m.Params}}{{if $j}},{{end}} {{$p.Field}}: {{if $p.Variadic}}received.slice({{$j}}){{else}}received[{{$j}}]{{end}}{{end}}{{if $m.Params}} {{end}}} as {{$call}});
+        return undefined as never;
+      });
+    },
+{{- if $m.Fails}}
+    fails: async () => {
+      const outcome = await settle(() => {{$helper}}(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+{{- end}}
+  };
+}
 {{- end}}
 {{- $pick := 0}}{{$found := false}}
 {{- range $i, $m := $c.Methods}}{{if and $m.Async (not $found)}}{{$pick = $i}}{{$found = true}}{{end}}{{end}}
@@ -54,130 +105,40 @@ function {{$helper}}Pin(): {{spell (index $m.Returns 0).Type}} {
 {{- $instance := printf "%sInstance" (stubCamel $stub)}}
 
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * {{$p.Name}} alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call {{$p.Name}} alone.
  */
 function {{$instance}}(double: {{$double}}) {
   return {
     stub: double.{{$p.Field}},
     call: () => {{stubCamel $stub}}{{stubPascal $p.Name}}(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("{{$stub}}", () => {
 {{- range $i, $m := $c.Methods}}
 {{- $helper := printf "%s%s" (stubCamel $stub) (stubPascal $m.Name)}}
-{{- $await := ""}}{{if $m.Async}}{{$await = "await "}}{{end}}
-{{- $check := "expect"}}{{if gt (len $m.Params) 1}}{{$check = "expect.soft"}}{{end}}
 {{- if $i}}
 {{end}}
   describe("{{$m.Name}}", () => {
-    const checks = behaviour("{{$m.Qualified}}", (seat) => {
-      const double = new {{$double}}(seat);
-      return {
-        stub: double.{{$m.Field}},
-        call: () => {{$helper}}(double),
-        override: (mark) => {
-          double.{{$m.Field}}.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-{{- with $m.Returns}}{{with (index . 0).Default}}
-        default: () => {{spellvalue (stubRef $t .Ref)}}.{{.Seed}}{{typeargs .Args}}().build(),
-{{- end}}{{end}}
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("{{$m.Qualified}}", {{$helper}}Subject{{$wa}})) {
       it(c.name, () => c.run(new Standard()));
     }
-{{- if $m.Params}}
-
-    it("records the arguments of the call", async () => {
-      const double = new {{$double}}(undefined);
-      {{$await}}{{$helper}}(double);
-      expect(double.{{$m.Field}}.callCount).isEqualTo(1, "{{$m.Name}} records the call");
-      const got = double.{{$m.Field}}.calls[0];
-      const args = {{$helper}}Args{{typeargs $m.ArgWitnesses}}();
-{{- range $j, $p := $m.Params}}
-      {{$check}}(got?.{{$p.Field}}).isEqualTo(args[{{$j}}], "the call records {{$p.Field}}");
-{{- end}}
-    });
-{{- end}}
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new {{$double}}(undefined);
-      let seen = 0;
-      double.{{$m.Field}}.onRecord(() => {
-        seen += 1;
-      });
-      {{$await}}{{$helper}}(double);
-      {{$await}}{{$helper}}(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of {{$m.Name}}");
-    });
   });
 {{- end}}
-{{- use "@dokimi/runtime/stub/double-behaviour" "resetBehaviour"}}
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => {{$instance}}(new {{$double}}(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
 {{- range $i, $m := $c.Methods}}
-{{- $helper := printf "%s%s" (stubCamel $stub) (stubPascal $m.Name)}}
-{{- $await := ""}}{{if $m.Async}}{{$await = "await "}}{{end}}
-
-    it("clears the recorded calls of {{$m.Name}}", async () => {
-      const double = new {{$double}}(undefined);
-      {{$await}}{{$helper}}(double);
-      double.resetCalls();
-      expect(double.{{$m.Field}}.callCount).isEqualTo(0, "resetCalls clears the calls of {{$m.Name}}");
-    });
-{{- if $m.Pinnable}}
-
-    it("keeps the result of returns of {{$m.Name}}", async () => {
-      const double = new {{$double}}(undefined);
-      const want = {{$helper}}Pin();
-      double.{{$m.Field}}.returns(want);
-      double.resetCalls();
-      expect({{$await}}{{$helper}}(double)).isEqualTo(want, "resetCalls keeps the result of {{$m.Name}}");
-    });
-{{- end}}
-{{- end}}
-  });
-{{- use "@dokimi/runtime/stub/double-behaviour" "latencyBehaviour"}}
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => {{$instance}}({{$stub}}.newDelayed{{$wa}}(seat, duration, clock)),
-      {{$p.Async}},
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-{{- if $c.Fallible}}
-
-  describe("newFailing", () => {
-{{- range $i, $m := $c.Methods}}
-{{- if $m.Fails}}
 {{- $helper := printf "%s%s" (stubCamel $stub) (stubPascal $m.Name)}}
 {{- if $i}}
 {{end}}
-    it("fails {{$m.Name}} with its error", async () => {
-      const want = new Error("{{$m.Name}}-failing");
-      const double = {{$stub}}.newFailing{{$wa}}(undefined, want);
-      const outcome = await settle(() => {{$helper}}(double));
-      const message = "{{$m.Name}} fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("{{$m.Name}}", () => {
+      for (const c of resetBehaviour("{{$m.Qualified}}", {{$helper}}Subject{{$wa}})) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 {{- end}}
-{{- end}}
   });
-{{- end}}
 {{- use "@dokimi/runtime/stub/double-behaviour" "strictBehaviour"}}
 
   describe("strict", () => {
@@ -251,6 +212,7 @@ describe("{{$stub}}", () => {
       it(c.name, () => c.run(new Standard()));
     }
   });
+{{- use "@dokimi/runtime/stub/double-behaviour" "latencyBehaviour"}}
 
   describe("withLatency", () => {
     const checks = latencyBehaviour(
@@ -300,57 +262,12 @@ describe("{{$stub}}", () => {
 {{- end}}
 });
 {{- range $i, $m := $c.Methods}}
-{{- if or $m.Returns $m.Params}}
+{{- if or $m.Sequence $m.Errors $m.Retry (ge $m.Partition 0)}}
 {{- $helper := printf "%s%s" (stubCamel $stub) (stubPascal $m.Name)}}
-{{- $await := ""}}{{if $m.Async}}{{$await = "await "}}{{end}}
+{{- $sections := 0}}
 
 describe("{{$m.Stub}}", () => {
-{{- if $m.Returns}}
-  describe("returns", () => {
-{{- if $m.Pinnable}}
-    it("sets the result of each call of {{$m.Name}}", async () => {
-      const double = new {{$double}}(undefined);
-      const want = {{$helper}}Pin();
-{{- with (index $m.Returns 0).Default}}
-      const unset = {{spellvalue (stubRef $t .Ref)}}.{{.Seed}}{{typeargs .Args}}().build();
-      expect(want).isNotEqualTo(unset, "the sample of the result differs from its default result");
-{{- end}}
-      double.{{$m.Field}}.returns(want);
-      expect({{$await}}{{$helper}}(double)).isEqualTo(want, "{{$m.Name}} returns the result that returns sets");
-    });
-{{- end}}
-{{- use "@dokimi/assert" "Recorder"}}
-{{- if $m.Pinnable}}
-{{end}}
-    it("configures {{$m.Name}} for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new {{$double}}(failures);
-      double.{{$m.Field}}.strict();
-      double.{{$m.Field}}.returns(undefined as never);
-      await settle(() => {{$helper}}(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of {{$m.Name}}");
-    });
-  });
-{{- end}}
-{{- if $m.Params}}
-{{- if $m.Returns}}
-{{end}}
-  describe("func", () => {
-    it("passes the arguments of each call of {{$m.Name}} to the function", async () => {
-      const double = new {{$double}}(undefined);
-      let got: unknown[] = [];
-      double.{{$m.Field}}.func((...received: unknown[]) => {
-        got = received;
-        return undefined as never;
-      });
-      {{$await}}{{$helper}}(double);
-      const args = {{$helper}}Args{{typeargs $m.ArgWitnesses}}();
-      expect(got).isEqualTo([{{template "stub.ts.callargs" $m}}], "the function receives the arguments of the call");
-    });
-  });
-{{- end}}
-{{- if $m.Sequence}}
-
+{{- if $m.Sequence}}{{$sections = 1}}
   describe("yields", () => {
     it("yields each item", async () => {
       const double = new {{$double}}(undefined);
@@ -375,7 +292,8 @@ describe("{{$m.Stub}}", () => {
   });
 {{- end}}
 {{- range $m.Errors}}
-
+{{- if $sections}}
+{{end}}{{$sections = 1}}
   describe("{{.Helper}}", () => {
     it("fails the next call of {{$m.Name}} with {{.Name}}", async () => {
       const double = new {{$double}}(undefined);
@@ -395,7 +313,8 @@ describe("{{$m.Stub}}", () => {
   });
 {{- end}}
 {{- if $m.Retry}}
-
+{{- if $sections}}
+{{end}}{{$sections = 1}}
   describe("retrySchedule", () => {
     it("fails each call of {{$m.Name}} before call {{$m.Retry}}", async () => {
       const double = new {{$double}}(undefined);
@@ -420,7 +339,8 @@ describe("{{$m.Stub}}", () => {
   });
 {{- end}}
 {{- if ge $m.Partition 0}}
-
+{{- if $sections}}
+{{end}}
   describe("faultForPartition", () => {
     it("fails a call of {{$m.Name}} in the partition of the key", async () => {
       const double = new {{$double}}(undefined);
@@ -482,10 +402,6 @@ describe("{{$stub}}", () => {
       {
         name: "keeps each property of a double with a latency",
         giveDouble: () => new {{$double}}(undefined, {{$stub}}.withLatency{{$wa}}(1)),
-      },
-      {
-        name: "keeps each property of a delayed double",
-        giveDouble: () => {{$stub}}.newDelayed{{$wa}}(undefined, 1, new Controlled()),
       },
     ];
     for (const tt of tests) {

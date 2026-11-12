@@ -103,30 +103,6 @@ export class PointStub implements Point {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: PointStubOption[]
-  ): PointStub {
-    return new PointStub(
-      seat,
-      PointStub.withClock(clock),
-      PointStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -229,30 +205,6 @@ export class BoxStub<T> implements Box<T> {
     return (double) => {
       double.#group.setLatency(duration);
     };
-  }
-
-  /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed<T>(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: BoxStubOption<T>[]
-  ): BoxStub<T> {
-    return new BoxStub<T>(
-      seat,
-      BoxStub.withClock<T>(clock),
-      BoxStub.withLatency<T>(duration),
-      ...options,
-    );
   }
 
   /**

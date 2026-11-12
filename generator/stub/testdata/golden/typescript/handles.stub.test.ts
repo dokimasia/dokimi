@@ -1,90 +1,62 @@
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
 import type { Cursor } from "./handles";
-import { CursorStub, ProducerStub } from "./handles.stub";
+import { type CursorCloseCall, type CursorNextCall, CursorStub, type ProducerOpenCall, ProducerStub } from "./handles.stub";
 
 /** Calls open of double with the samples of its arguments. */
 function producerStubOpen(double: ProducerStub): Promise<Cursor> {
   return double.open();
 }
 
+/** Returns the subject of behaviour and resetBehaviour for open, on a new double that reports to seat. */
+function producerStubOpenSubject(seat: Seat): Subject<ProducerOpenCall, Cursor | undefined> {
+  const double = new ProducerStub(seat);
+  return {
+    stub: double.onOpen,
+    call: () => producerStubOpen(double),
+    reset: () => double.resetCalls(),
+    result: async () => await producerStubOpen(double),
+    override: (seen) => {
+      double.onOpen.func(() => {
+        seen({} as ProducerOpenCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => producerStubOpen(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * open alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call open alone.
  */
 function producerStubInstance(double: ProducerStub) {
   return {
     stub: double.onOpen,
     call: () => producerStubOpen(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("ProducerStub", () => {
   describe("open", () => {
-    const checks = behaviour("Producer.open", (seat) => {
-      const double = new ProducerStub(seat);
-      return {
-        stub: double.onOpen,
-        call: () => producerStubOpen(double),
-        override: (mark) => {
-          double.onOpen.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Producer.open", producerStubOpenSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new ProducerStub(undefined);
-      let seen = 0;
-      double.onOpen.onRecord(() => {
-        seen += 1;
-      });
-      await producerStubOpen(double);
-      await producerStubOpen(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of open");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => producerStubInstance(new ProducerStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of open", async () => {
-      const double = new ProducerStub(undefined);
-      await producerStubOpen(double);
-      double.resetCalls();
-      expect(double.onOpen.callCount).isEqualTo(0, "resetCalls clears the calls of open");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => producerStubInstance(ProducerStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails open with its error", async () => {
-      const want = new Error("open-failing");
-      const double = ProducerStub.newFailing(undefined, want);
-      const outcome = await settle(() => producerStubOpen(double));
-      const message = "open fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("open", () => {
+      for (const c of resetBehaviour("Producer.open", producerStubOpenSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -173,19 +145,6 @@ describe("ProducerStub", () => {
   });
 });
 
-describe("ProducerOpenStub", () => {
-  describe("returns", () => {
-    it("configures open for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new ProducerStub(failures);
-      double.onOpen.strict();
-      double.onOpen.returns(undefined as never);
-      await settle(() => producerStubOpen(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of open");
-    });
-  });
-});
-
 /** Calls next of double with the samples of its arguments. */
 function cursorStubNext(double: CursorStub): Promise<string> {
   return double.next();
@@ -198,139 +157,98 @@ function cursorStubNextPin(): string {
   return want0;
 }
 
+/** Returns the subject of behaviour and resetBehaviour for next, on a new double that reports to seat. */
+function cursorStubNextSubject(seat: Seat): Subject<CursorNextCall, string | undefined> {
+  const double = new CursorStub(seat);
+  return {
+    stub: double.onNext,
+    call: () => cursorStubNext(double),
+    reset: () => double.resetCalls(),
+    result: async () => await cursorStubNext(double),
+    returns: () => {
+      const want = cursorStubNextPin();
+      double.onNext.returns(want);
+      return want;
+    },
+    override: (seen) => {
+      double.onNext.func(() => {
+        seen({} as CursorNextCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => cursorStubNext(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /** Calls close of double with the samples of its arguments. */
 function cursorStubClose(double: CursorStub): void {
   return double.close();
 }
 
+/** Returns the subject of behaviour and resetBehaviour for close, on a new double that reports to seat. */
+function cursorStubCloseSubject(seat: Seat): Subject<CursorCloseCall, undefined> {
+  const double = new CursorStub(seat);
+  return {
+    stub: double.onClose,
+    call: () => cursorStubClose(double),
+    reset: () => double.resetCalls(),
+    override: (seen) => {
+      double.onClose.func(() => {
+        seen({} as CursorCloseCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => cursorStubClose(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * next alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call next alone.
  */
 function cursorStubInstance(double: CursorStub) {
   return {
     stub: double.onNext,
     call: () => cursorStubNext(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("CursorStub", () => {
   describe("next", () => {
-    const checks = behaviour("Cursor.next", (seat) => {
-      const double = new CursorStub(seat);
-      return {
-        stub: double.onNext,
-        call: () => cursorStubNext(double),
-        override: (mark) => {
-          double.onNext.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Cursor.next", cursorStubNextSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new CursorStub(undefined);
-      let seen = 0;
-      double.onNext.onRecord(() => {
-        seen += 1;
-      });
-      await cursorStubNext(double);
-      await cursorStubNext(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of next");
-    });
   });
 
   describe("close", () => {
-    const checks = behaviour("Cursor.close", (seat) => {
-      const double = new CursorStub(seat);
-      return {
-        stub: double.onClose,
-        call: () => cursorStubClose(double),
-        override: (mark) => {
-          double.onClose.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Cursor.close", cursorStubCloseSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new CursorStub(undefined);
-      let seen = 0;
-      double.onClose.onRecord(() => {
-        seen += 1;
-      });
-      cursorStubClose(double);
-      cursorStubClose(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of close");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => cursorStubInstance(new CursorStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of next", async () => {
-      const double = new CursorStub(undefined);
-      await cursorStubNext(double);
-      double.resetCalls();
-      expect(double.onNext.callCount).isEqualTo(0, "resetCalls clears the calls of next");
+    describe("next", () => {
+      for (const c of resetBehaviour("Cursor.next", cursorStubNextSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("keeps the result of returns of next", async () => {
-      const double = new CursorStub(undefined);
-      const want = cursorStubNextPin();
-      double.onNext.returns(want);
-      double.resetCalls();
-      expect(await cursorStubNext(double)).isEqualTo(want, "resetCalls keeps the result of next");
-    });
-
-    it("clears the recorded calls of close", async () => {
-      const double = new CursorStub(undefined);
-      cursorStubClose(double);
-      double.resetCalls();
-      expect(double.onClose.callCount).isEqualTo(0, "resetCalls clears the calls of close");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => cursorStubInstance(CursorStub.newDelayed(seat, duration, clock)),
-      true,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails next with its error", async () => {
-      const want = new Error("next-failing");
-      const double = CursorStub.newFailing(undefined, want);
-      const outcome = await settle(() => cursorStubNext(double));
-      const message = "next fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails close with its error", async () => {
-      const want = new Error("close-failing");
-      const double = CursorStub.newFailing(undefined, want);
-      const outcome = await settle(() => cursorStubClose(double));
-      const message = "close fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("close", () => {
+      for (const c of resetBehaviour("Cursor.close", cursorStubCloseSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -451,26 +369,6 @@ describe("CursorStub", () => {
       });
       cursorStubClose(new CursorStub(undefined, option));
       expect(called).isTrue("withCursorClose sets the function of close");
-    });
-  });
-});
-
-describe("CursorNextStub", () => {
-  describe("returns", () => {
-    it("sets the result of each call of next", async () => {
-      const double = new CursorStub(undefined);
-      const want = cursorStubNextPin();
-      double.onNext.returns(want);
-      expect(await cursorStubNext(double)).isEqualTo(want, "next returns the result that returns sets");
-    });
-
-    it("configures next for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new CursorStub(failures);
-      double.onNext.strict();
-      double.onNext.returns(undefined as never);
-      await settle(() => cursorStubNext(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of next");
     });
   });
 });

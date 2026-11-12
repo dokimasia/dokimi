@@ -505,47 +505,6 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: StoreStubOption[]
-  ): StoreStub {
-    return new StoreStub(
-      seat,
-      StoreStub.withClock(clock),
-      StoreStub.withLatency(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: StoreStubOption[]
-  ): StoreStub {
-    return new StoreStub(seat, StoreStub.failing(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -690,30 +649,6 @@ export class ItemStub implements Item {
     return (double) => {
       double.#group.setLatency(duration);
     };
-  }
-
-  /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: ItemStubOption[]
-  ): ItemStub {
-    return new ItemStub(
-      seat,
-      ItemStub.withClock(clock),
-      ItemStub.withLatency(duration),
-      ...options,
-    );
   }
 
   /**
@@ -921,47 +856,6 @@ export class RepoStub<T> implements Repo<T> {
   }
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed<T>(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: RepoStubOption<T>[]
-  ): RepoStub<T> {
-    return new RepoStub<T>(
-      seat,
-      RepoStub.withClock<T>(clock),
-      RepoStub.withLatency<T>(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing<T>(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: RepoStubOption<T>[]
-  ): RepoStub<T> {
-    return new RepoStub<T>(seat, RepoStub.failing<T>(error), ...options);
-  }
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */
@@ -1152,47 +1046,6 @@ export class WrapStub<T$> implements Wrap<T$> {
     return (double) => {
       double.onPut.func(fn);
     };
-  }
-
-  /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed<T$>(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: WrapStubOption<T$>[]
-  ): WrapStub<T$> {
-    return new WrapStub<T$>(
-      seat,
-      WrapStub.withClock<T$>(clock),
-      WrapStub.withLatency<T$>(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing<T$>(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: WrapStubOption<T$>[]
-  ): WrapStub<T$> {
-    return new WrapStub<T$>(seat, WrapStub.failing<T$>(error), ...options);
   }
 
   /**
@@ -1480,47 +1333,6 @@ export class TableStub<K, V> implements Table<K, V> {
     return (double) => {
       double.onSize.func(fn);
     };
-  }
-
-  /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed<K, V>(
-    seat: Seat | undefined,
-    duration: number,
-    clock: Clock,
-    ...options: TableStubOption<K, V>[]
-  ): TableStub<K, V> {
-    return new TableStub<K, V>(
-      seat,
-      TableStub.withClock<K, V>(clock),
-      TableStub.withLatency<K, V>(duration),
-      ...options,
-    );
-  }
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing<K, V>(
-    seat: Seat | undefined,
-    error: unknown,
-    ...options: TableStubOption<K, V>[]
-  ): TableStub<K, V> {
-    return new TableStub<K, V>(seat, TableStub.failing<K, V>(error), ...options);
   }
 
   /**

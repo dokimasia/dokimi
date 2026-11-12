@@ -1,12 +1,36 @@
-import { Recorder, Standard, byIdentity } from "@dokimi/assert";
-import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
-import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { type Seat, Standard, byIdentity } from "@dokimi/assert";
+import { type Subject, behaviour, resetBehaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
 import { describe, expect, it } from "vitest";
-import { FeedStub } from "./stream.stub";
+import { type FeedNamesCall, type FeedRowsCall, FeedStub } from "./stream.stub";
 
 /** Calls names of double with the samples of its arguments. */
 function feedStubNames(double: FeedStub): Iterable<string> {
   return double.names();
+}
+
+/** Returns the subject of behaviour and resetBehaviour for names, on a new double that reports to seat. */
+function feedStubNamesSubject(seat: Seat): Subject<FeedNamesCall, Iterable<string> | undefined> {
+  const double = new FeedStub(seat);
+  return {
+    stub: double.onNames,
+    call: () => feedStubNames(double),
+    reset: () => double.resetCalls(),
+    result: async () => feedStubNames(double),
+    override: (seen) => {
+      double.onNames.func(() => {
+        seen({} as FeedNamesCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => feedStubNames(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
 }
 
 /** Calls rows of double with the samples of its arguments. */
@@ -14,126 +38,65 @@ function feedStubRows(double: FeedStub): AsyncIterable<number> {
   return double.rows();
 }
 
+/** Returns the subject of behaviour and resetBehaviour for rows, on a new double that reports to seat. */
+function feedStubRowsSubject(seat: Seat): Subject<FeedRowsCall, AsyncIterable<number> | undefined> {
+  const double = new FeedStub(seat);
+  return {
+    stub: double.onRows,
+    call: () => feedStubRows(double),
+    reset: () => double.resetCalls(),
+    result: async () => feedStubRows(double),
+    override: (seen) => {
+      double.onRows.func(() => {
+        seen({} as FeedRowsCall);
+        return undefined as never;
+      });
+    },
+    fails: async () => {
+      const outcome = await settle(() => feedStubRows(double));
+      if (outcome.threw) {
+        return outcome.error;
+      }
+      return undefined;
+    },
+  };
+}
+
 /**
- * Returns the instance of double that the checks of the constructors and the
- * options drive. The options apply to the whole double, so the checks call
- * names alone.
+ * Returns the instance of double that the checks of the options drive. The
+ * options apply to the whole double, so the checks call names alone.
  */
 function feedStubInstance(double: FeedStub) {
   return {
     stub: double.onNames,
     call: () => feedStubNames(double),
-    reset: () => double.resetCalls(),
   };
 }
 
 describe("FeedStub", () => {
   describe("names", () => {
-    const checks = behaviour("Feed.names", (seat) => {
-      const double = new FeedStub(seat);
-      return {
-        stub: double.onNames,
-        call: () => feedStubNames(double),
-        override: (mark) => {
-          double.onNames.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Feed.names", feedStubNamesSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new FeedStub(undefined);
-      let seen = 0;
-      double.onNames.onRecord(() => {
-        seen += 1;
-      });
-      feedStubNames(double);
-      feedStubNames(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of names");
-    });
   });
 
   describe("rows", () => {
-    const checks = behaviour("Feed.rows", (seat) => {
-      const double = new FeedStub(seat);
-      return {
-        stub: double.onRows,
-        call: () => feedStubRows(double),
-        override: (mark) => {
-          double.onRows.func(() => {
-            mark();
-            return undefined as never;
-          });
-        },
-      };
-    });
-    for (const c of checks) {
+    for (const c of behaviour("Feed.rows", feedStubRowsSubject)) {
       it(c.name, () => c.run(new Standard()));
     }
-
-    it("runs the onRecord hook once for each call", async () => {
-      const double = new FeedStub(undefined);
-      let seen = 0;
-      double.onRows.onRecord(() => {
-        seen += 1;
-      });
-      feedStubRows(double);
-      feedStubRows(double);
-      expect(seen).isEqualTo(2, "onRecord runs once for each call of rows");
-    });
   });
 
   describe("resetCalls", () => {
-    const checks = resetBehaviour((seat) => feedStubInstance(new FeedStub(seat)));
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-
-    it("clears the recorded calls of names", async () => {
-      const double = new FeedStub(undefined);
-      feedStubNames(double);
-      double.resetCalls();
-      expect(double.onNames.callCount).isEqualTo(0, "resetCalls clears the calls of names");
+    describe("names", () => {
+      for (const c of resetBehaviour("Feed.names", feedStubNamesSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
 
-    it("clears the recorded calls of rows", async () => {
-      const double = new FeedStub(undefined);
-      feedStubRows(double);
-      double.resetCalls();
-      expect(double.onRows.callCount).isEqualTo(0, "resetCalls clears the calls of rows");
-    });
-  });
-
-  describe("newDelayed", () => {
-    const checks = latencyBehaviour(
-      (seat, duration, clock) => feedStubInstance(FeedStub.newDelayed(seat, duration, clock)),
-      false,
-    );
-    for (const c of checks) {
-      it(c.name, () => c.run(new Standard()));
-    }
-  });
-
-  describe("newFailing", () => {
-    it("fails names with its error", async () => {
-      const want = new Error("names-failing");
-      const double = FeedStub.newFailing(undefined, want);
-      const outcome = await settle(() => feedStubNames(double));
-      const message = "names fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
-    });
-
-    it("fails rows with its error", async () => {
-      const want = new Error("rows-failing");
-      const double = FeedStub.newFailing(undefined, want);
-      const outcome = await settle(() => feedStubRows(double));
-      const message = "rows fails with the error of newFailing";
-      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    describe("rows", () => {
+      for (const c of resetBehaviour("Feed.rows", feedStubRowsSubject)) {
+        it(c.name, () => c.run(new Standard()));
+      }
     });
   });
 
@@ -258,31 +221,7 @@ describe("FeedStub", () => {
   });
 });
 
-describe("FeedNamesStub", () => {
-  describe("returns", () => {
-    it("configures names for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new FeedStub(failures);
-      double.onNames.strict();
-      double.onNames.returns(undefined as never);
-      await settle(() => feedStubNames(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of names");
-    });
-  });
-});
-
 describe("FeedRowsStub", () => {
-  describe("returns", () => {
-    it("configures rows for strict mode", async () => {
-      const failures = new Recorder();
-      const double = new FeedStub(failures);
-      double.onRows.strict();
-      double.onRows.returns(undefined as never);
-      await settle(() => feedStubRows(double));
-      expect(failures.failed).isFalse("strict mode accepts the call of rows");
-    });
-  });
-
   describe("yields", () => {
     it("yields each item", async () => {
       const double = new FeedStub(undefined);

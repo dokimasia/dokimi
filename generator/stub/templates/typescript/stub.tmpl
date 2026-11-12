@@ -337,49 +337,6 @@ export class {{$stub}}{{$tp}} implements {{spell $c.Value}} {
 {{- end}}
 
   /**
-   * Returns a double whose asynchronous methods wait duration on clock before
-   * they return. It applies options after the clock and the latency.
-   *
-   * @param seat - The seat of the test.
-   * @param duration - The latency, in milliseconds.
-   * @param clock - The clock.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newDelayed{{$tp}}(
-    seat: {{$seat}} | undefined,
-    duration: number,
-    clock: {{spell (stubType "Clock" "@dokimi/assert")}},
-    ...options: {{$stub}}Option{{$ta}}[]
-  ): {{$stub}}{{$ta}} {
-    return new {{$stub}}{{$ta}}(
-      seat,
-      {{$stub}}.withClock{{$ta}}(clock),
-      {{$stub}}.withLatency{{$ta}}(duration),
-      ...options,
-    );
-  }
-{{- if $c.Fallible}}
-
-  /**
-   * Returns a double on which each call of a method that can fail fails with
-   * error. It applies options after the failure.
-   *
-   * @param seat - The seat of the test.
-   * @param error - The error.
-   * @param options - The options.
-   * @returns The double.
-   */
-  static newFailing{{$tp}}(
-    seat: {{$seat}} | undefined,
-    error: unknown,
-    ...options: {{$stub}}Option{{$ta}}[]
-  ): {{$stub}}{{$ta}} {
-    return new {{$stub}}{{$ta}}(seat, {{$stub}}.failing{{$ta}}(error), ...options);
-  }
-{{- end}}
-
-  /**
    * Clears the recorded calls, the counters of the faults and the expected
    * counts. It keeps the functions, the fixed results and the faults.
    */

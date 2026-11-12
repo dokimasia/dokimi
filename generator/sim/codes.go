@@ -103,15 +103,18 @@ var BadFunction = diag.MustRegister(CodePrefix, diag.CodeSpec{
 // without a function or without the event of the failure, or a function with
 // a result and without a dependency. It also reports a dependency that is no
 // interface, the param ends beside a call, a dependency, a result, a timeout
-// or an end, and the param end without a dependency. It reports a call, a
-// dependency, an end event or an ended wait whose parameters, results, events
-// and tokens the fields of the effect and of the events do not bind. The world
-// cannot perform the effect, so the finding is an Error at the effect type,
-// and sim writes nothing for its interface.
+// or an end, and the param end without a dependency. It reports the param
+// scope without a dependency and without a call, and an effect whose scope
+// differs from the scope of an earlier effect of its dependency. It reports a
+// call, a dependency, an end event or an ended wait whose parameters, results,
+// events and tokens the fields of the effect and of the events do not bind.
+// The world cannot perform the effect, so the finding is an Error at the
+// effect type, and sim writes nothing for its interface.
 var BadPerform = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number: 9,
 	Meaning: "a directive perform names both a function and a call or neither, a call without a result, a " +
 		"dependency without a function or a result, a function with a result and without a dependency, a " +
 		"dependency that is no interface, the end of a wait beside a call or a result, an end event without a " +
-		"dependency, or a call, a dependency or an end that the effect and its events do not bind",
+		"dependency, a scope without a dependency, two scopes of one dependency, or a call, a dependency or an " +
+		"end that the effect and its events do not bind",
 })

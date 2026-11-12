@@ -292,6 +292,34 @@ func TestNew(t *testing.T) {
 			"the end of the term takes the token of the campaign, and has no error")
 	})
 
+	t.Run("records the scope of the dependency of each effect", func(t *testing.T) {
+		t.Parallel()
+
+		r := generateWithFaults(t, hostedPackage, hostedSimPackage)
+		expect.Empty(t, slices.Concat(slices.Collect(r.stamps.Sink.All()), slices.Collect(r.res.Sink.All())),
+			"the members have no finding")
+		m := r.models(t)["Machine"]
+		scopes := make([]string, 0, len(m.Performs))
+		for _, p := range m.Performs {
+			assert.NotNil(t, p.Dependency, "the effect "+p.Type.Spelling+" has a dependency")
+			scopes = append(scopes, p.Type.Spelling+" "+p.Dependency.Name+" "+p.Dependency.Scope)
+		}
+		expect.Equal(t, scopes, []string{
+			"Load hosted.Storage host", "Lookup hosted.Registry world", "Persist hosted.Storage host",
+		}, "the call and the function of the storage have the scope host, and the registry has the scope world")
+		expect.Equal(t, m.Hosted, []string{"hosted.Storage"},
+			"the storage is the one dependency of the scope host, once for its two effects")
+	})
+
+	t.Run("records no dependency of the scope host for a machine without one", func(t *testing.T) {
+		t.Parallel()
+
+		m := generateWithFaults(t, placedPackage, placedSimPackage).models(t)["Machine"]
+		assert.Length(t, m.Performs, 1, "the write is the one effect with a performer")
+		expect.Equal(t, m.Performs[0].Dependency.Scope, "world", "the store of the agents has the scope world")
+		expect.Empty(t, m.Hosted, "the machine has no dependency of the scope host")
+	})
+
 	t.Run("records the mean and the most steps of a case", func(t *testing.T) {
 		t.Parallel()
 
@@ -386,6 +414,16 @@ func TestNew(t *testing.T) {
 			name: "refuses an end event without a dependency", giveDecl: "Endless",
 			wantMsg: "the directive perform of Endless names an end without a dependency. Only an outage of the " +
 				"dependency ends a wait with its end event",
+		},
+		{
+			name: "refuses a scope of a function without a dependency", giveDecl: "Unscoped",
+			wantMsg: "the directive perform of Unscoped names a scope without a dependency. An effect without a " +
+				"dependency has no instance",
+		},
+		{
+			name: "refuses a scope beside the end of a wait", giveDecl: "EndsScope",
+			wantMsg: "the directive perform of EndsScope names a scope without a dependency. An effect without a " +
+				"dependency has no instance",
 		},
 	}
 	for _, tt := range misfits {
@@ -994,6 +1032,11 @@ func TestNew(t *testing.T) {
 			name: "refuses an end event without a field of the token", giveDecl: "misfit.Unended",
 			wantCode: sim.BadPerform,
 			wantMsg:  "the end event Untokened of Unended has no field of the type Token for the token of Unended",
+		},
+		{
+			name: "refuses two scopes of one dependency", giveDecl: "misfit.Shared", wantCode: sim.BadPerform,
+			wantMsg: "the dependency misfit.Store has the scope host on Hosted and the scope world on Shared. Give " +
+				"each effect of a dependency the same scope",
 		},
 		{
 			name: "refuses the mode tasks on a machine interface", giveDecl: "bad.TaskedMachine",

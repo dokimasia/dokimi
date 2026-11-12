@@ -90,6 +90,16 @@
 			return "", false
 		}
 	},
+{{- with $c.Hosted}}
+	Scope: func(dependency string) {{$sim}}.Scope {
+		switch dependency {
+		case {{range $i, $n := .}}{{if $i}}, {{end}}{{printf "%q" $n}}{{end}}:
+			return {{$sim}}.ScopeHost
+		default:
+			return {{$sim}}.ScopeWorld
+		}
+	},
+{{- end}}
 	Fail: func(f {{$F}}, err error) ({{$E}}, bool) {
 		switch f := f.(type) {
 {{- range $p := $c.Performs}}{{with $p.Dependency}}

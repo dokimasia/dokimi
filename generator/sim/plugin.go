@@ -66,7 +66,9 @@ const (
 // failure of the effect. Its param TimeoutParam names the field of the effect
 // that bounds its call. Its param EndParam names the event that ends the wait
 // of the effect after the wait has delivered an event, and its param EndsParam
-// the effects whose waits the effect ends. The other directives mark the
+// the effects whose waits the effect ends. Its param ScopeParam gives the
+// dependency of the effect one instance in the world or an instance on each
+// host. The other directives mark the
 // functions of the consumer: SystemDirective the system, ActionDirective an
 // action with the positional params CallParam and FinalParam, SpecDirective
 // the spec of the calls, InvariantDirective an invariant with the param
@@ -106,6 +108,7 @@ const (
 	TimeoutParam         directive.ParamKey = "timeout"
 	EndParam             directive.ParamKey = "end"
 	EndsParam            directive.ParamKey = "ends"
+	ScopeParam           directive.ParamKey = "scope"
 	CallParam            directive.ParamKey = "call"
 	FinalParam           directive.ParamKey = "final"
 	DefectParam          directive.ParamKey = "defect"
@@ -128,6 +131,7 @@ const (
 // of the event of the result of the call or of the failure of the effect.
 // KeyEnd contains the identity of the event that ends the wait of an effect,
 // and KeyEnds the identities of the effects whose waits an effect ends.
+// KeyScope contains the scope of the dependency of an effect, world or host.
 const (
 	KeyDefect     meta.KeyName = "sim.defect"
 	KeyWithin     meta.KeyName = "sim.within"
@@ -143,10 +147,12 @@ const (
 	KeyResult     meta.KeyName = "sim.result"
 	KeyEnd        meta.KeyName = "sim.end"
 	KeyEnds       meta.KeyName = "sim.ends"
+	KeyScope      meta.KeyName = "sim.scope"
 )
 
 // The spellings of the positional params of the directives token and action,
-// and of the strategies and the isolation levels of the directive sim.
+// of the strategies and the isolation levels of the directive sim, and of the
+// scopes of the directive perform.
 const (
 	replyKind         = "reply"
 	tokenKind         = "token"
@@ -156,6 +162,8 @@ const (
 	pctStrategy       = "pct"
 	serializable      = "serializable"
 	snapshotIsolation = "snapshot-isolation"
+	worldScope        = "world"
+	hostScope         = "host"
 )
 
 // The words of the names of the declarations of a simulation, the name of
@@ -209,7 +217,9 @@ const defaultMaxSteps = 100
 // with their tokens, Ends the effects that end a wait with the tokens of
 // their waits, Replies the types of its replies, with an instantiation of a
 // generic reply for each type of its union, and Performs the effects with
-// their performers, each in the order of their identities. Unknown are the
+// their performers, each in the order of their identities. Hosted are the
+// names of the dependencies of the scope host, each once in the order of
+// their effects. Unknown are the
 // errors of the replies that leave the outcome of their call unknown, in the
 // order of the replies and of their directives. For a system of components
 // they are the errors of the param unknown of its directive system, in their
@@ -256,6 +266,7 @@ type Model struct {
 	Replies     []Reply
 	Unknown     []*emit.TypeRef
 	Performs    []Perform
+	Hosted      []string
 	Rules       []Rule
 	Actions     []Action
 	Invariants  []Invariant
@@ -332,6 +343,8 @@ type Perform struct {
 // or on the methods of the interface of a function in the order of the
 // methods, each error once. End is the event that ends the wait of the effect
 // after the wait has delivered an event, and nil for an effect without one.
+// Scope is the scope of the dependency: world for one instance in the world,
+// and host for an instance on each host.
 type Dependency struct {
 	Event       *emit.TypeRef
 	End         *End
@@ -339,6 +352,7 @@ type Dependency struct {
 	Token       string
 	EffectToken string
 	Err         string
+	Scope       string
 	Errors      []*emit.TypeRef
 }
 
@@ -594,6 +608,11 @@ var performSchema = directive.Schema{
 			Resolution: directive.ResolveTypeInScope,
 			Doc:        "the effects whose waits the effect ends, such as [Watch]",
 		},
+		{
+			Key: ScopeParam, Type: directive.TypeString, Choices: []string{worldScope, hostScope},
+			Doc: "the scope of the dependency of the effect: world for one instance in the world, the default, or " +
+				"host for an instance on each host",
+		},
 	},
 	Doc: "names the function or the call of a dependency that performs the effect",
 }
@@ -697,6 +716,7 @@ type generator struct {
 	result     meta.Key[symbol.Identity]
 	end        meta.Key[symbol.Identity]
 	ends       meta.Key[[]symbol.Identity]
+	scope      meta.Key[string]
 }
 
 // New returns sim, a plugin with an annotate half and a generate half.
@@ -752,7 +772,7 @@ func (g *generator) register(r *meta.Registry) error {
 	on := func(kind symbol.Kind, name meta.KeyName, doc string) meta.KeySpec {
 		return meta.KeySpec{Name: name, Kinds: []symbol.Kind{kind}, Doc: doc}
 	}
-	var errs [15]error
+	var errs [16]error
 	errs[0] = r.ClaimNamespace(KeyDefect.Namespace())
 	g.defect, errs[1] = meta.Register[symbol.Identity](r, on(symbol.KindFunction, KeyDefect,
 		"contains the identity of the function that builds the system with the planted defect of the invariant or "+
@@ -784,6 +804,8 @@ func (g *generator) register(r *meta.Registry) error {
 		"contains the identity of the event that ends the wait of the effect after the wait has delivered an event"))
 	g.ends, errs[14] = meta.Register[[]symbol.Identity](r, on(symbol.KindStruct, KeyEnds,
 		"contains the identities of the effects whose waits the effect ends"))
+	g.scope, errs[15] = meta.Register[string](r, on(symbol.KindStruct, KeyScope,
+		"contains the scope of the dependency of the effect, world or host"))
 	return errors.Join(errs[:]...)
 }
 
@@ -821,10 +843,11 @@ func (g *generator) concludeReply(m *sdk.StructMatch, _ part, st *sdk.Stamper) e
 // concludePerform stamps the function or the call that performs an effect,
 // the dependency of the function, the event of the result of the call or of
 // the failure of the function, the event that ends the wait of the effect,
-// the effects whose waits the effect ends, and the field that bounds the call.
-// It reports [BadPerform] at a directive that names both a function and a
-// call, at one that names neither and no ends, at a call without a result, at
-// a dependency without a function or without a result, at a function with a
+// the effects whose waits the effect ends, the scope of the dependency and the
+// field that bounds the call. It reports [BadPerform] at a scope without a
+// dependency and without a call, at a directive that names both a function and
+// a call, at one that names neither and no ends, at a call without a result,
+// at a dependency without a function or without a result, at a function with a
 // result and without a dependency, at ends beside a call, a dependency, a
 // result, a timeout or an end, and at an end without a dependency. It stamps
 // nothing for such a directive.
@@ -835,7 +858,13 @@ func (g *generator) concludePerform(m *sdk.StructMatch, _ part, st *sdk.Stamper)
 	dependency, depends := d.Param(DependencyParam)
 	result, resulted := d.Param(ResultParam)
 	end, ended := d.Param(EndParam)
+	scope, scoped := d.Param(ScopeParam)
 	name := m.Struct.Name
+	if scoped && !depends && !called {
+		m.Errorf(BadPerform, "the directive perform of %s names a scope without a dependency. An effect without a "+
+			"dependency has no instance", name)
+		return nil
+	}
 	if ends, ending := d.Param(EndsParam); ending {
 		for _, key := range []directive.ParamKey{CallParam, DependencyParam, ResultParam, TimeoutParam, EndParam} {
 			if _, stated := d.Param(key); stated {
@@ -896,6 +925,9 @@ func (g *generator) concludePerform(m *sdk.StructMatch, _ part, st *sdk.Stamper)
 	}
 	if timeout, stated := d.Param(TimeoutParam); stated {
 		sdk.Stamp(st, g.timeout, timeout.Str)
+	}
+	if scoped {
+		sdk.Stamp(st, g.scope, scope.Str)
 	}
 	return nil
 }
@@ -1358,11 +1390,11 @@ func (in *invocation) tokenFields(s *node.Struct, kind string) []*node.Field {
 	return out
 }
 
-// anatomy sets the inbound calls, the tokens, the ends of waits, the replies
-// and the performers of the model from the events and the effects of the
-// machine. An effect under the param ends has no token of its own and may
-// have no performer. It reports [NoPerform], [BadReply], [BadFunction] and
-// [BadPerform] at the effects at fault.
+// anatomy sets the inbound calls, the tokens, the ends of waits, the replies,
+// the performers and the dependencies of the scope host of the model from the
+// events and the effects of the machine. An effect under the param ends has no
+// token of its own and may have no performer. It reports [NoPerform],
+// [BadReply], [BadFunction] and [BadPerform] at the effects at fault.
 func (in *invocation) anatomy(model *Model, events, effects []*node.Struct) {
 	for _, ev := range events {
 		if model.Cancelled != nil && ev.ID == model.Cancelled.Type.Target {
@@ -1388,10 +1420,11 @@ func (in *invocation) anatomy(model *Model, events, effects []*node.Struct) {
 		callee, called := sdk.FactOf(in.m, f.ID, in.g.callee)
 		dependency, depends := sdk.FactOf(in.m, f.ID, in.g.dependency)
 		timeout, _ := sdk.FactOf(in.m, f.ID, in.g.timeout)
+		scope, _ := sdk.FactOf(in.m, f.ID, in.g.scope)
 		fit, pointer := in.performer(fn, f)
 		switch {
 		case called:
-			if call, dep, bound := in.called(f, &callee); bound {
+			if call, dep, bound := in.called(f, &callee); bound && in.scoped(model, f, dep, scope) {
 				model.Performs = append(model.Performs,
 					Perform{Type: refOf(f), Call: call, Dependency: dep, Timeout: timeout})
 			}
@@ -1405,7 +1438,7 @@ func (in *invocation) anatomy(model *Model, events, effects []*node.Struct) {
 			in.refuse(BadFunction, f.Pos, "the package of the simulation of %s has no function %s with the "+
 				"signature %s, with T the effect %s", in.name, fn, performForm, f.Name)
 		case depends:
-			if dep, bound := in.depended(f, &dependency); bound {
+			if dep, bound := in.depended(f, &dependency); bound && in.scoped(model, f, dep, scope) {
 				model.Performs = append(model.Performs,
 					Perform{Type: refOf(f), Func: fn, Dependency: dep, Timeout: timeout, Pointer: pointer})
 			}
@@ -1415,6 +1448,30 @@ func (in *invocation) anatomy(model *Model, events, effects []*node.Struct) {
 		}
 	}
 	model.Timeouts = slices.ContainsFunc(model.Performs, func(p Perform) bool { return p.Timeout != "" })
+	for _, p := range model.Performs {
+		if p.Dependency != nil && p.Dependency.Scope == hostScope && !slices.Contains(model.Hosted, p.Dependency.Name) {
+			model.Hosted = append(model.Hosted, p.Dependency.Name)
+		}
+	}
+}
+
+// scoped sets the scope of the dependency dep of the effect f to the scope of
+// its directive, and to world without one. It reports [BadPerform] at f, and
+// false, where an earlier effect of the model gives the dependency the other
+// scope.
+func (in *invocation) scoped(model *Model, f *node.Struct, dep *Dependency, scope string) bool {
+	dep.Scope = cmp.Or(scope, worldScope)
+	at := slices.IndexFunc(model.Performs, func(p Perform) bool {
+		return p.Dependency != nil && p.Dependency.Name == dep.Name && p.Dependency.Scope != dep.Scope
+	})
+	if at < 0 {
+		return true
+	}
+	first := model.Performs[at]
+	in.refuse(BadPerform, f.Pos, "the dependency %s has the scope %s on %s and the scope %s on %s. Give each "+
+		"effect of a dependency the same scope", dep.Name, first.Dependency.Scope, first.Type.Spelling, dep.Scope,
+		f.Name)
+	return false
 }
 
 // ends adds the effect f, which ends the waits of the effects waits, to the

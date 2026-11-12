@@ -246,6 +246,46 @@ type Pointed struct{ Token Token }
 //dokimi:perform func=misvalue
 type Misvalued struct{ Token Token }
 
+// Unscoped names a scope for a function without a dependency.
+//
+//dokimi:perform func=watch scope=host
+type Unscoped struct{ Token Token }
+
+// EndsScope ends a wait beside a scope.
+//
+//dokimi:perform ends=[Watch] scope=host
+type EndsScope struct{ Token Token }
+
+// Hosted puts through the store of its host. It is the first effect of the
+// machine whose performer binds.
+//
+//dokimi:perform call=Store.Put result=Stored scope=host
+type Hosted struct {
+	Key   string
+	Value string
+	Token Token
+}
+
+// Shared puts through the store that every host shares.
+//
+//dokimi:perform call=Store.Put result=Stored
+type Shared struct {
+	Key   string
+	Value string
+	Token Token
+}
+
+// Zoned puts through the store of its host, as Hosted does. Its name sorts
+// after Watch, an effect without a dependency, so the check of its scope
+// meets an effect without one.
+//
+//dokimi:perform call=Store.Put result=Stored scope=host
+type Zoned struct {
+	Key   string
+	Value string
+	Token Token
+}
+
 // helper is no method of a dependency.
 func helper(context.Context) error { return nil }
 
@@ -313,6 +353,11 @@ func (Ticketed) effect()       {}
 func (Mistyped) effect()       {}
 func (Pointed) effect()        {}
 func (Misvalued) effect()      {}
+func (Unscoped) effect()       {}
+func (EndsScope) effect()      {}
+func (Hosted) effect()         {}
+func (Shared) effect()         {}
+func (Zoned) effect()          {}
 
 // Machine is the machine of a node.
 //

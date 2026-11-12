@@ -39,6 +39,8 @@ const (
 	placedSimPackage   = "example.com/shop/placed/placedsim"
 	waitsPackage       = "example.com/shop/waits"
 	waitsSimPackage    = "example.com/shop/waits/waitssim"
+	hostedPackage      = "example.com/shop/hosted"
+	hostedSimPackage   = "example.com/shop/hosted/hostedsim"
 	simTemplate        = "sim.tmpl"
 	testTemplate       = "sim.test.tmpl"
 )

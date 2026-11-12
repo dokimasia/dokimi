@@ -61,6 +61,15 @@
 //	//dokimi:perform func=campaign dependency=Store result=Campaigned end=TermEnded
 //	type Campaign struct{ ... }
 //
+// The param scope sets the scope of the dependency of a function or of a
+// call. Under scope=host each host of a world has an instance of the
+// dependency, so a fault of the dependency strikes the effects of one host.
+// The default scope=world gives the world one instance, as a database that
+// every host calls has. The effects of one dependency have one scope:
+//
+//	//dokimi:perform func=persist dependency=Storage result=Persisted scope=host
+//	type Persist struct{ ... }
+//
 // The param ends marks an effect that ends the waits of the effects that it
 // lists, such as an unwatch. The anatomy returns no token for such an effect,
 // and the world cancels the wait of its token. Its function is optional:
@@ -114,8 +123,10 @@
 // [NoReply] at a machine with an action call and without a reply, [BadReply]
 // at a reply that lacks a field of its directive, [BadToken] at a token type
 // that is not an unsigned integer type, and [BadFunction] at a function that
-// does not have the signature of its directive. sim records nothing for a
-// machine interface or a system of components that it reports.
+// does not have the signature of its directive. It also reports [BadPerform]
+// at an effect whose scope differs from the scope of another effect of its
+// dependency. sim records nothing for a machine interface or a system of
+// components that it reports.
 //
 // # Dependency position
 //

@@ -4419,12 +4419,12 @@ func registryActions(c *prop.Case, subject func() Registry) []stateful.Action[st
 			Name: "Set",
 			Input: func(c *prop.Case, _ struct{}) any {
 				key := c.Draw(prop.SampledFrom(keysString...), "set.key")
-				value := c.Draw(prop.Of[string](), "set.value")
+				value := c.Draw(prop.SampledFrom(keysString...), "set.value")
 				return []any{key, value}
 			},
 			Run: func(c *prop.Case, client int, input any) {
 				args, _ := input.([]any)
-				call := c.History().Invoke(client, "Set", args, args[0])
+				call := c.History().Invoke(client, "Set", args, args[0], args[1])
 				values, err := registrySetCall(c.Context(), subject(), args)
 				conform.Complete(c.Context(), call, err, values...)
 			},
@@ -4591,7 +4591,7 @@ func registryOperations(c *prop.Case) []probe.Operation[Registry] {
 			Name: "Set",
 			Input: func(c *prop.Case) any {
 				key := keysString.Pick(c, "set.key")
-				value := c.Draw(prop.Of[string](), "set.value")
+				value := keysString.Pick(c, "set.value")
 				return []any{key, value}
 			},
 			Args: func(input any) []any {
@@ -4600,7 +4600,7 @@ func registryOperations(c *prop.Case) []probe.Operation[Registry] {
 			},
 			Keys: func(input any) []any {
 				args, _ := input.([]any)
-				return []any{args[0]}
+				return []any{args[0], args[1]}
 			},
 			Call: func(ctx context.Context, s Registry, input any) (conform.Output, error) {
 				args, _ := input.([]any)

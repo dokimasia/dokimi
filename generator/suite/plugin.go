@@ -280,7 +280,11 @@ const (
 // are the parts of the generated sequences that the derived checks call, and
 // nil for a suite without a derived check of generated sequences. World is the
 // world of the subject that the derived checks of the world probes run, and
-// nil for a suite without such a check. Package is
+// nil for a suite without such a check. Shapes are the shape definitions that
+// the generated bindings draw through, for a language whose property engine
+// reads the type of no value, and nil for Go. Fields are the names of the
+// fields of the members of an interface, which a planted defect of a language
+// without embedding forwards to its fresh subject. Package is
 // the import path of the package of the declaration, and Version the version
 // of the plugin, which the suite record names as the version of its
 // generator.
@@ -310,6 +314,8 @@ type Suite struct {
 	Derivation  derive.Suite
 	Derived     []Derived
 	Defects     []*Defect
+	Shapes      []Shape
+	Fields      []string
 	Dynamic     bool
 	Errors      bool
 }
@@ -386,9 +392,8 @@ type Callable struct {
 // conform.Doors, and empty for a check without a door. Values refer to the
 // functions of the doors of values of the planted defect, in the order of the
 // directive, and are empty for a check without one. Machineries are the
-// names of the constants of the package spec of the Go runtime of the
-// machineries whose door the planted defect states, so the handle builds the
-// subjects of the check through that door. Options refers to the function of
+// identifiers of the machineries whose door the planted defect states, so the
+// handle builds the subjects of the check through that door. Options refers to the function of
 // the options of the property run of the check, and is nil for a check
 // without options. Around refers to the function of the environment of the
 // runs of the check, and is nil for a check without one.
@@ -421,7 +426,10 @@ type Door struct {
 // tests, and the template of the family reads it. Test is the name of the
 // test function, and Declaration the name of the declaration whose suite the
 // test applies. Subject is the name of the subject of a conformance test, and
-// empty for the test of a suite. Excusals are the excusals of the subject in
+// empty for the test of a suite. Qualified is the subject of the records of a
+// conformance test, the package of the subject and its name, as
+// example.com/store.Memory, which a test in a language without the type of a
+// value at run time passes to the application. Excusals are the excusals of the subject in
 // the order of their directives. The test of a suite applies a check of its
 // own to the forms of the application, so it excuses every check of the suite
 // through conform.ExcuseSuite. Excused reports that the suite of such a test
@@ -494,6 +502,7 @@ type Conformance struct {
 	Options     *emit.TypeRef
 	Test        string
 	Subject     string
+	Qualified   string
 	Declaration string
 	Builds      string
 	Receives    string
@@ -567,13 +576,84 @@ type Excusal struct {
 }
 
 // part is the part of suite for one language. It declares the target with its
-// template tree and its helpers.
+// template tree and its helpers, and the words and the values of the language
+// that the record of a suite contains.
 type part interface {
 	lang.Part
+	runtimePart
+
+	// context returns the name of the context of the call of a closure, which
+	// the closure passes to each parameter in the role context.
+	context() string
+
+	// typed returns the value v of a sample or of a zero value as a value of
+	// the type ref, as a closure and a planted defect pass it.
+	typed(ref *emit.TypeRef, v *emit.Value) *emit.Value
+
+	// converted returns the sample v that a parameter states on itself as a
+	// value of the type ref, as a call generator passes it.
+	converted(ref *emit.TypeRef, v *emit.Value) *emit.Value
+
+	// names returns the names of the declarations of the suite of the
+	// declaration named decl, in the neutral convention of an emitted name.
+	names(e *sdk.Emitter, decl string) Names
+
+	// checkOpening returns the words that open the doc comment of the check
+	// named name, before its statement.
+	checkOpening(name string) string
+
+	// spelled returns the name that the settle of the plan gives a
+	// declaration of the kind named name. A reference to an emitted
+	// declaration spells it, because the settle does not rewrite a reference
+	// to the name of a record.
+	spelled(kind symbol.Kind, name string) string
+
+	// pascal returns word in Pascal case under the initialisms of the
+	// language, as a generated name joins it to another word: ID for id in
+	// Go, and Id in TypeScript.
+	pascal(word string) string
+}
+
+// runtimePart is the part of suite that the runtime of one language decides:
+// the generators of the values that a property draws, the case of its
+// property engine, and the counts of its benchmarks.
+type runtimePart interface {
+	// shape returns the shape file of the values of the type ref, which the
+	// generator of a drawn value of the type reads, for a language whose
+	// property engine reads the type of no value. It returns the empty
+	// string for a language whose engine reads the type itself, and for a
+	// type that no shape states.
+	shape(k *caller, ref *node.TypeRef) string
+
+	// start returns the starting value of the values of the type ref, which
+	// the generator of a drawn value keeps or changes, for a language whose
+	// suite registers no generators of the starting values. It returns nil for
+	// a language whose suite registers them, and for a type without a
+	// starting value.
+	start(k *caller, ref *node.TypeRef) *emit.Value
+
+	// takesCase reports whether ref is the type of the case of the property
+	// engine, which a property check takes after its handle.
+	takesCase(ref *node.TypeRef) bool
+
+	// caseSpelling returns the spelling of the type of the case of the
+	// property engine in the language, which a message about a check writes.
+	caseSpelling() string
+
+	// countsAllocations reports whether the runtime of the language counts the
+	// allocations of a call, which a ceiling of allocations or of bytes reads.
+	countsAllocations() bool
+}
+
+// emittedRef returns the reference to the emitted declaration of the kind
+// named name, whose origin is origin, under the name that the settle of the
+// plan of p gives it.
+func emittedRef(p part, origin *symbol.Identity, kind symbol.Kind, name string) *emit.TypeRef {
+	return &emit.TypeRef{Spelling: p.spelled(kind, name), Target: *origin, Emitted: true}
 }
 
 // parts are the parts of suite, one for each language that it serves.
-var parts = []part{golangPart{}}
+var parts = []part{golangPart{}, typescriptPart{}}
 
 // suiteSchema is the directive of a suite.
 var suiteSchema = directive.Schema{
@@ -890,20 +970,21 @@ func (g *generator) register(r *meta.Registry) error {
 // no callable, so a check of a function must not have the segment of a check
 // that the test of the suite adds. Otherwise concludeCheck reports
 // [UnknownCallable] or [BadCheck] at the directive.
-func (g *generator) concludeCheck(m *sdk.FunctionMatch, _ part, st *sdk.Stamper) error {
+func (g *generator) concludeCheck(m *sdk.FunctionMatch, p part, st *sdk.Stamper) error {
 	fn := m.Function
 	d := m.Directive()
 	decl, callable, resolved := resolveCallable(m, d, fn.Name)
 	if !resolved {
 		return nil
 	}
-	statement, stated := statementOf(fn)
+	opening := p.checkOpening(fn.Name)
+	statement, stated := statementOf(fn, opening)
 	if !stated {
 		m.ErrorfAt(BadCheck, d.Pos, "the doc comment of %s does not open with %q, so the check has no statement",
-			fn.Name, fn.Name+checksThat)
+			fn.Name, opening)
 		return nil
 	}
-	property, ok := signed(m, d, fn)
+	property, ok := signed(m, p, d, fn)
 	if !ok || !doored(m, d, fn) || !valued(m, d, fn) || !optioned(m, d, fn, property) || !arounded(m, d, fn) {
 		return nil
 	}
@@ -1035,34 +1116,34 @@ func callablesOf(decl string, callables []string) string {
 }
 
 // statementOf returns the statement of the check fn, and false where the doc
-// comment of fn does not open with the name of fn and the words checks that.
-// The statement is the rest of the first sentence of the doc comment.
-func statementOf(fn *node.Function) (string, bool) {
+// comment of fn does not open with the words opening. The statement is the
+// rest of the first sentence of the doc comment.
+func statementOf(fn *node.Function, opening string) (string, bool) {
 	text := strings.Join(strings.Fields(strings.Join(fn.Doc, " ")), " ")
-	rest, opens := strings.CutPrefix(text, fn.Name+checksThat+" ")
+	rest, opens := strings.CutPrefix(text, opening+" ")
 	sentence, _, _ := strings.Cut(rest, ". ")
 	return strings.TrimSuffix(sentence, "."), opens
 }
 
 // signed reports whether the check fn and the defect of its directive d have
 // the signatures of a check, and whether fn is a property check. A check takes
-// the handle of its check and returns nothing. A property check also takes a
-// *prop.Case after the handle. The defect returns the planted defect from the
-// handle of its check. signed reports [BadCheck] at d where a signature
-// differs.
-func signed(m *sdk.FunctionMatch, d *directive.Directive, fn *node.Function) (property, ok bool) {
+// the handle of its check and returns nothing. A property check also takes the
+// case of the property engine of the part p after the handle, such as a
+// *prop.Case. The defect returns the planted defect from the handle of its
+// check. signed reports [BadCheck] at d where a signature differs.
+func signed(m *sdk.FunctionMatch, p part, d *directive.Directive, fn *node.Function) (property, ok bool) {
 	defect := d.Params[DefectParam].Target
 	b := m.Rules()
 	check, _ := b.CallableOf(fn)
 	found, _ := m.Reader().Lookup(defect)
 	planted, _ := b.CallableOf(found)
 	switch {
-	case len(check.Params) == 2 && !takesCase(check.Params[1].Ref):
+	case len(check.Params) == 2 && !p.takesCase(check.Params[1].Ref):
 		m.ErrorfAt(BadCheck, d.Pos, "the second parameter of the check %s has the type %s, and a property check "+
-			"takes a *prop.Case after the handle of its check", fn.Name, check.Params[1].Ref.Spelling)
+			"takes a %s after the handle of its check", fn.Name, check.Params[1].Ref.Spelling, p.caseSpelling())
 	case len(check.Params) != 1 && len(check.Params) != 2:
 		m.ErrorfAt(BadCheck, d.Pos, "the check %s takes %d parameters, and a check takes the handle of its check, "+
-			"with a *prop.Case after it for a property check", fn.Name, len(check.Params))
+			"with a %s after it for a property check", fn.Name, len(check.Params), p.caseSpelling())
 	case len(check.Returns) > 0:
 		m.ErrorfAt(BadCheck, d.Pos, "the check %s returns a result, and a check returns nothing", fn.Name)
 	case len(planted.Params) != 1:
@@ -1250,12 +1331,6 @@ func parameters(n int) string {
 	return fmt.Sprintf("%d parameters", n)
 }
 
-// takesCase reports whether ref is a pointer to the case of the property
-// engine, whatever name the file gives the package of the engine.
-func takesCase(ref *node.TypeRef) bool {
-	return pointerTo(ref, propPackage, caseType)
-}
-
 // pointerTo reports whether ref is a pointer to the type named name of the
 // package pkg, whatever name the file gives the package. Go spells a pointer
 // in the optional form, which has one child.
@@ -1325,7 +1400,7 @@ func (g *generator) checksOf(m sdk.Matcher, origin *symbol.Identity, callables [
 			if fn := b.doors[i]; fn != (symbol.Identity{}) {
 				opened = append(opened, Door{Field: door.field, Func: &emit.TypeRef{Spelling: fn.Name, Target: fn}})
 				if door.machinery != "" {
-					machineries = append(machineries, goName(door.machinery))
+					machineries = append(machineries, string(door.machinery))
 				}
 			}
 		}
@@ -1369,7 +1444,7 @@ func (g *generator) checksOf(m sdk.Matcher, origin *symbol.Identity, callables [
 // excusal. A subject of a struct with several directives subject reads the
 // excusals of the callables of its own declaration, as [skips] states.
 func (g *generator) excusalsOf(
-	m *sdk.StructMatch, e *sdk.Emitter, declared *symbol.Identity, callables []*node.Method,
+	m *sdk.StructMatch, p part, e *sdk.Emitter, declared *symbol.Identity, callables []*node.Method,
 ) ([]Excusal, bool) {
 	var checks []excusable
 	bindings := g.boundTo(m, declared)
@@ -1377,7 +1452,7 @@ func (g *generator) excusalsOf(
 		b := &bindings[i]
 		checks = append(checks, excusable{callable: b.callable, segment: b.segment, method: b.fn.Name})
 	}
-	derived := g.derivationOf(m, e, declared, callables).Checks
+	derived := g.derivationOf(m, p, e, declared, callables).Checks
 	base := bases(derived)
 	for _, c := range derived {
 		callable, segment, _ := strings.Cut(c.Identity, "/")
@@ -1430,13 +1505,14 @@ func (g *generator) excusalsOf(
 
 // derivationOf returns the checks that the suite of the declaration declared
 // derives for its callables, at the witnesses of the type parameters of a
-// generic interface, as [generator.suiteOfInterface] derives them. e is the
-// emitter of the conformance test. The call generator of each callable
-// decides whether a check of samples has a generated binding.
+// generic interface, as [generator.suiteOfInterface] derives them. p is the
+// part of the language of the subject, and e the emitter of the conformance
+// test. The call generator of each callable decides whether a check of
+// samples has a generated binding.
 func (g *generator) derivationOf(
-	m *sdk.StructMatch, e *sdk.Emitter, declared *symbol.Identity, callables []*node.Method,
+	m *sdk.StructMatch, p part, e *sdk.Emitter, declared *symbol.Identity, callables []*node.Method,
 ) derive.Suite {
-	k := caller{m: m, g: g, e: e, b: m.Rules(), origin: *declared, decl: declared.Name}
+	k := caller{m: m, g: g, e: e, p: p, b: m.Rules(), origin: *declared, decl: declared.Name}
 	sym, _ := m.Reader().Lookup(*declared)
 	if i, isInterface := sym.(*node.Interface); isInterface {
 		k.typeParams, k.witnesses = i.TypeParams, k.b.Witnesses(i.TypeParams)
@@ -1476,11 +1552,11 @@ func listed(words []string, conjunction string) string {
 
 // suiteOfInterface records the suite of an interface. The subject type is the
 // interface at the witnesses of its type parameters.
-func (g *generator) suiteOfInterface(m *sdk.InterfaceMatch, _ part, e *sdk.Emitter) error {
+func (g *generator) suiteOfInterface(m *sdk.InterfaceMatch, p part, e *sdk.Emitter) error {
 	i := m.Interface
 	b := m.Rules()
 	subject := &emit.TypeRef{Spelling: i.Name, Target: i.ID}
-	k := caller{m: m, g: g, e: e, b: b, origin: i.ID, decl: i.Name, typeParams: i.TypeParams}
+	k := caller{m: m, g: g, e: e, p: p, b: b, origin: i.ID, decl: i.Name, typeParams: i.TypeParams}
 	if len(i.TypeParams) > 0 {
 		k.witnesses = b.Witnesses(i.TypeParams)
 		if k.witnesses == nil {
@@ -1495,7 +1571,7 @@ func (g *generator) suiteOfInterface(m *sdk.InterfaceMatch, _ part, e *sdk.Emitt
 	if unimportable(m, &b, e.File(), i.Name, methods) {
 		return nil
 	}
-	s := Suite{Subject: subject, Declaration: i.Name, Names: NamesOf(e, i.Name)}
+	s := Suite{Subject: subject, Declaration: i.Name, Names: p.names(e, i.Name), Fields: fieldsOfMembers(&b, i)}
 	if g.callsOf(&k, &s, methods) {
 		write(&k, &s)
 	}
@@ -1504,7 +1580,7 @@ func (g *generator) suiteOfInterface(m *sdk.InterfaceMatch, _ part, e *sdk.Emitt
 
 // suiteOfStruct records the suite of a struct. The subject type is the
 // interface of the exported methods of the struct, which the suite declares.
-func (g *generator) suiteOfStruct(m *sdk.StructMatch, _ part, e *sdk.Emitter) error {
+func (g *generator) suiteOfStruct(m *sdk.StructMatch, p part, e *sdk.Emitter) error {
 	st := m.Struct
 	if len(st.TypeParams) > 0 {
 		m.Errorf(Uninstantiable, "%s is a generic struct, so it has no suite", st.Name)
@@ -1515,16 +1591,17 @@ func (g *generator) suiteOfStruct(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 	if unimportable(m, &b, e.File(), st.Name, callables) {
 		return nil
 	}
-	names := NamesOf(e, st.Name)
+	names := p.names(e, st.Name)
 	names.Methods = e.JoinName(methodsWord, st.Name)
 	methods := &emit.Interface{Origin: st.ID, Name: names.Methods, Visibility: symbol.VisibilityPublic}
 	s := Suite{
-		Subject: &emit.TypeRef{Spelling: names.Methods}, Methods: methods, Declaration: st.Name, Names: names,
+		Subject: &emit.TypeRef{Spelling: p.spelled(symbol.KindInterface, names.Methods)}, Methods: methods,
+		Declaration: st.Name, Names: names,
 	}
 	for _, method := range callables {
 		methods.Methods.Append(sdk.Mirror(names.Methods, method))
 	}
-	k := caller{m: m, g: g, e: e, b: b, origin: st.ID, decl: st.Name}
+	k := caller{m: m, g: g, e: e, p: p, b: b, origin: st.ID, decl: st.Name}
 	if g.callsOf(&k, &s, callables) {
 		write(&k, &s)
 	}
@@ -1560,7 +1637,7 @@ func (g *generator) callsOf(k *caller, s *Suite, methods []*node.Method) bool {
 
 // suiteOfFunction records the suite of a function. The subject type is the
 // function type of the function, which the suite declares.
-func (g *generator) suiteOfFunction(m *sdk.FunctionMatch, _ part, e *sdk.Emitter) error {
+func (g *generator) suiteOfFunction(m *sdk.FunctionMatch, p part, e *sdk.Emitter) error {
 	f := m.Function
 	if len(f.TypeParams) > 0 {
 		m.Errorf(Uninstantiable, "%s is a generic function, so it has no suite", f.Name)
@@ -1571,15 +1648,21 @@ func (g *generator) suiteOfFunction(m *sdk.FunctionMatch, _ part, e *sdk.Emitter
 	if unreferable(m, &b, e.File(), f.Name, []*node.Method{signature}) {
 		return nil
 	}
-	names := NamesOf(e, f.Name)
+	names := p.names(e, f.Name)
 	names.Func = e.JoinName(funcWord, f.Name)
 	names.NewOver = e.JoinName(e.JoinName(overWord, f.Name), newWord)
 	callables := []Callable{{Name: f.Name, Type: e.JoinName(callableWord, f.Name)}}
-	k := caller{m: m, g: g, e: e, b: b, origin: f.ID, decl: f.Name}
+	k := caller{m: m, g: g, e: e, p: p, b: b, origin: f.ID, decl: f.Name}
 	s := Suite{
-		Subject: &emit.TypeRef{Spelling: names.Func}, Func: sdk.Mirror(names.Func, signature), Declaration: f.Name,
-		Names: names, Callables: callables, Checks: g.checksOf(m, &f.ID, callables),
-		Calls: []Call{k.call(&callables[0], f, &f.ID)},
+		Subject: &emit.TypeRef{
+			Spelling: p.spelled(symbol.KindAlias, names.Func),
+		},
+		Func:        sdk.Mirror(names.Func, signature),
+		Declaration: f.Name,
+		Names:       names,
+		Callables:   callables,
+		Checks:      g.checksOf(m, &f.ID, callables),
+		Calls:       []Call{k.call(&callables[0], f, &f.ID)},
 	}
 	k.overrides(&s)
 	if k.derivation(&s, []symbol.Symbol{f}) {
@@ -1610,6 +1693,7 @@ func write(k *caller, s *Suite) {
 		return &emit.Alias{Origin: *origin, Name: name, Visibility: symbol.VisibilityPublic}
 	}
 	s.Package, s.Version = origin.Package, Version
+	shapesOf(e, k.p, s)
 	n := &s.Names
 	if !slices.ContainsFunc(s.Calls, func(c Call) bool { return c.Concurrent }) {
 		n.BenchParallel = ""
@@ -1709,19 +1793,23 @@ func write(k *caller, s *Suite) {
 	record := &emit.Struct{
 		Origin: *origin, Name: e.JoinName(proofsWord, s.Declaration), Visibility: symbol.VisibilityPackage,
 	}
-	emitted := func(name string) *emit.TypeRef { return &emit.TypeRef{Spelling: name, Target: *origin, Emitted: true} }
+	fn := func(name string) *emit.TypeRef { return emittedRef(k.p, origin, symbol.KindFunction, name) }
+	aliased := func(name string) *emit.TypeRef { return emittedRef(k.p, origin, symbol.KindAlias, name) }
 	subject := s.Subject
-	if s.Methods != nil || s.Func != nil {
-		subject = emitted(s.Subject.Spelling)
+	switch {
+	case s.Methods != nil:
+		subject = emittedRef(k.p, origin, symbol.KindInterface, s.Subject.Spelling)
+	case s.Func != nil:
+		subject = aliased(s.Subject.Spelling)
 	}
 	record.Fields.Append(
-		&emit.Field{Name: suiteWord, Type: emitted(n.Suite)},
-		&emit.Field{Name: runWord, Type: emitted(n.Run)},
-		&emit.Field{Name: fromHandleWord, Type: emitted(n.RunFromHandle)},
-		&emit.Field{Name: handleWord, Type: emitted(n.Handle)},
-		&emit.Field{Name: checkWord, Type: emitted(n.Check)},
+		&emit.Field{Name: suiteWord, Type: fn(n.Suite)},
+		&emit.Field{Name: runWord, Type: fn(n.Run)},
+		&emit.Field{Name: fromHandleWord, Type: fn(n.RunFromHandle)},
+		&emit.Field{Name: handleWord, Type: aliased(n.Handle)},
+		&emit.Field{Name: checkWord, Type: aliased(n.Check)},
 		&emit.Field{Name: subjectWord, Type: subject},
-		&emit.Field{Name: checksWord, Type: emitted(n.Checks)},
+		&emit.Field{Name: checksWord, Type: emittedRef(k.p, origin, symbol.KindVariable, n.Checks)},
 	)
 	test := Conformance{
 		Test: e.JoinName(n.Suite, testWord), Declaration: s.Declaration, Builds: buildsSegment,
@@ -1735,9 +1823,9 @@ func write(k *caller, s *Suite) {
 	if s.Func != nil {
 		record.Fields.Append(
 			&emit.Field{Name: funcWord, Type: &emit.TypeRef{Spelling: s.Declaration, Target: *origin}},
-			&emit.Field{Name: fuzzWord, Type: emitted(n.Fuzz)},
-			&emit.Field{Name: budgetsWord, Type: emitted(n.Budgets)},
-			&emit.Field{Name: benchWord, Type: emitted(n.Bench)},
+			&emit.Field{Name: fuzzWord, Type: fn(n.Fuzz)},
+			&emit.Field{Name: budgetsWord, Type: fn(n.Budgets)},
+			&emit.Field{Name: benchWord, Type: fn(n.Bench)},
 		)
 		test.Targets = []Target{{Name: e.JoinName(s.Declaration, fuzzWord)}}
 		if s.Calls[0].repeatable() {
@@ -1745,14 +1833,14 @@ func write(k *caller, s *Suite) {
 		}
 	} else if len(s.Calls) > 0 {
 		record.Fields.Append(
-			&emit.Field{Name: fuzzWord, Type: emitted(n.Fuzz)},
-			&emit.Field{Name: budgetsWord, Type: emitted(n.Budgets)},
-			&emit.Field{Name: benchWord, Type: emitted(n.Bench)},
+			&emit.Field{Name: fuzzWord, Type: fn(n.Fuzz)},
+			&emit.Field{Name: budgetsWord, Type: fn(n.Budgets)},
+			&emit.Field{Name: benchWord, Type: fn(n.Bench)},
 		)
 		test.idle(e, n, s.Calls)
 	}
 	if n.BenchParallel != "" {
-		record.Fields.Append(&emit.Field{Name: parallelWord, Type: emitted(n.BenchParallel)})
+		record.Fields.Append(&emit.Field{Name: parallelWord, Type: fn(n.BenchParallel)})
 	}
 	test.Identities = identitiesOf(s)
 	e.File(TestTag).Record(test, record)
@@ -1846,7 +1934,7 @@ const (
 // conformance test for each declaration of its directives subject, and
 // conformanceOf reports [RepeatedSubject] at a second directive of one
 // declaration.
-func (g *generator) conformanceOf(m *sdk.StructMatch, _ part, e *sdk.Emitter) error {
+func (g *generator) conformanceOf(m *sdk.StructMatch, p part, e *sdk.Emitter) error {
 	st := m.Struct
 	d := m.Directive()
 	declared := d.Args[0].Target
@@ -1868,7 +1956,7 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 			factory.Name, len(view.Params), st.Name)
 		return nil
 	}
-	names := NamesOf(e, declared.Name)
+	names := p.names(e, declared.Name)
 	run := names.Run
 	if len(view.Params) == 1 {
 		run = names.RunFromHandle
@@ -1893,7 +1981,7 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 	}
 	decl, _ := m.Reader().Lookup(declared)
 	methods := methodsOf(&b, decl)
-	excusals, excused := g.excusalsOf(m, e, &declared, methods)
+	excusals, excused := g.excusalsOf(m, p, e, &declared, methods)
 	ceilings, stated := g.ceilingsOf(m, &declared, methods)
 	if !excused || !stated {
 		return nil
@@ -1917,21 +2005,22 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 		Name:       e.JoinName(conformanceWord, conforms),
 		Visibility: symbol.VisibilityPackage,
 	}
-	emitted := func(name string) *emit.TypeRef { return &emit.TypeRef{Spelling: name, Target: declared, Emitted: true} }
+	fn := func(name string) *emit.TypeRef { return emittedRef(p, &declared, symbol.KindFunction, name) }
+	aliased := func(name string) *emit.TypeRef { return emittedRef(p, &declared, symbol.KindAlias, name) }
 	record.Fields.Append(
-		&emit.Field{Name: runWord, Type: emitted(run)},
+		&emit.Field{Name: runWord, Type: fn(run)},
 		&emit.Field{Name: newWord, Type: &emit.TypeRef{Spelling: factory.Name, Target: factory}},
-		&emit.Field{Name: checksWord, Type: emitted(names.Checks)},
-		&emit.Field{Name: fuzzWord, Type: emitted(names.Fuzz)},
-		&emit.Field{Name: handleWord, Type: emitted(names.Handle)},
+		&emit.Field{Name: checksWord, Type: emittedRef(p, &declared, symbol.KindVariable, names.Checks)},
+		&emit.Field{Name: fuzzWord, Type: fn(names.Fuzz)},
+		&emit.Field{Name: handleWord, Type: aliased(names.Handle)},
 		&emit.Field{Name: subjectWord, Type: rules.EmitRef(view.Returns[0].Ref)},
-		&emit.Field{Name: budgetsWord, Type: emitted(names.Budgets)},
-		&emit.Field{Name: benchWord, Type: emitted(names.Bench)},
-		&emit.Field{Name: optionWord, Type: emitted(names.Option)},
-		&emit.Field{Name: declaredWord, Type: g.subjectOf(e, &b, decl, emitted)},
+		&emit.Field{Name: budgetsWord, Type: fn(names.Budgets)},
+		&emit.Field{Name: benchWord, Type: fn(names.Bench)},
+		&emit.Field{Name: optionWord, Type: aliased(names.Option)},
+		&emit.Field{Name: declaredWord, Type: g.subjectOf(e, p, &b, decl, &declared)},
 	)
 	if slices.ContainsFunc(levels, func(l Level) bool { return l.Concurrent }) {
-		record.Fields.Append(&emit.Field{Name: parallelWord, Type: emitted(names.BenchParallel)})
+		record.Fields.Append(&emit.Field{Name: parallelWord, Type: fn(names.BenchParallel)})
 	}
 	var targets []Target
 	fuzz := e.JoinName(conforms, fuzzWord)
@@ -1939,7 +2028,7 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 		targets = append(targets, Target{Name: e.JoinName(method.Name, fuzz), Field: method.Name})
 	}
 	test := Conformance{
-		Test:    e.JoinName(conforms, testWord),
+		Test: e.JoinName(conforms, testWord), Qualified: st.ID.Package + "." + st.Name,
 		Subject: st.Name, Declaration: declared.Name, Excusals: excusals, Ceilings: ceilings, Targets: targets,
 		Levels: levels, Options: options, FromHandle: len(view.Params) == 1, Isolate: g.settings.Isolate,
 	}
@@ -2059,13 +2148,14 @@ func skips(m *sdk.StructMatch, callable string) (skipped, refused bool) {
 }
 
 // subjectOf returns the type of the subjects of the suite of the declaration
-// decl: the interface at its witnesses, or the interface of the methods of a
-// struct, which emitted refers to.
+// decl: the interface at its witnesses, or the emitted interface of the
+// methods of a struct, whose origin is declared. p is the part of the
+// language of the plan.
 func (*generator) subjectOf(
-	e *sdk.Emitter, b *rules.Bound, decl symbol.Symbol, emitted func(string) *emit.TypeRef,
+	e *sdk.Emitter, p part, b *rules.Bound, decl symbol.Symbol, declared *symbol.Identity,
 ) *emit.TypeRef {
 	if st, isStruct := decl.(*node.Struct); isStruct {
-		return emitted(e.JoinName(methodsWord, st.Name))
+		return emittedRef(p, declared, symbol.KindInterface, e.JoinName(methodsWord, st.Name))
 	}
 	i, _ := decl.(*node.Interface)
 	subject := &emit.TypeRef{Spelling: i.Name, Target: i.ID}
@@ -2101,6 +2191,22 @@ func suites(m sdk.SubjectMatch) []node.Declaration {
 // canonical is the canonical name of the directive suite, the spelling that
 // names the plugin.
 var canonical = directive.Schema{Plugin: string(ID), Name: SuiteDirective}.Canonical()
+
+// fieldsOfMembers returns the names of the required fields of the member walk
+// of the interface decl, in the order of the walk. Each field of an interface
+// is public. A planted defect forwards a required field to its fresh subject,
+// and leaves out an optional field, because the type takes an object without
+// it.
+func fieldsOfMembers(b *rules.Bound, decl symbol.Symbol) []string {
+	set, _ := b.MembersOf(decl)
+	var out []string
+	for i := range set.Members {
+		if field, isField := set.Members[i].Symbol.(*node.Field); isField && !field.Optional {
+			out = append(out, field.Name)
+		}
+	}
+	return out
+}
 
 // methodsOf returns the exported methods of the member walk of the
 // declaration decl, in the order of the walk.

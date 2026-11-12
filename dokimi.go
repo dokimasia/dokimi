@@ -69,34 +69,42 @@ func Base() *workspace.Builder {
 // alone scopes each plan, so a plan also reads the packages of its language
 // that a store provides, such as the standard library of Go. A double of an
 // interface that embeds io.Closer then has the method Close. Both plans share
-// one instance of each generator: builder, stub, enum and sentinel. The plan
-// go also runs suite, which writes the suites of Go and the lock of their
-// checks at the root of the workspace as dokimi.go.lock, sim, which writes the
-// simulation of each machine interface, and fake, which writes the verified
-// fake of each interface under its directive. The test of a fake applies the
-// suite of its interface, so fake runs after suite. builder also has an
-// annotate half, which the workspace runs with the annotators. It stamps the
-// names of each builder, which the stub generator reads for the default
-// results of a double. Each call returns new plugin instances.
+// one instance of each generator: builder, stub, enum, sentinel and suite.
+// suite writes the suites of a plan and the lock of their checks at the root
+// of the workspace, as dokimi.go.lock and dokimi.typescript.lock. The plan go
+// also runs sim, which writes the simulation of each machine interface, and
+// fake, which writes the verified fake of each interface under its directive.
+// The test of a fake applies the suite of its interface, so fake runs after
+// suite. builder also has an annotate half, which the workspace runs with the
+// annotators. It stamps the names of each builder, which the stub generator
+// reads for the default results of a double. Each call returns new plugin
+// instances.
 func Plans() []workspace.Plan {
-	generators := []plugin.Generator{builder.New(), stub.New(), enum.New(), sentinel.New()}
+	generators := []plugin.Generator{builder.New(), stub.New(), enum.New(), sentinel.New(), suite.New()}
 	return []workspace.Plan{
 		{
 			Name:       GoPlan,
 			Sources:    workspace.Sources{Lang: golang.Lang},
-			Generators: append(slices.Clone(generators), suite.New(), sim.New(), fake.New()),
+			Generators: append(slices.Clone(generators), sim.New(), fake.New()),
 			Backend:    gobackend.New(),
-			Layout: layout.Config{Families: map[layout.Family]layout.Refinement{
-				{Plugin: suite.ID, Tag: suite.LockTag}: {Dir: ".", File: "dokimi." + GoPlan + ".lock"},
-			}},
+			Layout:     lockLayout(GoPlan),
 		},
 		{
 			Name:       TypeScriptPlan,
 			Sources:    workspace.Sources{Lang: typescript.Lang},
 			Generators: generators,
 			Backend:    tsbackend.New(),
+			Layout:     lockLayout(TypeScriptPlan),
 		},
 	}
+}
+
+// lockLayout returns the layout that writes the lock of the suites of the
+// plan named plan at the root of the workspace, as dokimi.<plan>.lock.
+func lockLayout(plan string) layout.Config {
+	return layout.Config{Families: map[layout.Family]layout.Refinement{
+		{Plugin: suite.ID, Tag: suite.LockTag}: {Dir: ".", File: "dokimi." + plan + ".lock"},
+	}}
 }
 
 // Compose returns Base with Plans, the composition of the binary.

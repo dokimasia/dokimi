@@ -178,6 +178,19 @@ func TestFacts(t *testing.T) {
 			assert.Equal(t, names, []string{"ID", "User"}, "the session has two exported fields")
 		})
 
+		t.Run("records the properties of the value of a TypeScript interface", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, tsTree, versionsModule).suites["Versions"]
+
+			version := factsOf(t, &got, "version")
+			names := make([]string, 0, len(version.Results[0].Fields))
+			for _, f := range version.Results[0].Fields {
+				names = append(names, f.Name)
+			}
+			assert.Equal(t, names, []string{"key", "rev"}, "the record has the properties key and rev")
+		})
+
 		t.Run("records the inputs of a generic interface at its witnesses", func(t *testing.T) {
 			t.Parallel()
 

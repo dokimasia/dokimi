@@ -190,18 +190,29 @@ func (k *caller) defaultOf(ref *node.TypeRef) (emit.Value, bool) {
 }
 
 // fieldsOf returns the exported fields of the struct that ref refers to, or
-// that the pointer ref points to, with the shape of each.
+// that the pointer ref points to, with the shape of each. The fields of a
+// TypeScript interface are its properties.
 func (k *caller) fieldsOf(ref *node.TypeRef) []derive.Field {
 	if ref.Form == symbol.FormOptional {
 		ref = ref.Elems[0]
 	}
 	sym, _ := k.m.Reader().Lookup(ref.Target)
-	st, isStruct := sym.(*node.Struct)
-	if !isStruct {
+	var fields []*node.Field
+	switch d := sym.(type) {
+	case *node.Struct:
+		fields = d.Fields
+	case *node.Interface:
+		set, _ := k.b.MembersOf(d)
+		for i := range set.Members {
+			if f, isField := set.Members[i].Symbol.(*node.Field); isField {
+				fields = append(fields, f)
+			}
+		}
+	default:
 		return nil
 	}
 	var out []derive.Field
-	for _, f := range st.Fields {
+	for _, f := range fields {
 		if f.Visibility == symbol.VisibilityPublic {
 			out = append(out, derive.Field{Name: f.Name, Shape: k.b.FieldTypeOf(f)})
 		}

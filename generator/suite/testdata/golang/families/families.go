@@ -30,6 +30,13 @@ type Value struct {
 	Rev  int64
 }
 
+// Revised returns v with the revision rev, so the members of Value include a
+// method beside its fields.
+func (v Value) Revised(rev int64) Value {
+	v.Rev = rev
+	return v
+}
+
 // Invalid is a value that Validate refuses, and Unkeyed a value that Write
 // refuses.
 var (

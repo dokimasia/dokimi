@@ -627,21 +627,30 @@ func (k *caller) wholeStartOf(d *node.Alias, ref *node.TypeRef, taken map[string
 	if !d.Defined || len(d.TypeParams) > 0 || !k.importable(ref) {
 		return Start{}, false
 	}
-	s := Start{Type: rules.EmitRef(ref), Whole: true}
-	if sample, _ := k.b.View().Authored(k.b.Source(), d.ID, ref); sample.OK() && k.referable(&sample.Value) {
-		s.Value = sample.Value
-	} else if text, declared := sdk.FactOf(k.m, d.ID, meta.Named[string](defaults.KeyValue)); declared {
-		scope := k.b.View().ScopeOf(d.ID)
-		value, read := defaults.Value(&k.b, &scope, ref, text)
-		if !read || !k.referable(&value) {
-			return Start{}, false
-		}
-		s.Value = value
-	} else {
+	value, started := k.startValueOf(d, ref)
+	if !started {
 		return Start{}, false
 	}
+	s := Start{Type: rules.EmitRef(ref), Whole: true, Value: value}
 	k.name(&s, d.Name, taken)
 	return s, true
+}
+
+// startValueOf returns the starting value of the values of the alias d at
+// the type ref: its authored sample, or else its declared default, where the
+// file of the suite can refer to the value. It reports false for an alias
+// without such a value.
+func (k *caller) startValueOf(d *node.Alias, ref *node.TypeRef) (emit.Value, bool) {
+	if sample, _ := k.b.View().Authored(k.b.Source(), d.ID, ref); sample.OK() && k.referable(&sample.Value) {
+		return sample.Value, true
+	}
+	text, declared := sdk.FactOf(k.m, d.ID, meta.Named[string](defaults.KeyValue))
+	if !declared {
+		return emit.Value{}, false
+	}
+	scope := k.b.View().ScopeOf(d.ID)
+	value, read := defaults.Value(&k.b, &scope, ref, text)
+	return value, read && k.referable(&value)
 }
 
 // name gives the generator s of the values of the type named typ its name,

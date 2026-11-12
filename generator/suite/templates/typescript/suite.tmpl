@@ -1,0 +1,434 @@
+{{- use "@dokimi/runtime/conform/compat" "compatV1"}}
+{{- range .Records}}
+{{- $d := .Decl}}
+{{- $c := .Data}}
+{{- $n := $c.Names}}
+{{- $checks := suiteCamel $n.Checks}}
+{{- if eq $d.Name $checks}}
+{{- $subject := $c.Subject}}
+{{- $s := spell $subject}}
+{{- $handle := suitePascal $n.Handle}}
+{{- $option := suitePascal $n.Option}}
+{{- $suite := suiteCamel $n.Suite}}
+{{- $id := spell (suiteType "Id" "@dokimi/runtime/conform/suite" $subject)}}
+{{- $callable := spell (suiteType "Callable" "@dokimi/runtime/conform/suite" $subject)}}
+
+{{docs (wrapdocs (printf `The handle of a check of the suite of %s.` $c.Declaration))}}
+{{- ""}}export type {{$handle}} = {{spell (suiteType "Handle" "@dokimi/runtime/conform/handle" $subject)}};
+
+{{docs (wrapdocs (printf `A check of the suite of %s.` $c.Declaration))}}
+{{- ""}}export type {{suitePascal $n.Check}} = {{spell (suiteType "Check" "@dokimi/runtime/conform/suite" $subject)}};
+
+{{docs (wrapdocs (printf `The options of an application of the suite of %s.` $c.Declaration))}}
+{{- ""}}export type {{$option}} = {{spell (suiteType "Options" "@dokimi/runtime/conform/options" $subject)}};
+{{- with $c.Func}}
+
+{{docs (wrapdocs (printf `The type of the function %s. Each subject of the suite of %s has it.` $c.Declaration $c.Declaration))}}
+{{- ""}}export type {{$s}} = ({{params .Params}}) => {{template "suite.result" .}};
+{{- end}}
+
+{{docs (wrapdocs (printf `The name of each callable of %s, with the identity of each of its checks.` $c.Declaration))}}
+{{- ""}}export const {{$checks}} = {
+{{- range $c.Callables}}
+{{- $type := .Type}}
+{{- $name := .Name}}
+{{- $indent := "    "}}
+{{- with .Field}}
+  {{.}}: {
+{{- else}}{{$indent = "  "}}{{end}}
+{{$indent}}callable: {{value (suiteString $name)}} as {{$callable}},
+{{- range $c.Checks}}
+{{- if eq .Type $type}}
+{{$indent}}{{suiteCamel .Method}}: (): {{$id}} => {{value (suiteString (printf "%s/%s" $name .Segment))}},
+{{- end}}
+{{- end}}
+{{- range $c.Derived}}
+{{- if and (eq .Type $type) (not .Base)}}
+{{$indent}}{{suiteCamel .Method}}: (): {{$id}} => {{if .Whole}}{{value (suiteString .Whole)}}{{else}}{{value (suiteString (printf "%s/%s" $name .Segment))}}{{end}},
+{{- end}}
+{{- end}}
+{{- if .Field}}
+  },
+{{- end}}
+{{- end}}
+};
+{{- $prop := ""}}
+{{- range $c.Shapes}}
+{{- $prop = import "@dokimi/assert" "prop"}}
+
+{{- if .Start}}
+
+{{docs (wrapdocs (printf `The generator of the values of %s that the generated bindings draw: its starting value, or a value of its shape.` (spell .Type)))}}
+{{- ""}}const {{.Name}} = {{$prop}}.oneOf<{{spell .Type}}>({{$prop}}.just({{value .Start}}), {{$prop}}.ofShape<{{spell .Type}}>({{value (suiteString .File)}}));
+{{- else}}
+
+{{docs (wrapdocs (printf `The generator of the values of %s that the generated bindings draw.` (spell .Type)))}}
+{{- ""}}const {{.Name}} = {{$prop}}.ofShape<{{spell .Type}}>({{value (suiteString .File)}});
+{{- end}}
+{{- end}}
+
+{{docs (wrapdocs (printf `Returns the checks of %s, the claims that the generator refuses for its callables, and the classifications of its callables without a check.` $c.Declaration))}}
+{{- ""}}export function {{$suite}}(): {{spell (suiteType "Suite" "@dokimi/runtime/conform/suite" $subject)}} {
+  return {
+    declaration: {{value (suiteString $c.Declaration)}},
+    package: {{value (suiteString $c.Package)}},
+    generator: { name: "dokimi", version: {{value (suiteString $c.Version)}} },
+{{- if or $c.Derived $c.Checks}}
+    checks: [
+{{- range $c.Derived}}
+      {
+        id: {{template "suite.id" (suiteIdentityOf $checks .Field .Method .Base)}},
+        statement: {{value (suiteString .Statement)}},
+        claim: {{value (suiteString .Claim)}},
+        machineries: [{{range $i, $m := .Machineries}}{{if $i}}, {{end}}{{value (suiteString $m)}}{{end}}],
+{{- if .Shallow}}
+        shallow: true,
+{{- end}}
+{{- with .Entails}}
+        entails: [{{range $i, $e := .}}{{if $i}}, {{end}}{{template "suite.id" (suiteIdentityOf $checks $e.Field $e.Method $e.Base)}}{{end}}],
+{{- end}}
+{{- $probe := import (suiteModule .Probe) (suiteCamel .Probe)}}
+{{- if or .Generated .Cased .Sequence}}
+        property: async (h, c) => {
+{{- range .Draws}}{{template "suite.draw" .}}{{end}}
+          await {{$probe}}(h{{if or .Cased .Sequence}}, c{{end}}{{range .Args}}, {{template "suite.arg" .}}{{end}});
+        },
+{{- else}}
+        apply: async (h) => {
+          await {{$probe}}(h{{range .Args}}, {{template "suite.arg" .}}{{end}});
+        },
+{{- end}}
+        defect: {{suiteCamel .Defect}},
+      },
+{{- end}}
+{{- range $c.Checks}}
+      {
+        id: {{$checks}}{{with .Field}}.{{.}}{{end}}.{{suiteCamel .Method}}(),
+        statement: {{value (suiteString .Statement)}},
+{{- if .Property}}
+        property: {{spellvalue .Apply}},
+{{- else}}
+        apply: {{spellvalue .Apply}},
+{{- end}}
+        defect: {{spellvalue .Defect}},
+      },
+{{- end}}
+    ],
+{{- else}}
+    checks: [],
+{{- end}}
+{{- with $c.Derivation.Refusals}}
+    refusals: [
+{{- range .}}
+      {
+        claim: {{value (suiteString (print .Claim))}},
+        callable: {{value (suiteString (suiteIdentity $c.Declaration (not $c.Func) .Callable))}},
+        gate: {{value (suiteString (print .Gate))}},
+        why: {{value (suiteString .Why)}},
+        remedy: {{value (suiteString .Remedy)}},
+      },
+{{- end}}
+    ],
+{{- else}}
+    refusals: [],
+{{- end}}
+{{- with $c.Derivation.Unclaimed}}
+    unclaimed: [
+{{- range .}}
+      {
+        classification: {{value (suiteString .Classification)}},
+        callable: {{value (suiteString (suiteIdentity $c.Declaration (not $c.Func) .Callable))}},
+        stance: {{value (suiteString (print .Stance))}},
+{{- with .Note}}
+        note: {{value (suiteString .)}},
+{{- end}}
+      },
+{{- end}}
+    ],
+{{- else}}
+    unclaimed: [],
+{{- end}}
+  };
+}
+{{- $run := import "@dokimi/runtime/conform/run" "run"}}
+{{- if $c.Func}}
+
+{{docs (wrapdocs (printf `Registers the application of the checks of %s, and of the checks that options add, to subject.` $c.Declaration))}}
+{{- ""}}export function {{suiteCamel $n.Run}}(subject: {{$s}}, options?: {{$option}}): void {
+  {{suiteCamel $n.RunFromHandle}}(() => subject, options);
+}
+{{- else}}
+
+{{docs (wrapdocs (printf `Registers the application of the checks of %s, and of the checks that options add, to a fresh subject of newSubject for each check.` $c.Declaration))}}
+{{- ""}}export function {{suiteCamel $n.Run}}(newSubject: () => {{$s}} | Promise<{{$s}}>, options?: {{$option}}): void {
+  {{suiteCamel $n.RunFromHandle}}(() => newSubject(), options);
+}
+{{- end}}
+
+{{docs (wrapdocs `Registers the same application to a subject that newSubject builds from the handle of each check.`)}}
+{{- ""}}export function {{suiteCamel $n.RunFromHandle}}(newSubject: (h: {{$handle}}) => {{$s}} | Promise<{{$s}}>, options?: {{$option}}): void {
+  {{$run}}({{$suite}}(), newSubject, options);
+}
+{{- range $c.Defects}}
+{{- template "suite.defect" (suiteDefectOf . $c.Callables $c.Fields $handle $s)}}
+{{- end}}
+{{- with $c.Sequences}}{{$q := .}}
+{{- if $q.Actions}}{{$prop := import "@dokimi/assert" "prop"}}{{$complete := import "@dokimi/runtime/conform/output" "complete"}}
+
+{{docs (wrapdocs (printf `The actions of the generated sequences of %s over the subject that subject returns. The actions of a case take their keys from the pools that it draws.` $c.Declaration))}}
+{{- ""}}const {{suiteCamel $q.Actions}}: {{spell (suiteType "Actions" "@dokimi/runtime/probe/sequence" $subject)}} = (c, subject) => {
+{{- range $q.Pools}}
+  const {{.Name}} = c.draw({{$prop}}.list({{.Generator}}, { unique: true, minSize: 1, maxSize: 3 }), {{value (suiteString .Label)}});
+{{- end}}
+  return [
+{{- range $q.Steps}}{{if .Action}}
+{{- $inputs := false}}{{range .Params}}{{if ge .Arg 0}}{{$inputs = true}}{{end}}{{end}}
+    {
+      name: {{value (suiteString .Name)}},
+{{- if $inputs}}
+      input: (step) => [
+{{- range .Params}}{{if ge .Arg 0}}
+        {{template "suite.step.input" .}},
+{{- end}}{{end}}
+      ],
+      run: async (step, client, input) => {
+        const args = input as readonly unknown[];
+{{- else}}
+      run: async (step, client) => {
+        const args: readonly unknown[] = [];
+{{- end}}
+        const call = step.history().invoke(client, {{value (suiteString .Name)}}, args{{range .Keys}}, {{if .Field}}(args[{{.Arg}}] as {{spell .Type}}).{{.Field}}{{else}}args[{{.Arg}}]{{end}}{{end}});
+        await {{suiteCamel .Call}}(step.signal, subject(), args).then(
+          (values) => {
+            {{$complete}}(step.signal, call, undefined, ...values);
+          },
+          (error: unknown) => {
+            {{$complete}}(step.signal, call, error);
+          },
+        );
+      },
+    },
+{{- end}}{{end}}
+  ];
+};
+{{- range $q.Steps}}{{if .Action}}{{template "suite.step" (suiteStep . $s $q.Normalize)}}{{end}}{{end}}
+{{- end}}
+{{- end}}
+
+void compatV1;
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.id writes the identity of a check through the names of the callables:
+the method of the identity on the field of its callable, and the identity of
+the generated binding of the method of its sample binding.
+*/}}
+{{- define "suite.id"}}
+{{- $path := .Checks}}{{with .Field}}{{$path = printf "%s.%s" $path .}}{{end}}
+{{- if .Base}}{{import "@dokimi/runtime/conform/suite" "generated"}}({{$path}}.{{suiteCamel .Base}}())
+{{- else}}{{$path}}.{{suiteCamel .Method}}()
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.result writes the type of the result of a callable: the promise of its
+value for an asynchronous callable, and void for a callable without a value.
+*/}}
+{{- define "suite.result"}}
+{{- $value := "void"}}{{with .Returns.Items}}{{$value = spell (index . 0).Type}}{{end}}
+{{- if .Async}}Promise<{{$value}}>{{else}}{{$value}}{{end}}
+{{- end}}
+
+{{- /*
+suite.draw writes one draw of a generated binding: two distinct values of a
+type, or one value of a type, through the generator of the shape definition
+of the type.
+*/}}
+{{- define "suite.draw"}}
+{{- if .Pair}}{{$prop := import "@dokimi/assert" "prop"}}
+          const {{.Name}} = c.draw({{$prop}}.list({{.Generator}}, { unique: true, minSize: 2, maxSize: 2 }), {{value (suiteString .Label)}});
+{{- else}}
+          const {{.Name}} = c.draw({{.Generator}}, {{value (suiteString .Label)}});
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.arg writes one argument of the probe of a derived check.
+*/}}
+{{- define "suite.arg"}}
+{{- if .Closure}}{{template "suite.closure" .Closure}}
+{{- else if .Expr}}{{template "suite.expr" .Expr}}
+{{- else if .Projection}}(v: {{spell .Projection.Type}}) => v{{with .Projection.Field}}.{{.}}{{end}}
+{{- else if .Ref}}{{suiteCamel .Ref}}
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.step writes the function of the step of a callable, which calls the
+callable on the subject with the arguments of a list. It resolves with the
+value of the call, as the one value of a list, and with an empty list for a
+callable without a value. It rejects with the error of the call.
+*/}}
+{{- define "suite.step"}}
+{{- with .Step}}
+
+{{docs (wrapdocs (printf `Calls %s on subject with the arguments args, and resolves with the values of the call.` .Name))}}
+{{- ""}}async function {{suiteCamel .Call}}(signal: AbortSignal, subject: {{$.Subject}}, args: readonly unknown[]): Promise<readonly unknown[]> {
+{{- if .Values}}
+  return [await {{template "suite.step.call" .}}];
+{{- else}}
+  await {{template "suite.step.call" .}};
+  return [];
+{{- end}}
+}
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.step.call writes the call of a step on the subject with the arguments
+of the list args, and the signal of the step for the parameter in the role
+context.
+*/}}
+{{- define "suite.step.call"}}subject{{with .Field}}.{{.}}{{end}}({{range $i, $p := .Params}}{{if not .Omitted}}{{if $i}}, {{end}}{{if .Context}}signal{{else if .Variadic}}...(args[{{.Arg}}] as {{spell .Type}}[]){{else}}args[{{.Arg}}] as {{spell .Type}}{{end}}{{end}}{{end}}){{end}}
+
+{{- /*
+suite.step.input writes the draw of one input of an action: a key of its
+pool, the sample of the parameter, or a value of the generator of its type.
+Each field of the value that takes a key of a pool takes it after the draw.
+*/}}
+{{- define "suite.step.input"}}
+{{- $prop := import "@dokimi/assert" "prop"}}
+{{- if .Pool}}step.draw({{$prop}}.sampledFrom(...{{.Pool}}), {{value (suiteString .Label)}})
+{{- else if .Sample}}{{if .Variadic}}[{{value .Sample}}]{{else}}{{value .Sample}}{{end}}
+{{- else if .Fields}}Object.assign(step.draw({{.Generator}}, {{value (suiteString .Label)}}), {
+{{- range .Fields}} {{.Name}}: step.draw({{$prop}}.sampledFrom(...{{.Pool}}), {{value (suiteString .Label)}}),{{end}} })
+{{- else if .Variadic}}step.draw({{$prop}}.list({{.Generator}}), {{value (suiteString .Label)}})
+{{- else}}step.draw({{.Generator}}, {{value (suiteString .Label)}})
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.expr writes one expression of a derived check.
+*/}}
+{{- define "suite.expr"}}
+{{- if .Value}}{{value .Value}}
+{{- else if .Drawn}}{{.Drawn.Draw.Name}}{{if .Drawn.Draw.Pair}}[{{if .Drawn.Second}}1{{else}}0{{end}}]{{end}}
+{{- else if .Of}}({{template "suite.expr" .Of}}).{{.Select}}
+{{- else if .Name}}{{.Name}}
+{{- else}}{{.Word}}
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.closure writes a closure that a derived check passes to its probe. It
+takes the signal of the call where its callable takes one.
+*/}}
+{{- define "suite.closure"}}
+{{- $signal := false}}{{range .Args}}{{if eq .Word "signal"}}{{$signal = true}}{{end}}{{end}}
+{{- if $signal}}(signal){{else}}(){{end}} => {{with .Receiver}}{{template "suite.expr" .}}{{else}}h.subject(){{end}}{{with .Method}}.{{.}}{{end}}({{range $i, $e := .Args}}{{if $i}}, {{end}}{{template "suite.expr" $e}}{{end}})
+{{- end}}
+
+{{- /*
+suite.defect writes the function of a planted defect, which returns an object
+over a fresh subject of the handle. The object calls the fresh subject for
+each callable of the declaration and reads it for each required field, and
+breaks the callable of the defect. The defect of a function is a function. A
+defect builds the fresh subject where its body calls the callable, or where
+its object forwards another callable or a field.
+*/}}
+{{- define "suite.defect"}}
+{{- $d := .Defect}}
+{{- if or $d.Delegates (and $d.Type (or .Fields (gt (len .Callables) 1)))}}
+
+{{docs (wrapdocs (printf `Returns the planted defect of %s over a fresh subject.` $d.Doc))}}
+{{- ""}}async function {{suiteCamel $d.Name}}(h: {{.Handle}}): Promise<{{.Subject}}> {
+  const s = await h.fresh();
+{{- else}}
+
+{{docs (wrapdocs (printf `Returns the planted defect of %s.` $d.Doc))}}
+{{- ""}}function {{suiteCamel $d.Name}}(_h: {{.Handle}}): {{.Subject}} {
+{{- end}}
+{{- if $d.Counts}}
+  let calls = 0;
+{{- end}}
+{{- if eq $d.Body "first-after"}}
+  let first: { readonly value: {{spell (index $d.Method.Returns.Items 0).Type}} } | undefined;
+{{- end}}
+{{- if $d.Type}}
+  return {
+{{- range .Fields}}
+    get {{.}}() {
+      return s.{{.}};
+    },
+{{- end}}
+{{- range .Callables}}
+{{- if eq .Field $d.Method.Name}}
+    {{.Field}}: {{template "suite.defect.body" (suiteBody $d (printf "s.%s" .Field) "" "s")}},
+{{- else}}
+    {{.Field}}: s.{{.Field}}.bind(s),
+{{- end}}
+{{- end}}
+  };
+{{- else}}
+  return {{template "suite.defect.body" (suiteBody $d "s" "" "s")}};
+{{- end}}
+}
+{{- end}}
+
+{{- /*
+suite.defect.body writes the override of the callable of a planted defect as
+an arrow function. Call is the callable of the fresh subject. A body that
+counts its calls increments the counter of the function of the defect.
+*/}}
+{{- define "suite.defect.body"}}
+{{- $d := .Defect}}
+{{- $panic := value (suiteString (printf "the planted defect of %s" $d.Doc))}}
+{{- if eq $d.Body "panic"}}() => {
+      throw new TypeError({{$panic}});
+    }
+{{- else if eq $d.Body "panic-later"}}({{template "suite.defect.params" $d}}) => {
+      calls += 1;
+      if (calls > 1) {
+        throw new TypeError({{$panic}});
+      }
+      return {{.Call}}({{template "suite.defect.params" $d}});
+    }
+{{- else if eq $d.Body "fail"}}{{if $d.Method.Async}}async {{end}}() => {
+      throw new {{import "@dokimi/runtime/conform/errors" "GeneratedError"}}({{$panic}});
+    }
+{{- else if eq $d.Body "fail-later"}}({{template "suite.defect.params" $d}}) => {
+      calls += 1;
+      if (calls > 1) {
+        throw new {{import "@dokimi/runtime/conform/errors" "GeneratedError"}}({{$panic}});
+      }
+      return {{.Call}}({{template "suite.defect.params" $d}});
+    }
+{{- else if eq $d.Body "uncancelled"}}{{if $d.Method.Async}}async {{end}}({{template "suite.defect.params" $d}}) => {
+      if ({{$d.Context}}?.aborted) {
+        return{{range $d.Results}}{{if eq .Role "value"}} {{template "suite.expr" .Sample}}{{end}}{{end}};
+      }
+      return {{.Call}}({{template "suite.defect.params" $d}});
+    }
+{{- else if eq $d.Body "drift"}}{{if $d.Method.Async}}async {{end}}() => {
+      calls += 1;
+{{- range $d.Results}}{{if eq .Role "value"}}
+      return calls === 1 ? {{template "suite.expr" .Other}} : {{template "suite.expr" .Sample}};
+{{- end}}{{end}}
+    }
+{{- else if eq $d.Body "first-after"}}{{if $d.Method.Async}}async {{end}}({{template "suite.defect.params" $d}}) => {
+      calls += 1;
+      const r0 = {{if $d.Method.Async}}await {{end}}{{.Call}}({{template "suite.defect.params" $d}});
+      first ??= { value: r0 };
+      return calls > {{$d.After}} ? first.value : r0;
+    }
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.defect.params writes the parameters of the override of a planted
+defect, which are also the arguments of its call of the fresh subject.
+*/}}
+{{- define "suite.defect.params"}}
+{{- range $i, $p := .Method.Params.Items}}{{if $i}}, {{end}}{{if $p.Variadic}}...{{end}}{{$p.Name}}{{end}}
+{{- end}}

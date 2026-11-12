@@ -212,6 +212,46 @@ func TestBudget(t *testing.T) {
 			})
 		}
 
+		t.Run("warns at a ceiling of allocations in a language that counts no allocations", func(t *testing.T) {
+			t.Parallel()
+
+			p := suite.New()
+			f := fixture(t, tsTree, p, "budgeted")
+			stamps, _ := phases(t, f, p)
+			decl := f.Find(t, symbol.KindMethod, "Meter", "count")
+			expect.Equal(t, messages(stamps.Sink.All(), decl.Position()), []string{
+				"the language of Meter.count counts no allocations of a call, so its budget has no ceiling of " +
+					"allocations or bytes",
+			}, "suite warns at the budget above the callable")
+			expect.Equal(t, stamped(t, f, decl.Identity()), ceilings{}, "suite stamps no ceiling of allocations")
+		})
+
+		t.Run("warns at a ceiling of bytes in a language that counts no allocations", func(t *testing.T) {
+			t.Parallel()
+
+			p := suite.New()
+			f := fixture(t, tsTree, p, "budgeted")
+			stamps, _ := phases(t, f, p)
+			decl := f.Find(t, symbol.KindMethod, "Meter", "size")
+			expect.Equal(t, messages(stamps.Sink.All(), decl.Position()), []string{
+				"the language of Meter.size counts no allocations of a call, so its budget has no ceiling of " +
+					"allocations or bytes",
+			}, "suite warns at the budget above the callable")
+			expect.Equal(t, stamped(t, f, decl.Identity()), ceilings{}, "suite stamps no ceiling of bytes")
+		})
+
+		t.Run("stamps a ceiling of latency in a language that counts no allocations", func(t *testing.T) {
+			t.Parallel()
+
+			p := suite.New()
+			f := fixture(t, tsTree, p, "budgeted")
+			stamps, _ := phases(t, f, p)
+			decl := f.Find(t, symbol.KindMethod, "Meter", "total")
+			expect.Empty(t, messages(stamps.Sink.All(), decl.Position()), "suite accepts the budget above the callable")
+			expect.Equal(t, stamped(t, f, decl.Identity()), ceilings{latency: time.Millisecond, latencySet: true},
+				"suite stamps the ceiling of latency")
+		})
+
 		t.Run("records the ceilings of a subject for its conformance test", func(t *testing.T) {
 			t.Parallel()
 

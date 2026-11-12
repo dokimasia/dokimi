@@ -216,3 +216,14 @@ var BadFalsify = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Meaning: "the function of the param falsify of the directive suite is not a function of the options of an " +
 		"application",
 })
+
+// UncountedBudget reports a budget that states a ceiling of allocations or of
+// bytes in a language that counts no allocations of a call, such as
+// TypeScript, whose V8 counts none. The finding is a Warning at the
+// directive, and suite stamps the other ceilings and the warm-up of the
+// budget.
+var UncountedBudget = diag.MustRegister(CodePrefix, diag.CodeSpec{
+	Number: 18,
+	Meaning: "the directive budget states a ceiling of allocations or of bytes in a language that counts no " +
+		"allocations of a call",
+})

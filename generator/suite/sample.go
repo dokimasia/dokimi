@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"go.dokimi.dev/eidos/lang/naming"
 	"go.dokimi.dev/eidos/plugin/shape"
 	"go.dokimi.dev/eidos/sdk"
 	"go.dokimi.dev/eidos/sdk/emit"
@@ -105,8 +104,9 @@ func (k *caller) builtOf(f *derive.Facts, i int) (Expr, bool) {
 
 // declareBuilt makes c call each builder whose values its arguments and its
 // assignments take, once before its call, and names each value that it
-// takes after the callable and the position of the value, as builtSeal0.
-func declareBuilt(c *Closure) {
+// takes after the callable and the position of the value in the Pascal case
+// of the part, as builtSeal0.
+func (k *caller) declareBuilt(c *Closure) {
 	var visit func(e *Expr)
 	visit = func(e *Expr) {
 		switch {
@@ -124,7 +124,7 @@ func declareBuilt(c *Closure) {
 				c.Builds = append(c.Builds, Build{Builder: b.Builder, Names: names})
 				at = len(c.Builds) - 1
 			}
-			b.Name = builtWord + naming.Pascal(b.Builder.Callable) + strconv.Itoa(b.Index)
+			b.Name = builtWord + k.p.pascal(b.Builder.Callable) + strconv.Itoa(b.Index)
 			c.Builds[at].Names[b.Index] = b.Name
 		case e.Of != nil:
 			visit(e.Of)

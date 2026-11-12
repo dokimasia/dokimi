@@ -74,7 +74,7 @@ func (k *caller) txnOf(s *Suite, q *Sequences, tx *derive.Transaction) *Txn {
 	key := k.typeOf(k.inputRef(write, tx.Key))
 	t := &Txn{
 		Key: key, Value: k.typeOf(k.inputRef(write, tx.Value)), Handle: k.typeOf(k.resultRef(tx.Begin.Facts, 0)),
-		Pool: q.pool(key).Name, Function: writeFunction, Appends: tx.Appends,
+		Pool: q.pool(key, k.p).Name, Function: writeFunction, Appends: tx.Appends,
 		Text: write.Inputs[tx.Value].Shape.Form == symbol.FormText,
 	}
 	if tx.Appends {

@@ -1,0 +1,116 @@
+{{- range .Records}}
+{{- $r := .}}
+{{- $c := .Data}}
+{{- $refs := .Decl.Fields.Items}}
+{{- if $c.Subject}}
+
+{{spellvalue (index $refs 0).Type}}({{spellvalue (index $refs 1).Type}}, {
+  subject: {{value (suiteString $c.Qualified)}},
+{{- if $c.Isolate}}
+  isolate: true,
+{{- end}}
+{{- with $c.Cases}}
+  cases: {{.}},
+{{- end}}
+{{- with $c.Excusals}}
+{{- $checks := spellvalue (index $refs 2).Type}}
+  excuse: {
+{{- range .}}
+    [{{template "suite.excused" (suiteIdentityOf $checks .Field .Method .Base)}}]: {{value (suiteString .Reason)}},
+{{- end}}
+  },
+{{- end}}
+{{- with $c.Options}}
+  ...{{spellvalue .}}(),
+{{- end}}
+});
+{{- else}}
+{{- $suite := spellvalue (index $refs 0).Type}}
+{{- $handle := spell (index $refs 3).Type}}
+{{- $subject := spell (index $refs 5).Type}}
+{{- $check := import "@dokimi/assert" "check"}}
+{{- $byIdentity := import "@dokimi/assert" "byIdentity"}}
+
+{{import "@dokimi/runtime/conform/falsify" "falsify"}}({{$suite}}(){{with $c.Options}}, {{spellvalue .}}(){{end}});
+{{- if $c.Function}}
+{{- $fn := spellvalue (index $refs 7).Type}}
+{{- range $i, $form := slice $refs 1 3}}
+{{- $segment := $c.Receives}}
+{{- $statement := "the subject of a check is the function of the application"}}
+{{- if $i}}
+{{- $segment = $c.Builds}}
+{{- $statement = "the subject of a check is the function that the factory returns"}}
+{{- end}}
+
+{{spellvalue $form.Type}}({{if $i}}() => {{end}}{{$fn}}, {
+  checks: [
+    {
+      id: {{value (suiteString (printf "%s/%s" $c.Declaration $segment))}},
+      statement: {{value (suiteString $statement)}},
+      apply: async (h: {{$handle}}) => {
+        {{$check}}.isEqualTo(h, h.subject(), {{$fn}}, h.statement(), {{$byIdentity}}());
+      },
+      defect: (): {{$subject}} => {{$fn}}.bind(undefined),
+    },
+  ],
+{{- if $c.Excused}}
+  excuseSuite: "the test applies the check of its option alone",
+{{- end}}
+});
+{{- end}}
+{{- else}}
+{{- $built := printf "%sBuilt" (suiteCamel $c.Declaration)}}
+
+{{docs (wrapdocs `The subject that the factory of the last check of an application built.`)}}
+{{- ""}}let {{$built}}: {{$subject}} | undefined;
+{{- range slice $refs 1 3}}
+
+{{spellvalue .Type}}(
+  () => {
+    {{$built}} = {} as {{$subject}};
+    return {{$built}};
+  },
+  {
+    checks: [
+      {
+        id: {{value (suiteString (printf "%s/%s" $c.Declaration $c.Builds))}},
+        statement: "the subject of a check is the value that the factory builds",
+        apply: async (h: {{$handle}}) => {
+          {{$check}}.isEqualTo<{{$subject}} | undefined>(h, h.subject(), {{$built}}, h.statement(), {{$byIdentity}}());
+        },
+        defect: () => ({}) as {{$subject}},
+      },
+    ],
+{{- if $c.Excused}}
+    excuseSuite: "the test applies the check of its option alone",
+{{- end}}
+  },
+);
+{{- end}}
+{{- end}}
+{{- with $c.Identities}}
+{{- $checks := spellvalue (index $refs 6).Type}}
+
+{{import "vitest" "it"}}({{value (suiteString (index $refs 6).Type.Spelling)}}, () => {
+{{- range .}}
+  {{import "vitest" "expect"}}({{$checks}}{{with .Field}}.{{.}}{{end}}.{{suiteCamel .Method}}()).isEqualTo(
+    {{value (suiteString .ID)}},
+    "the identity of the check joins the callable and the segment of the check",
+  );
+{{- end}}
+});
+{{- end}}
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.excused writes the identity of an excused check through the names of
+the callables: the method of the identity on the field of its callable, and
+the identity of the generated binding of the method of its sample binding.
+*/}}
+{{- define "suite.excused"}}
+{{- $path := .Checks}}{{with .Field}}{{$path = printf "%s.%s" $path .}}{{end}}
+{{- if .Base}}{{import "@dokimi/runtime/conform/suite" "generated"}}({{$path}}.{{suiteCamel .Base}}())
+{{- else}}{{$path}}.{{suiteCamel .Method}}()
+{{- end}}
+{{- end}}

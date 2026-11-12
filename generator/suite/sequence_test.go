@@ -323,6 +323,29 @@ func TestSequence(t *testing.T) {
 			expect.Equal(t, store.Params[1].Fields[0].Name, "Key", "Get selects the item by its key")
 		})
 
+		{
+			versions := generate(t, tsTree, versionsModule).suites["Versions"]
+			tests := []struct {
+				name string
+				give string
+			}{
+				{name: "gives the record of put the key that version reads it by without a pair", give: "put"},
+				{name: "gives the record of replace the key that version reads it by without a pair", give: "replace"},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+
+					st := stepOf(t, &versions, tt.give)
+					expect.Equal(t, st.Params[0].Fields, []suite.PoolField{
+						{Name: "key", Pool: "keysString", Label: tt.give + ".r.key"},
+					}, "the field key of the record takes a key of the pool of version")
+					expect.Equal(t, st.Keys, []suite.StepKey{{Type: st.Params[0].Type, Field: "key", Arg: 0}},
+						"the history records the key of the record as the key of the call")
+				})
+			}
+		}
+
 		t.Run("gives no key of a pool to a write whose builder returns its inputs", func(t *testing.T) {
 			t.Parallel()
 
@@ -371,6 +394,24 @@ func TestSequence(t *testing.T) {
 
 			derivedNamed(t, suiteOf("Run"), "Retry", "follows-its-graph")
 			derivedNamed(t, suiteOf("Run"), "Advance", "follows-its-graph")
+		})
+
+		t.Run("binds the graph of a workflow whose constant takes its type from its initializer", func(t *testing.T) {
+			t.Parallel()
+
+			flow := generate(t, tsTree, "workflow").suites["Flow"]
+			derivedNamed(t, &flow, "run", "follows-its-graph")
+		})
+
+		t.Run("refuses a workflow whose constant has a type of no graph", func(t *testing.T) {
+			t.Parallel()
+
+			flow := generate(t, tsTree, "workflow").suites["Flow"]
+			refused := slices.ContainsFunc(flow.Derivation.Refusals, func(r derive.Refusal) bool {
+				return r.Callable == "restart" && r.Claim == "follows-its-graph" && r.Gate == spec.GraphOfStates
+			})
+			expect.True(t, refused, "the suite refuses the claim follows-its-graph of restart by the gate "+
+				string(spec.GraphOfStates))
 		})
 
 		t.Run("passes the total that observe reads to the probe of a conserved quantity", func(t *testing.T) {

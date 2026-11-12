@@ -6,10 +6,14 @@ package suite
 import (
 	"reflect"
 	"slices"
+	"strings"
 
 	"go.dokimi.dev/eidos/lang/naming"
+	"go.dokimi.dev/eidos/sdk"
+	"go.dokimi.dev/eidos/sdk/emit"
 	"go.dokimi.dev/eidos/sdk/node"
 	"go.dokimi.dev/eidos/sdk/rules"
+	"go.dokimi.dev/eidos/sdk/symbol"
 
 	"go.dokimi.dev/dokimi/internal/derive"
 )
@@ -23,9 +27,117 @@ import (
 // A draw of a generated function or implementation draws the lists of its
 // results once. It declares a function that builds a new generated function
 // or implementation over the lists, so two calls of a probe take two of them.
+//
+// Generator is the name of the shape definition of the suite whose generator
+// draws the value, for a draw whose parameter has a shape file, and empty for
+// any other draw.
 type Draw struct {
+	Generator string
 	Param
 	Pair bool
+}
+
+// Shape is the shape definition of one type whose values the generated
+// bindings of a suite draw through a shape file, for a language whose
+// property engine reads the type of no value. Name is the name of the
+// variable of the definition in the spelling of the language, Type the type
+// of its values and File its shape file. Start is the starting value of the
+// values, which the generator keeps or changes, and nil for a type without
+// one.
+type Shape struct {
+	Type  *emit.TypeRef
+	Start *emit.Value
+	Name  string
+	File  string
+}
+
+// shapeWord is the word that the name of a shape definition joins to the name
+// of its declaration and of the draw that first reads it, as StoreIdShape for
+// the draw drawnId of the suite of Store.
+const shapeWord = "Shape"
+
+// shaped is one draw of a suite whose type has a shape file: its type, the
+// starting value and the shape file of its values, the word that names its
+// shape definition, and the name of the generator that it reads.
+type shaped struct {
+	typ       *emit.TypeRef
+	start     *emit.Value
+	generator *string
+	file      string
+	word      string
+}
+
+// shapesOf records into s a shape definition for each type with a shape file
+// that the suite draws, and the name of that definition into each draw. The
+// suite draws the inputs of its derived checks, the keys of each pool of its
+// generated sequences, and each input of an action. The shape file of a draw
+// follows from its type. A definition takes the name of the declaration of the
+// suite and of the first draw of its type in the spelling of the part p, as
+// sinkPShape for the draw p of the suite of Sink. The word of a draw is the
+// name of the draw of a check, the type of the keys of a pool, or the name of
+// the parameter of an action. The suites of one module so declare distinct
+// names. A definition takes a number where another definition of the suite
+// has that name, or where the file imports a type of that name for a draw.
+func shapesOf(e *sdk.Emitter, p part, s *Suite) {
+	var draws []shaped
+	for i := range s.Derived {
+		for _, d := range s.Derived[i].Draws {
+			if d.Shape != "" {
+				draws = append(draws, shaped{
+					typ: d.Type, start: d.Start, generator: &d.Generator, file: d.Shape,
+					word: strings.TrimPrefix(d.Name, drawnWord),
+				})
+			}
+		}
+	}
+	if q := s.Sequences; q != nil {
+		for i := range q.Pools {
+			pool := &q.Pools[i]
+			if pool.Shape != "" {
+				draws = append(draws, shaped{
+					typ: pool.Type, start: pool.Start, generator: &pool.Generator, file: pool.Shape,
+					word: pool.Type.Spelling,
+				})
+			}
+		}
+		for i := range q.Steps {
+			for j := range q.Steps[i].Params {
+				sp := &q.Steps[i].Params[j]
+				if sp.Shape != "" {
+					draws = append(draws, shaped{
+						typ: sp.Type, start: sp.Start, generator: &sp.Generator, file: sp.Shape, word: sp.Name,
+					})
+				}
+			}
+		}
+	}
+	taken := map[string]bool{}
+	for _, d := range draws {
+		imported(d.typ, taken)
+	}
+	for _, d := range draws {
+		at := slices.IndexFunc(s.Shapes, func(sh Shape) bool { return reflect.DeepEqual(sh.Type, d.typ) })
+		if at < 0 {
+			word := e.JoinName(shapeWord, e.JoinName(d.word, s.Declaration))
+			name := naming.Unique(taken, p.spelled(symbol.KindVariable, word))
+			taken[name] = true
+			s.Shapes = append(s.Shapes, Shape{Type: d.typ, Start: d.start, Name: name, File: d.file})
+			at = len(s.Shapes) - 1
+		}
+		*d.generator = s.Shapes[at].Name
+	}
+}
+
+// imported adds to taken the name under which the file of a suite refers to
+// typ and to each type in it, such as Box for Box<number>. The spelling of a
+// structural type, such as string[], is no name of a shape definition, so
+// taken may contain it.
+func imported(typ *emit.TypeRef, taken map[string]bool) {
+	name, _, _ := strings.Cut(typ.Spelling, "<")
+	taken[name] = true
+	for _, part := range slices.Concat(typ.Elems, typ.Args) {
+		imported(part, taken)
+	}
 }
 
 // choosing reports whether the draw takes a choice of the case: a draw of a
@@ -165,14 +277,15 @@ func (d *draws) field(f *derive.Facts, i int, name string) (first, second Expr) 
 	if p == nil {
 		return first, second
 	}
-	draw := d.draw(&Param{Name: p.Name + naming.Pascal(name), Label: p.Label + "." + naming.Kebab(name), Type: t})
+	draw := d.draw(&Param{Name: p.Name + d.k.p.pascal(name), Label: p.Label + "." + naming.Kebab(name), Type: t})
 	draw.Pair = true
 	return Expr{Drawn: &Drawn{Draw: draw}}, Expr{Drawn: &Drawn{Draw: draw, Second: true}}
 }
 
 // draw returns the one draw of the check for the label and the type of the
-// parameter p. A new draw takes the name of p after drawnWord, numbered where
-// another draw has that name.
+// parameter p. A new draw takes the name of p after drawnWord in the Pascal
+// case of the part, as drawnID in Go and drawnId in TypeScript, numbered
+// where another draw has that name.
 func (d *draws) draw(p *Param) *Draw {
 	for _, o := range d.list {
 		if o.Label == p.Label && reflect.DeepEqual(o.Type, p.Type) {
@@ -180,7 +293,7 @@ func (d *draws) draw(p *Param) *Draw {
 		}
 	}
 	o := &Draw{Param: *p}
-	o.Name = naming.Unique(d.taken, drawnWord+naming.Pascal(p.Name))
+	o.Name = naming.Unique(d.taken, drawnWord+d.k.p.pascal(p.Name))
 	d.taken[o.Name] = true
 	d.list = append(d.list, o)
 	return o

@@ -13,6 +13,7 @@ import (
 	"go.dokimi.dev/eidos/sdk/diag"
 	"go.dokimi.dev/eidos/sdk/node"
 	"go.dokimi.dev/eidos/sdk/symbol"
+	"go.dokimi.dev/spec"
 
 	"go.dokimi.dev/dokimi/generator/suite"
 	"go.dokimi.dev/dokimi/internal/gentest"
@@ -66,10 +67,10 @@ func TestSample(t *testing.T) {
 
 			metronome := got.suites["Metronome"]
 			expect.Equal(t, derivedNamed(t, &aead, "Seal", "smoke").Machineries,
-				[]string{"InputsBuiltFromTheSubject", "NothingBeyondACaller"},
+				[]string{string(spec.InputsBuiltFromTheSubject), string(spec.NothingBeyondACaller)},
 				"the builder of Seal takes the subject, which it can call")
-			expect.Equal(t, derivedNamed(t, &metronome, "Tick", "smoke").Machineries, []string{"NothingBeyondACaller"},
-				"the builder of Tick takes no subject")
+			expect.Equal(t, derivedNamed(t, &metronome, "Tick", "smoke").Machineries,
+				[]string{string(spec.NothingBeyondACaller)}, "the builder of Tick takes no subject")
 		})
 
 		t.Run("records no generated binding of a callable with a builder", func(t *testing.T) {

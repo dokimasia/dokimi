@@ -1529,12 +1529,12 @@ func shelfActions(c *prop.Case, subject func() Shelf) []stateful.Action[struct{}
 		{
 			Name: "Add",
 			Input: func(c *prop.Case, _ struct{}) any {
-				key := c.Draw(prop.Of[string](), "add.key")
+				key := c.Draw(prop.SampledFrom(keysString...), "add.key")
 				return []any{key}
 			},
 			Run: func(c *prop.Case, client int, input any) {
 				args, _ := input.([]any)
-				call := c.History().Invoke(client, "Add", args)
+				call := c.History().Invoke(client, "Add", args, args[0])
 				values, err := shelfAddCall(c.Context(), subject(), args)
 				conform.Complete(c.Context(), call, err, values...)
 			},

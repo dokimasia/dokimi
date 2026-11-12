@@ -150,6 +150,11 @@ const jsonTag = "json"
 // the suite covers the type, as a sentence. A list, an array and a map take
 // the shape reader, and the walk of the overrides enters their parts.
 func (k *caller) sourceOf(ref *node.TypeRef) (source, string) {
+	// The property engine of a language that reads the type of no value draws
+	// a type through its shape file.
+	if k.p.shape(k, ref) != "" {
+		return sourceEngine, ""
+	}
 	switch shape := k.b.TypeOf(ref); {
 	case shape.Form == symbol.FormDynamic:
 		return sourceDynamic, ""

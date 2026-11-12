@@ -32,48 +32,48 @@ func TestMachinery(t *testing.T) {
 			giveSuite   string
 			giveField   string
 			giveSegment string
-			wantProbe   string
+			wantProbe   spec.ProbeID
 		}{
 			{
 				name: "derives a reported failure of each callable with an error", giveSuite: "Cache",
-				giveField: "Get", giveSegment: "failure-is-reported", wantProbe: "ReportsAFailedDependency",
+				giveField: "Get", giveSegment: "failure-is-reported", wantProbe: spec.ReportsAFailedDependency,
 			},
 			{
 				name: "derives a failed call without effect of an atomic write", giveSuite: "Writer",
-				giveField: "Put", giveSegment: "no-partial-write", wantProbe: "FailsWithoutEffect",
+				giveField: "Put", giveSegment: "no-partial-write", wantProbe: spec.FailsWithoutEffect,
 			},
 			{
 				name: "derives a retry under faults of a callable that retries", giveSuite: "Syncer",
-				giveField: "Sync", giveSegment: "retry-succeeds-under-faults", wantProbe: "SucceedsAfterAFailure",
+				giveField: "Sync", giveSegment: "retry-succeeds-under-faults", wantProbe: spec.SucceedsAfterAFailure,
 			},
 			{
 				name: "derives a rollback under faults of a transaction", giveSuite: "Account",
-				giveField: "Run", giveSegment: "transaction-under-faults", wantProbe: "RollsBackUnderFaults",
+				giveField: "Run", giveSegment: "transaction-under-faults", wantProbe: spec.RollsBackUnderFaults,
 			},
 			{
 				name: "derives a breaker that opens", giveSuite: "Breaker", giveField: "Do",
-				giveSegment: "fails-fast", wantProbe: "RefusesWithoutTheDependency",
+				giveSegment: "fails-fast", wantProbe: spec.RefusesWithoutTheDependency,
 			},
 			{
 				name: "derives one instance for each key of a sticky callable", giveSuite: "Balancer",
-				giveField: "Route", giveSegment: "keeps-its-instance", wantProbe: "UsesOneInstance",
+				giveField: "Route", giveSegment: "keeps-its-instance", wantProbe: spec.UsesOneInstance,
 			},
 			{
 				name: "derives a release on every path of a callable that acquires", giveSuite: "Copier",
-				giveField: "Copy", giveSegment: "releases-on-every-path", wantProbe: "ReleasesWhatItAcquires",
+				giveField: "Copy", giveSegment: "releases-on-every-path", wantProbe: spec.ReleasesWhatItAcquires,
 			},
 			{
 				name: "derives a retry under faults of a function", giveSuite: "Fetch",
-				giveSegment: "retry-succeeds-under-faults", wantProbe: "SucceedsAfterAFailure",
+				giveSegment: "retry-succeeds-under-faults", wantProbe: spec.SucceedsAfterAFailure,
 			},
 			{
 				name: "derives a reported failure of a method of a struct", giveSuite: "Mirror", giveField: "Get",
-				giveSegment: "failure-is-reported", wantProbe: "ReportsAFailedDependency",
+				giveSegment: "failure-is-reported", wantProbe: spec.ReportsAFailedDependency,
 			},
 			{
 				name:      "derives the claims of a machinery that the declaration states beside an unknown one",
 				giveSuite: "Gravity", giveField: "Get", giveSegment: "failure-is-reported",
-				wantProbe: "ReportsAFailedDependency",
+				wantProbe: spec.ReportsAFailedDependency,
 			},
 		}
 		for _, tt := range tests {
@@ -82,8 +82,9 @@ func TestMachinery(t *testing.T) {
 
 				s := got.suites[tt.giveSuite]
 				d := derivedNamed(t, &s, tt.giveField, tt.giveSegment)
-				expect.Equal(t, d.Probe, tt.wantProbe, "the check calls the probe of its claim")
-				expect.Equal(t, d.Machineries, []string{"CallThatFailsOnDemand", "NothingBeyondACaller"},
+				expect.Equal(t, d.Probe, string(tt.wantProbe), "the check calls the probe of its claim")
+				expect.Equal(t, d.Machineries,
+					[]string{string(spec.CallThatFailsOnDemand), string(spec.NothingBeyondACaller)},
 					"the check lists the machinery of failing calls first")
 			})
 		}

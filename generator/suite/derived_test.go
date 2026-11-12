@@ -10,6 +10,7 @@ import (
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/eidos/sdk/emit"
+	"go.dokimi.dev/spec"
 
 	"go.dokimi.dev/dokimi/generator/suite"
 	"go.dokimi.dev/dokimi/internal/derive"
@@ -29,14 +30,15 @@ func TestDerived(t *testing.T) {
 			assert.Length(t, got.Derived, len(got.Derivation.Checks), "each derived check has its record")
 		})
 
-		t.Run("names the constants of the spec of each derived check", func(t *testing.T) {
+		t.Run("names the identifiers of the spec of each derived check", func(t *testing.T) {
 			t.Parallel()
 
 			d := derivedNamed(t, &got, "Get", "read-after-write")
 			expect.Equal(t, d.Method, "ReadAfterWrite", "the method of the identity is the segment in Pascal case")
-			expect.Equal(t, d.Claim, "ReadAfterWrite", "the claim is the constant of the claim")
-			expect.Equal(t, d.Probe, "WriteThenRead", "the probe is the constant of the probe")
-			expect.Equal(t, d.Machineries, []string{"NothingBeyondACaller"}, "the machineries are their constants")
+			expect.Equal(t, d.Claim, string(spec.ReadAfterWrite), "the claim is the identifier of the claim")
+			expect.Equal(t, d.Probe, string(spec.WriteThenRead), "the probe is the identifier of the probe")
+			expect.Equal(t, d.Machineries, []string{string(spec.NothingBeyondACaller)},
+				"the machineries are their identifiers")
 			expect.False(t, d.Bubble, "the probe runs outside a bubble")
 		})
 
@@ -165,7 +167,7 @@ func TestDerived(t *testing.T) {
 			read := d.Args[0].Durable.Reads[0]
 			expect.True(t, read.Absent, "the read returns an error for a key without a value")
 			expect.Equal(t, read.Assign, []string{"r0", "ok"}, "the read keeps the value and the presence flag")
-			corruption := func(d suite.Derived) bool { return d.Claim == "CorruptionIsReported" }
+			corruption := func(d suite.Derived) bool { return d.Claim == string(spec.CorruptionIsReported) }
 			expect.False(t, slices.ContainsFunc(l.Derived, corruption),
 				"a writer without the param corrupt has no check of corruption")
 		})
@@ -183,7 +185,7 @@ func TestDerived(t *testing.T) {
 			d := derivedNamed(t, &tallies, "Limit", "smoke#generated")
 			expect.True(t, d.Generated, "the check generates the inputs of its calls")
 			expect.Equal(t, d.Method, "SmokeGenerated", "the method of the identity adds the word Generated")
-			expect.Equal(t, d.Machineries, []string{"GeneratedInputs", "NothingBeyondACaller"},
+			expect.Equal(t, d.Machineries, []string{string(spec.GeneratedInputs), string(spec.NothingBeyondACaller)},
 				"the machineries add generated-inputs before nothing-beyond-a-caller")
 			expect.False(t, derivedNamed(t, &tallies, "Limit", "smoke").Generated,
 				"the sample binding passes the samples of the inputs")
@@ -271,7 +273,7 @@ func TestDerived(t *testing.T) {
 				expect.Equal(
 					t,
 					[]any{d.Probe, d.Whole, d.Sequence},
-					[]any{"LinearizableHistory", "Board/linearizable", true},
+					[]any{string(spec.LinearizableHistory), "Board/linearizable", true},
 					"the check of the whole declaration runs generated sequences",
 				)
 				assert.NotNil(t, board.Sequences, "the declaration has the generated sequences of its reference")
@@ -289,7 +291,7 @@ func TestDerived(t *testing.T) {
 
 				shelf := generate(t, goTree, locksPackage).suites["Shelf"]
 				d := derivedNamed(t, &shelf, "Count", "reads-agree-under-concurrency")
-				expect.Equal(t, []any{d.Probe, d.Sequence}, []any{"ConcurrentReadsAgree", true},
+				expect.Equal(t, []any{d.Probe, d.Sequence}, []any{string(spec.ConcurrentReadsAgree), true},
 					"the check runs generated sequences")
 				assert.NotNil(t, shelf.Sequences, "the declaration has generated sequences")
 				assert.Length(t, d.Args, 4, "the probe takes the actions, the read, the read again and the clients")
@@ -306,7 +308,7 @@ func TestDerived(t *testing.T) {
 
 				snapshots := family("Snapshots")
 				d := derivedNamed(t, snapshots, "Get", "pins-the-snapshot-under-writes")
-				expect.Equal(t, []any{d.Probe, d.Sequence}, []any{"PinnedUnderConcurrentWrites", true},
+				expect.Equal(t, []any{d.Probe, d.Sequence}, []any{string(spec.PinnedUnderConcurrentWrites), true},
 					"the check runs generated sequences")
 				assert.NotNil(t, snapshots.Sequences, "the declaration has generated sequences")
 				expect.Equal(t, d.Args, []suite.Arg{
@@ -326,7 +328,7 @@ func TestDerived(t *testing.T) {
 
 				stamped := family("Stamped")
 				d := derivedNamed(t, stamped, "Get", "causal-history")
-				expect.Equal(t, []any{d.Probe, d.Sequence}, []any{"VersionsFollowTheCausalOrder", true},
+				expect.Equal(t, []any{d.Probe, d.Sequence}, []any{string(spec.VersionsFollowTheCausalOrder), true},
 					"the check runs generated sequences")
 				assert.NotNil(t, stamped.Sequences, "the declaration has generated sequences")
 				assert.Length(t, d.Args, 5,
@@ -343,6 +345,17 @@ func TestDerived(t *testing.T) {
 					"the check entails the check of a single caller of its law")
 			})
 
+		t.Run("reads the version of a record that a TypeScript interface declares", func(t *testing.T) {
+			t.Parallel()
+
+			versions := generate(t, tsTree, "versions").suites["Versions"]
+			d := derivedNamed(t, &versions, "version", "reads-never-go-back")
+			at := slices.IndexFunc(d.Args, func(a suite.Arg) bool { return a.Projection != nil })
+			assert.True(t, at >= 0, "the version is a projection")
+			expect.Equal(t, []string{d.Args[at].Projection.Field, d.Args[at].Projection.Result.Spelling},
+				[]string{"rev", "number"}, "the version reads the property rev of Rec")
+		})
+
 		flight := generate(t, goTree, locksPackage).suites["Flight"]
 
 		t.Run("passes a call with a computation for each input of a function type to the probe of one computation",
@@ -350,7 +363,7 @@ func TestDerived(t *testing.T) {
 				t.Parallel()
 
 				d := derivedNamed(t, &flight, "Do", "computes-once")
-				expect.Equal(t, []any{d.Probe, d.Bubble}, []any{"SharesOneComputation", true},
+				expect.Equal(t, []any{d.Probe, d.Bubble}, []any{string(spec.SharesOneComputation), true},
 					"the probe waits inside a bubble until each call blocks")
 				assert.Length(t, d.Args, 2, "the probe takes the call and the clients")
 				expect.Equal(t, d.Args[1], suite.Arg{Expr: &suite.Expr{Word: "2"}}, "three clients call at once")
@@ -380,7 +393,8 @@ func TestDerived(t *testing.T) {
 			t.Parallel()
 
 			d := derivedNamed(t, &locker, "Lock", "one-holder-at-a-time")
-			expect.Equal(t, []any{d.Probe, d.Cased, d.Sequence}, []any{"ExclusiveUnderConcurrency", true, false},
+			expect.Equal(t, []any{d.Probe, d.Cased, d.Sequence},
+				[]any{string(spec.ExclusiveUnderConcurrency), true, false},
 				"the probe takes the case, whose scheduler runs the clients of a planted defect")
 			assert.Length(t, d.Args, 3, "the probe takes the call, the sentinel and the clients")
 			assert.NotNil(t, d.Args[0].Closure, "the call is a closure")
@@ -412,7 +426,7 @@ func TestDerived(t *testing.T) {
 			t.Parallel()
 
 			d := derivedNamed(t, &records, "Read", "returns-on-error")
-			expect.Equal(t, d.Probe, "FieldBesideError", "the probe compares the field beside an error")
+			expect.Equal(t, d.Probe, string(spec.FieldBesideError), "the probe compares the field beside an error")
 			assert.Length(t, d.Args, 3,
 				"the probe takes the call, the field of the result and the field of the request")
 			call := d.Args[0].Closure

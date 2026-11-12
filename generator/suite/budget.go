@@ -118,7 +118,7 @@ var budgetSchema = directive.Schema{
 // suite has such a callable. It also reports the budget of a method with the
 // mixin waits or runs-until-cancelled, because a ceiling repeats the calls of
 // its callable on one subject with a context that does not end.
-func (g *generator) budgetOfMethod(m *sdk.MethodMatch, _ part, st *sdk.Stamper) error {
+func (g *generator) budgetOfMethod(m *sdk.MethodMatch, p part, st *sdk.Stamper) error {
 	method := m.Method
 	name := method.ID.Owner + "." + method.Name
 	why := unrepeatable(m, &method.ID)
@@ -131,7 +131,7 @@ func (g *generator) budgetOfMethod(m *sdk.MethodMatch, _ part, st *sdk.Stamper) 
 	case why != "":
 		m.ErrorfAt(BadBudget, m.Directive().Pos, "%s %s, so its budget has no check", name, why)
 	default:
-		g.stamp(m, name, st)
+		g.stamp(m, p, name, st)
 	}
 	return nil
 }
@@ -140,7 +140,7 @@ func (g *generator) budgetOfMethod(m *sdk.MethodMatch, _ part, st *sdk.Stamper) 
 // directive suite. It reports [BadBudget] at the budget of another function,
 // and at the budget of a function with the mixin waits or
 // runs-until-cancelled.
-func (g *generator) budgetOfFunction(m *sdk.FunctionMatch, _ part, st *sdk.Stamper) error {
+func (g *generator) budgetOfFunction(m *sdk.FunctionMatch, p part, st *sdk.Stamper) error {
 	fn := m.Function
 	why := unrepeatable(m, &fn.ID)
 	switch {
@@ -150,7 +150,7 @@ func (g *generator) budgetOfFunction(m *sdk.FunctionMatch, _ part, st *sdk.Stamp
 	case why != "":
 		m.ErrorfAt(BadBudget, m.Directive().Pos, "%s %s, so its budget has no check", fn.Name, why)
 	default:
-		g.stamp(m, fn.Name, st)
+		g.stamp(m, p, fn.Name, st)
 	}
 	return nil
 }
@@ -169,8 +169,11 @@ func (*generator) budgetOfStruct(m *sdk.StructMatch, _ part, _ *sdk.Emitter) err
 // stamp stamps a fact of each ceiling and of the warm-up of the budget of the
 // callable name on the subject of m. A callable has one budget, and its budget
 // names no callable. stamp reports [BadBudget] at the budget otherwise, and at
-// each mistake that [budgetOf] reports, and stamps nothing then.
-func (g *generator) stamp(m sdk.SubjectMatch, name string, st *sdk.Stamper) {
+// each mistake that [budgetOf] reports, and stamps nothing then. Where the
+// language of the part p counts no allocations, stamp reports
+// [UncountedBudget] at a budget with a ceiling of allocations or of bytes, and
+// stamps neither ceiling.
+func (g *generator) stamp(m sdk.SubjectMatch, p part, name string, st *sdk.Stamper) {
 	d := m.Directive()
 	if n := instances(m, BudgetDirective); n > 1 {
 		m.ErrorfAt(BadBudget, d.Pos, "%s states %d budgets, and a callable has one budget", name, n)
@@ -184,6 +187,11 @@ func (g *generator) stamp(m sdk.SubjectMatch, name string, st *sdk.Stamper) {
 	b, valid := budgetOf(m, d, name)
 	if !valid {
 		return
+	}
+	if (b.Allocs != nil || b.Bytes != nil) && !p.countsAllocations() {
+		m.WarnfAt(UncountedBudget, d.Pos, "the language of %s counts no allocations of a call, so its budget has no "+
+			"ceiling of allocations or bytes", name)
+		b.Allocs, b.Bytes = nil, nil
 	}
 	if b.Allocs != nil {
 		sdk.Stamp(st, g.allocs, *b.Allocs)

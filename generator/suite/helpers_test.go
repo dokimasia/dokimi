@@ -14,6 +14,7 @@ import (
 	golang "go.dokimi.dev/eidos/lang/go"
 	goannotate "go.dokimi.dev/eidos/lang/go/annotate"
 	gobackend "go.dokimi.dev/eidos/lang/go/backend"
+	"go.dokimi.dev/eidos/lang/typescript"
 	"go.dokimi.dev/eidos/plugin/shape/catalog"
 	"go.dokimi.dev/eidos/sdk/authored"
 	"go.dokimi.dev/eidos/sdk/diag"
@@ -33,6 +34,7 @@ import (
 // templates of the two families.
 const (
 	goTree             = "testdata/golang"
+	tsTree             = "testdata/typescript"
 	storePackage       = "example.com/shop/store"
 	genericPackage     = "example.com/shop/generic"
 	catalogPackage     = "example.com/shop/catalog"
@@ -97,24 +99,34 @@ func fixture(tb assert.TB, dir string, p plugin.Plugin, pkgs ...string) *gentest
 }
 
 // specOf returns the spec of a fixture over the packages pkgs of the tree dir
-// with the plugin suite p, the target golang and the Go backend as its spoke,
-// so a phase call previews the package of each routed file. The annotators of
-// the composition stamp the fixture: the authored samples and witnesses, the
-// facts of Go, the declared defaults, the names of the builders, the faults of
-// the methods and the classifications of the shape catalog.
+// with the plugin suite p and the target of the tree. A fixture of the target
+// golang has the Go backend as its spoke, so a phase call previews the
+// package of each routed file. The annotators of the composition stamp the
+// fixture: the authored samples and witnesses, the facts of Go, the declared
+// defaults, the names of the builders, the faults of the methods and the
+// classifications of the shape catalog.
 func specOf(dir string, p plugin.Plugin, pkgs ...string) *gentest.Spec {
 	annotators := append([]plugin.Annotator{
 		authored.Sample(), authored.Witness(), goannotate.New(), defaults.New(), builder.New(), fault.New(),
 	}, catalog.Annotators()...)
+	target := targets[dir]
 	return &gentest.Spec{
 		Dir:        dir,
 		Packages:   pkgs,
-		Target:     golang.Target,
-		Types:      gobackend.New(),
+		Target:     target,
+		Types:      spokes[target],
 		Plugins:    []plugin.Plugin{p},
 		Annotators: annotators,
 	}
 }
+
+// targets are the targets of the trees of the specs, and spokes the spokes
+// of the fixtures by their target. The plan of the scripted tree is the plan
+// of Go, whose declarations of another language suite leaves alone.
+var (
+	targets = map[string]plugin.Target{goTree: golang.Target, scriptedTree: golang.Target, tsTree: typescript.Target}
+	spokes  = map[plugin.Target]plugin.TypeSpeller{golang.Target: gobackend.New()}
+)
 
 // derivedNamed returns the derived check of the suite s on the callable of
 // the field, with the segment.

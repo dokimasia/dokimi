@@ -205,7 +205,7 @@ func (k *caller) inputOf(
 	funcs := make([]Func, 0, len(methods))
 	for i, method := range methods {
 		view, _ := b.CallableOf(method)
-		fn := name + naming.Pascal(method.Name)
+		fn := name + k.p.pascal(method.Name)
 		f := Func{Signature: &emit.Method{}, Field: in.Methods[i].Field}
 		for _, p := range view.Params {
 			param := &emit.Param{Type: rules.EmitRef(rules.Substitute(p.Ref, iface.TypeParams, ref.Args))}

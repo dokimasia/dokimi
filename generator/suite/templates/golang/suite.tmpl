@@ -119,8 +119,8 @@ var _ = {{$conform}}.CompatV1
 			{
 				ID:          {{$checks}}{{with .Field}}.{{.}}{{end}}.{{with .Base}}{{.}}().Generated(){{else}}{{.Method}}(){{end}},
 				Statement:   {{printf "%q" .Statement}},
-				Claim:       {{$spec}}.{{.Claim}},
-				Machineries: []{{$spec}}.MachineryID{ {{- range $i, $m := .Machineries}}{{if $i}}, {{end}}{{$spec}}.{{$m}}{{end -}} },
+				Claim:       {{$spec}}.{{suitePascal .Claim}},
+				Machineries: []{{$spec}}.MachineryID{ {{- range $i, $m := .Machineries}}{{if $i}}, {{end}}{{$spec}}.{{suitePascal $m}}{{end -}} },
 {{- if .Shallow}}
 				Shallow:     true,
 {{- end}}
@@ -129,16 +129,16 @@ var _ = {{$conform}}.CompatV1
 {{- end}}
 {{- if .Sequence}}
 				Property: func(h *{{$handle}}, c *{{import "go.dokimi.dev/assert/prop"}}.Case) {
-					{{$probe}}.{{.Probe}}{{with .TypeArgs}}[{{$s}}{{range .}}, {{if eq (len .) 2}}{{$probe}}.Pair[{{spell (index . 0)}}, {{spell (index . 1)}}]{{else}}{{spell (index . 0)}}{{end}}{{end}}]{{end}}(h, c{{range .Args}}, {{template "suite.arg" .}}{{end}})
+					{{$probe}}.{{suitePascal .Probe}}{{with .TypeArgs}}[{{$s}}{{range .}}, {{if eq (len .) 2}}{{$probe}}.Pair[{{spell (index . 0)}}, {{spell (index . 1)}}]{{else}}{{spell (index . 0)}}{{end}}{{end}}]{{end}}(h, c{{range .Args}}, {{template "suite.arg" .}}{{end}})
 				},
 {{- else if or .Generated .Cased}}
 				Property: func(h *{{$handle}}, c *{{import "go.dokimi.dev/assert/prop"}}.Case) {
 {{- range .Draws}}{{template "suite.draw" .}}{{end}}
-					{{$probe}}.{{.Probe}}(h{{if .Cased}}, c{{end}}{{range .Args}}, {{template "suite.arg" .}}{{end}})
+					{{$probe}}.{{suitePascal .Probe}}(h{{if .Cased}}, c{{end}}{{range .Args}}, {{template "suite.arg" .}}{{end}})
 				},
 {{- else}}
 				Apply: func(h *{{$handle}}) {
-					{{$probe}}.{{.Probe}}(h{{range .Args}}, {{if .Durable}}{{template "suite.durable" (suiteDurable .Durable $s)}}{{else}}{{template "suite.arg" .}}{{end}}{{end}})
+					{{$probe}}.{{suitePascal .Probe}}(h{{range .Args}}, {{if .Durable}}{{template "suite.durable" (suiteDurable .Durable $s)}}{{else}}{{template "suite.arg" .}}{{end}}{{end}})
 				},
 {{- end}}
 				Defect: {{suiteCamel .Defect}},
@@ -168,7 +168,7 @@ var _ = {{$conform}}.CompatV1
 				Doors:     {{$conform}}.Doors[{{$s}}]{{"{"}}{{range $i, $d := .Doors}}{{if $i}}, {{end}}{{$d.Field}}: {{spell $d.Func}}{{end}}{{if and .Doors .Values}}, {{end}}{{with .Values}}Values: []{{$conform}}.Supplied[{{$s}}]{{"{"}}{{range $i, $v := .}}{{if $i}}, {{end}}{{$conform}}.Supply({{spell $v}}){{end}}{{"}"}}{{end}}{{"}"}},
 {{- end}}
 {{- with .Machineries}}{{$spec := import "go.dokimi.dev/spec"}}
-				Machineries: []{{$spec}}.MachineryID{ {{- range $i, $m := .}}{{if $i}}, {{end}}{{$spec}}.{{$m}}{{end -}} },
+				Machineries: []{{$spec}}.MachineryID{ {{- range $i, $m := .}}{{if $i}}, {{end}}{{$spec}}.{{suitePascal $m}}{{end -}} },
 {{- end}}
 {{- with .Options}}
 				Options:   {{spell .}},

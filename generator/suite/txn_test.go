@@ -8,6 +8,7 @@ import (
 
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
+	"go.dokimi.dev/spec"
 
 	"go.dokimi.dev/dokimi/generator/suite"
 )
@@ -36,7 +37,7 @@ func TestTxn(t *testing.T) {
 
 			d := derivedNamed(t, &lists, "Append", "serializable")
 			expect.Equal(t, []any{d.Probe, d.Whole, d.Sequence},
-				[]any{"SerializableHistory", "Lists/serializable", true},
+				[]any{string(spec.SerializableHistory), "Lists/serializable", true},
 				"the check of the declaration runs generated sequences")
 			assert.NotNil(t, lists.Sequences, "the declaration has generated sequences")
 			expect.Equal(t, d.Args, []suite.Arg{{Ref: lists.Sequences.Actions}, {Expr: &suite.Expr{Word: "2"}}},
@@ -71,8 +72,12 @@ func TestTxn(t *testing.T) {
 			t.Parallel()
 
 			d := derivedNamed(t, &registers, "Begin", "snapshot-isolation")
-			expect.Equal(t, []any{d.Probe, d.Whole}, []any{"SnapshotHistory", "Registers/snapshot-isolation"},
-				"the check of the declaration binds on the begin of the handle")
+			expect.Equal(
+				t,
+				[]any{d.Probe, d.Whole},
+				[]any{string(spec.SnapshotHistory), "Registers/snapshot-isolation"},
+				"the check of the declaration binds on the begin of the handle",
+			)
 			txn := registers.Sequences.Txn
 			assert.NotNil(t, txn, "the actions have the action of a transaction")
 			expect.Equal(t, []any{txn.Value.Spelling, txn.Function, txn.Appends, txn.Text},

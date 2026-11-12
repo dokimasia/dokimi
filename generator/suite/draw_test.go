@@ -217,4 +217,40 @@ func TestDraw(t *testing.T) {
 				"the two draws of name have two types")
 		})
 	})
+
+	t.Run("Shape", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run(
+			"gives no shape definition to a suite of Go, whose engine reads the type of each value",
+			func(t *testing.T) {
+				t.Parallel()
+
+				var shapes []suite.Shape
+				var generators []string
+				for _, s := range families {
+					shapes = append(shapes, s.Shapes...)
+					for i := range s.Derived {
+						for _, d := range s.Derived[i].Draws {
+							generators = append(generators, d.Generator)
+						}
+					}
+					if q := s.Sequences; q != nil {
+						for _, pool := range q.Pools {
+							generators = append(generators, pool.Generator)
+						}
+						for _, st := range q.Steps {
+							for _, sp := range st.Params {
+								generators = append(generators, sp.Generator)
+							}
+						}
+					}
+				}
+				assert.True(t, len(generators) > 0, "the suites of families draw values and keep pools")
+				expect.Empty(t, shapes, "no suite of Go has a shape definition")
+				expect.Equal(t, generators, make([]string, len(generators)),
+					"no draw, pool or parameter of an action of Go has a generator")
+			},
+		)
+	})
 }

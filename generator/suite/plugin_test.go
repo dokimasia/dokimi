@@ -17,6 +17,7 @@ import (
 	"go.dokimi.dev/eidos/sdk/plugin"
 	"go.dokimi.dev/eidos/sdk/plugintest"
 	"go.dokimi.dev/eidos/sdk/symbol"
+	"go.dokimi.dev/spec"
 
 	"go.dokimi.dev/dokimi/generator/suite"
 	"go.dokimi.dev/dokimi/internal/gentest"
@@ -1750,7 +1751,7 @@ func TestSuite(t *testing.T) {
 				Type: "CacheGet", Method: "ServesTheStoredValue", Segment: "serves-the-stored-value",
 				Statement:   "Get returns the value that the backing store keeps, after a failed call of the store",
 				Doors:       []suite.Door{{Field: "Faults", Func: ref(t, f, "faulty")}},
-				Machineries: []string{"CallThatFailsOnDemand"},
+				Machineries: []string{string(spec.CallThatFailsOnDemand)},
 			}}, "the check lists the machinery whose door its planted defect states")
 		})
 

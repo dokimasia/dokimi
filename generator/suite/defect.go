@@ -119,10 +119,13 @@ type Defect struct {
 }
 
 // Outcome is one result of the callable of a planted defect: its name, its
-// role and a sample that is not its zero value. Role is value, flag or error.
-// A body returns the zero value of a result through a bare return.
+// role, a sample that is not its zero value, and the other sample of a value.
+// Role is value, flag or error. A Go body returns the zero value of a result
+// through a bare return. A language without zero values returns Other where
+// Go returns the zero value, because the two samples of a value differ.
 type Outcome struct {
 	Sample *Expr
+	Other  *Expr
 	Name   string
 	Role   string
 }
@@ -386,11 +389,11 @@ func (k *caller) defect(s *Suite, c *derive.Check, b *binder) (*Defect, bool) {
 		f = partnerOf(c, partner).Partner
 	}
 	racy := form.ID == spec.RacyReadWrite
-	words := []string{s.Declaration}
+	name := s.Declaration
 	if f.Declaration != "" && !slices.Contains(wholeForms, form.ID) && c.Transaction == nil {
-		words = append(words, f.Callable)
+		name = k.e.JoinName(f.Callable, name)
 	}
-	name := k.e.JoinName(naming.Pascal(string(form.ID)), strings.Join(words, ""))
+	name = k.e.JoinName(naming.Pascal(string(form.ID)), name)
 	for _, d := range s.Defects {
 		if d.Name == name {
 			return d, true
@@ -568,7 +571,7 @@ const defectWord = "defect"
 // and the names of its parameters in a call: the name p and its position of
 // each parameter, and of each variadic parameter with the ellipsis.
 func (k *caller) signatureOf(f *derive.Facts) (*emit.Method, []string) {
-	m := &emit.Method{Origin: f.ID, Name: f.Callable, Visibility: symbol.VisibilityPublic}
+	m := &emit.Method{Origin: f.ID, Name: f.Callable, Visibility: symbol.VisibilityPublic, Async: f.Signature.Async}
 	args := make([]string, 0, len(f.Signature.Params))
 	for i, p := range f.Signature.Params {
 		name := "p" + strconv.Itoa(i)
@@ -649,11 +652,12 @@ func (k *caller) outcomesOf(f *derive.Facts) []Outcome {
 			// The sample of a defect differs from the zero value, so a
 			// defect that returns it is seen. The two samples differ, so
 			// one of them is not the zero value.
-			sample := &v.Samples[1].Value
+			sample, other := &v.Samples[1].Value, &v.Samples[0].Value
 			if spellsZero(sample) {
-				sample = &v.Samples[0].Value
+				sample, other = other, sample
 			}
-			res.Sample = &Expr{Value: typed(ref, sample)}
+			res.Sample = &Expr{Value: k.p.typed(ref, sample)}
+			res.Other = &Expr{Value: k.p.typed(ref, other)}
 			n++
 		}
 		out = append(out, res)

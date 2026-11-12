@@ -56,11 +56,18 @@ type Sequences struct {
 }
 
 // Pool is the pool of the keys of the type Type that the actions of a case
-// draw once, under the name Name and the label Label.
+// draw once, under the name Name and the label Label. Shape and Start are the
+// shape file and the starting value of the keys, which the generator of the
+// pool reads, as the parameter of a call generator states them. Generator is
+// the name of the generator of the keys, which a suite of a language whose
+// property engine reads the type of no value declares, and empty otherwise.
 type Pool struct {
-	Type  *emit.TypeRef
-	Name  string
-	Label string
+	Type      *emit.TypeRef
+	Start     *emit.Value
+	Name      string
+	Label     string
+	Shape     string
+	Generator string
 }
 
 // Step is one callable of the declaration in the generated sequences. Name is
@@ -104,12 +111,14 @@ type Step struct {
 // which is -1 for the context and for an omitted parameter, and the name
 // Local of its value in the function of the call. Label is the label of its
 // draw, Pool the pool of a key, and Fields the fields of its value that take
-// keys of the pools.
+// keys of the pools. Generator is the name of the generator of a drawn value,
+// as a [Pool] has it.
 type StepParam struct {
-	Local  string
-	Label  string
-	Pool   string
-	Fields []PoolField
+	Local     string
+	Label     string
+	Pool      string
+	Generator string
+	Fields    []PoolField
 	Param
 	Arg int
 }
@@ -189,10 +198,13 @@ func sequenced(c *derive.Check) bool {
 
 // sequencesOf returns the parts of the generated sequences of the suite s. A
 // key input of a callable takes its key from the pool of its type, and so does
-// a field of a written value that a pair of a check of the declaration binds
-// to a key input of its read. The checks are visited in their order, and the
-// partners of each in the order of its claim, so each run writes the keys in
-// one order. [Sequences.used] drops the parts that no derived check calls.
+// a field of a written value that a pair binds to a key input of its read:
+// the pair of a check of the declaration, and the pairing of each callable of
+// the declaration as a read with each other callable as a write. So a read
+// observes the writes of its keys also where no claim pairs the two. The
+// checks are visited in their order, the partners of each in the order of its
+// claim, and then the callables in their order, so each run writes the keys
+// in one order. [Sequences.used] drops the parts that no derived check calls.
 // The action of a transaction joins the actions where a check of the
 // derivation has the scope of a transaction. Once every pool exists, each
 // step of a callable with the mixin creates gives its key to the pool of the
@@ -213,6 +225,14 @@ func (k *caller) sequencesOf(s *Suite) *Sequences {
 		}
 		if c.Transaction != nil {
 			q.Txn = k.txnOf(s, q, c.Transaction)
+		}
+	}
+	for i := range s.Facts {
+		for j := range s.Facts {
+			// A pair that Pairing gates has no read, and a callable binds each
+			// parameter to itself, so poolFields binds no key of either.
+			pair, _ := derive.Pairing(&s.Facts[i], &s.Facts[j])
+			poolFields(s, q, pair)
 		}
 	}
 	for i := range s.Facts {
@@ -339,7 +359,9 @@ func (k *caller) step(s *Suite, q *Sequences, i int) Step {
 			p.Arg, p.Local = arg, "a"+strconv.Itoa(arg)
 			arg++
 			if call.Builder == nil && slices.Contains(keys, f.Signature.Params[j].Name) {
-				p.Pool = q.pool(p.Type).Name
+				pool := q.pool(p.Type, k.p)
+				pool.Shape, pool.Start = p.Shape, p.Start
+				p.Pool = pool.Name
 				st.Keys = append(st.Keys, StepKey{Arg: p.Arg})
 			}
 		}
@@ -362,12 +384,13 @@ func keyNames(f *derive.Facts) []string {
 }
 
 // pool returns the pool of the keys of the type t, which it adds to q where q
-// has none.
-func (q *Sequences) pool(t *emit.TypeRef) *Pool {
-	if p := q.poolOf(t); p != nil {
-		return p
+// has none. A new pool takes the name of t after keysWord in the Pascal case of
+// the part p.
+func (q *Sequences) pool(t *emit.TypeRef, p part) *Pool {
+	if found := q.poolOf(t); found != nil {
+		return found
 	}
-	name := keysWord + naming.Pascal(t.Spelling)
+	name := keysWord + p.pascal(t.Spelling)
 	q.Pools = append(q.Pools, Pool{Type: t, Name: name, Label: keysWord + "." + naming.Kebab(t.Spelling)})
 	return &q.Pools[len(q.Pools)-1]
 }
@@ -525,15 +548,22 @@ func (k *caller) replicable(s *Suite, f *derive.Facts) bool {
 	return ok && satisfaction.Satisfied()
 }
 
-// graphed reports whether the param v of a classification names a variable
-// that can be a graph of states: a variable of a map type, or a variable
-// whose type its initializer states. eidos resolves the param transitions of
-// the contract workflow to a variable of the package.
+// graphed reports whether the param v of a classification names a value that
+// can be a graph of states: a value of a map type, or a value whose type its
+// initializer states. eidos resolves the param transitions of the contract
+// workflow to a variable of the package, or to a constant of a TypeScript
+// module, such as a constant of a new Map.
 func (k *caller) graphed(v any) bool {
 	id, _ := v.(symbol.Identity)
 	sym, _ := k.m.Reader().Lookup(id)
-	variable, _ := sym.(*node.Variable)
-	return variable.Type == nil || variable.Type.Form == symbol.FormMap
+	var typ *node.TypeRef
+	switch d := sym.(type) {
+	case *node.Variable:
+		typ = d.Type
+	case *node.Constant:
+		typ = d.Type
+	}
+	return typ == nil || typ.Form == symbol.FormMap
 }
 
 // argAt returns the expression of the argument at the position i of a list.

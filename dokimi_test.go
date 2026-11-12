@@ -81,6 +81,7 @@ func TestDokimi(t *testing.T) {
 			{name: "returns two plans that share one stub", give: stub.ID},
 			{name: "returns two plans that share one enum", give: enum.ID},
 			{name: "returns two plans that share one sentinel", give: sentinel.ID},
+			{name: "returns two plans that share one suite", give: suite.ID},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -106,12 +107,22 @@ func TestDokimi(t *testing.T) {
 				layout.Refinement{Dir: ".", File: "dokimi.go.lock"}, "the lock of the plan has the name of the plan")
 		})
 
-		t.Run("returns a plan typescript that runs no suite", func(t *testing.T) {
-			t.Parallel()
+		t.Run(
+			"returns a plan typescript that writes its lock as dokimi.typescript.lock at the root",
+			func(t *testing.T) {
+				t.Parallel()
 
-			suites := func(g plugin.Generator) bool { return g.Name() == suite.ID }
-			expect.False(t, slices.ContainsFunc(dokimi.Plans()[1].Generators, suites), "the plan writes no suite")
-		})
+				expect.Equal(
+					t,
+					dokimi.Plans()[1].Layout.Families[layout.Family{Plugin: suite.ID, Tag: suite.LockTag}],
+					layout.Refinement{
+						Dir:  ".",
+						File: "dokimi.typescript.lock",
+					},
+					"the lock of the plan has the name of the plan",
+				)
+			},
+		)
 
 		t.Run("returns a plan go that runs sim", func(t *testing.T) {
 			t.Parallel()

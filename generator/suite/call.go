@@ -102,12 +102,23 @@ func unrepeatable(m sdk.Matcher, id *symbol.Identity) string {
 // Type, and nil for a parameter without one. Each call takes the sample, and
 // the call generator draws no value for the parameter. A variadic parameter
 // passes the sample as its only element.
+//
+// Shape is the shape file of the values of Type that the generator of a
+// drawn value reads, for a language whose property engine reads the type of
+// no value. It is empty for Go, for a parameter without a drawn value and for
+// a type that no shape states. Start is the starting value of the values of
+// Type, which the generator of a drawn value of such a language keeps or
+// changes: the authored sample or the declared default of the alias Type. It
+// is nil for Go, whose suite registers the generators of its starting values,
+// and for a type without a starting value.
 type Param struct {
 	Type     *emit.TypeRef
 	Sample   *emit.Value
+	Start    *emit.Value
 	Name     string
 	Label    string
 	Input    string
+	Shape    string
 	Funcs    []Func
 	Context  bool
 	Variadic bool
@@ -131,15 +142,16 @@ var predeclared = []string{
 }
 
 // caller writes the calls of the callables of the declaration origin, named
-// decl. b contains the rules of the declaration. typeParams are the type
-// parameters of a generic interface, and witnesses the types that its suite
-// takes in their place. inputs are the implementations of interfaces that the
-// calls take, and roots the types of the drawn values of the calls, which
-// the overrides of the suite walk.
+// decl. b contains the rules of the declaration, and p the part of its
+// language. typeParams are the type parameters of a generic interface, and
+// witnesses the types that its suite takes in their place. inputs are the
+// implementations of interfaces that the calls take, and roots the types of
+// the drawn values of the calls, which the overrides of the suite walk.
 type caller struct {
 	m          sdk.SubjectMatch
 	g          *generator
 	e          *sdk.Emitter
+	p          part
 	b          rules.Bound
 	origin     symbol.Identity
 	decl       string
@@ -223,7 +235,7 @@ func (k *caller) params(view *rules.Callable, nodes []*node.Param, nilSafe bool,
 		// with the node of the parameter.
 		pos := slices.IndexFunc(nodes, func(n *node.Param) bool { return n.Type == p.Ref })
 		if sample := sampleOf(k.m, &k.b, nodes[pos], ref); !sample.IsZero() {
-			param.Sample = new(emit.Conversion(param.Type, sample))
+			param.Sample = k.p.converted(param.Type, &sample)
 			out = append(out, param)
 			continue
 		}
@@ -235,6 +247,7 @@ func (k *caller) params(view *rules.Callable, nodes []*node.Param, nilSafe bool,
 		case p.Variadic && src == sourceGenerated:
 			param.Omitted = true
 		case p.Variadic:
+			param.Shape, param.Start = k.p.shape(k, ref), k.p.start(k, ref)
 			k.roots = append(k.roots, at)
 		case src == sourceGenerated && isInterface:
 			param.Input, param.Funcs = k.inputOf(ifaceRef, iface, inputWordOf(ref, iface), name, label, taken, at)
@@ -248,8 +261,10 @@ func (k *caller) params(view *rules.Callable, nodes []*node.Param, nilSafe bool,
 		case ref.Form == symbol.FormOptional && !nilSafe && src == sourceEngine &&
 			!pointerShapes[qualified(&ref.Elems[0].Target)]:
 			param.Type, param.Address = rules.EmitRef(ref.Elems[0]), true
+			param.Shape, param.Start = k.p.shape(k, ref.Elems[0]), k.p.start(k, ref.Elems[0])
 			k.roots = append(k.roots, at.to(ref.Elems[0], "the target of "+ref.Spelling))
 		default:
+			param.Shape, param.Start = k.p.shape(k, ref), k.p.start(k, ref)
 			k.roots = append(k.roots, at)
 		}
 		out = append(out, param)

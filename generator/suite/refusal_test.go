@@ -44,7 +44,7 @@ func TestRefusal(t *testing.T) {
 					"Update fails only for an instant beyond the max offset of the clock"),
 			}, "the derivation refuses each claim with the reason of its directive")
 			expect.False(t, slices.ContainsFunc(clock.Derived, func(d suite.Derived) bool {
-				return d.Field == "Update" && (d.Claim == "ZeroOnError" || d.Claim == "Cancel")
+				return d.Field == "Update" && (d.Claim == string(spec.ZeroOnError) || d.Claim == string(spec.Cancel))
 			}), "the suite has no check of a refused claim")
 		})
 

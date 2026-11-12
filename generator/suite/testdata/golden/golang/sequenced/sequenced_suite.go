@@ -5669,12 +5669,12 @@ func runActions(c *prop.Case, subject func() Run) []stateful.Action[struct{}] {
 		{
 			Name: "Advance",
 			Input: func(c *prop.Case, _ struct{}) any {
-				key := c.Draw(prop.Of[string](), "advance.key")
+				key := c.Draw(prop.SampledFrom(keysString...), "advance.key")
 				return []any{key}
 			},
 			Run: func(c *prop.Case, client int, input any) {
 				args, _ := input.([]any)
-				call := c.History().Invoke(client, "Advance", args)
+				call := c.History().Invoke(client, "Advance", args, args[0])
 				values, err := runAdvanceCall(c.Context(), subject(), args)
 				conform.Complete(c.Context(), call, err, values...)
 			},
@@ -5682,12 +5682,12 @@ func runActions(c *prop.Case, subject func() Run) []stateful.Action[struct{}] {
 		{
 			Name: "Retry",
 			Input: func(c *prop.Case, _ struct{}) any {
-				key := c.Draw(prop.Of[string](), "retry.key")
+				key := c.Draw(prop.SampledFrom(keysString...), "retry.key")
 				return []any{key}
 			},
 			Run: func(c *prop.Case, client int, input any) {
 				args, _ := input.([]any)
-				call := c.History().Invoke(client, "Retry", args)
+				call := c.History().Invoke(client, "Retry", args, args[0])
 				values, err := runRetryCall(c.Context(), subject(), args)
 				conform.Complete(c.Context(), call, err, values...)
 			},
@@ -5695,12 +5695,12 @@ func runActions(c *prop.Case, subject func() Run) []stateful.Action[struct{}] {
 		{
 			Name: "Restart",
 			Input: func(c *prop.Case, _ struct{}) any {
-				key := c.Draw(prop.Of[string](), "restart.key")
+				key := c.Draw(prop.SampledFrom(keysString...), "restart.key")
 				return []any{key}
 			},
 			Run: func(c *prop.Case, client int, input any) {
 				args, _ := input.([]any)
-				call := c.History().Invoke(client, "Restart", args)
+				call := c.History().Invoke(client, "Restart", args, args[0])
 				values, err := runRestartCall(c.Context(), subject(), args)
 				conform.Complete(c.Context(), call, err, values...)
 			},
@@ -10882,7 +10882,7 @@ func indexActions(c *prop.Case, subject func() Index) []stateful.Action[struct{}
 		{
 			Name: "Find",
 			Input: func(c *prop.Case, _ struct{}) any {
-				key := c.Draw(prop.Of[string](), "find.key")
+				key := c.Draw(prop.SampledFrom(keysString...), "find.key")
 				keepResults := c.Draw(prop.List(prop.Of[bool]()), "keep")
 				var keepAt atomic.Int64
 				keep := func(Item) (r0 bool) {
@@ -10896,7 +10896,7 @@ func indexActions(c *prop.Case, subject func() Index) []stateful.Action[struct{}
 			},
 			Run: func(c *prop.Case, client int, input any) {
 				args, _ := input.([]any)
-				call := c.History().Invoke(client, "Find", args)
+				call := c.History().Invoke(client, "Find", args, args[0])
 				values, err := indexFindCall(c.Context(), subject(), args)
 				conform.Complete(c.Context(), call, err, values...)
 			},
@@ -10917,13 +10917,13 @@ func indexActions(c *prop.Case, subject func() Index) []stateful.Action[struct{}
 		{
 			Name: "Lookup",
 			Input: func(c *prop.Case, _ struct{}) any {
-				key := c.Draw(prop.Of[string](), "lookup.key")
-				rev := c.Draw(prop.Of[int](), "lookup.rev")
+				key := c.Draw(prop.SampledFrom(keysString...), "lookup.key")
+				rev := c.Draw(prop.SampledFrom(keysInt...), "lookup.rev")
 				return []any{key, rev}
 			},
 			Run: func(c *prop.Case, client int, input any) {
 				args, _ := input.([]any)
-				call := c.History().Invoke(client, "Lookup", args)
+				call := c.History().Invoke(client, "Lookup", args, args[0], args[1])
 				values, err := indexLookupCall(c.Context(), subject(), args)
 				conform.Complete(c.Context(), call, err, values...)
 			},
@@ -15328,12 +15328,12 @@ func stockActions(c *prop.Case, subject func() Stock) []stateful.Action[struct{}
 		{
 			Name: "Add",
 			Input: func(c *prop.Case, _ struct{}) any {
-				item := c.Draw(prop.Of[string](), "add.item")
+				item := c.Draw(prop.SampledFrom(keysString...), "add.item")
 				return []any{item}
 			},
 			Run: func(c *prop.Case, client int, input any) {
 				args, _ := input.([]any)
-				call := c.History().Invoke(client, "Add", args)
+				call := c.History().Invoke(client, "Add", args, args[0])
 				values, err := stockAddCall(c.Context(), subject(), args)
 				conform.Complete(c.Context(), call, err, values...)
 			},
@@ -21347,12 +21347,12 @@ func watchesActions(c *prop.Case, subject func() Watches) []stateful.Action[stru
 			Name: "Watch",
 			Input: func(c *prop.Case, _ struct{}) any {
 				scope := c.Draw(prop.Of[string](), "watch.scope")
-				key := c.Draw(prop.Of[string](), "watch.key")
+				key := c.Draw(prop.SampledFrom(keysString...), "watch.key")
 				return []any{scope, key}
 			},
 			Run: func(c *prop.Case, client int, input any) {
 				args, _ := input.([]any)
-				call := c.History().Invoke(client, "Watch", args)
+				call := c.History().Invoke(client, "Watch", args, args[1])
 				values, err := watchesWatchCall(c.Context(), subject(), args)
 				conform.Complete(c.Context(), call, err, values...)
 			},
@@ -21360,14 +21360,14 @@ func watchesActions(c *prop.Case, subject func() Watches) []stateful.Action[stru
 		{
 			Name: "Set",
 			Input: func(c *prop.Case, _ struct{}) any {
-				key := c.Draw(prop.Of[string](), "set.key")
+				key := c.Draw(prop.SampledFrom(keysString...), "set.key")
 				scope := c.Draw(prop.Of[string](), "set.scope")
 				u := c.Draw(prop.Of[Update](), "set.u")
 				return []any{key, scope, u}
 			},
 			Run: func(c *prop.Case, client int, input any) {
 				args, _ := input.([]any)
-				call := c.History().Invoke(client, "Set", args)
+				call := c.History().Invoke(client, "Set", args, args[0])
 				values, err := watchesSetCall(c.Context(), subject(), args)
 				conform.Complete(c.Context(), call, err, values...)
 			},

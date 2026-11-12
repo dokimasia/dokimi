@@ -14,6 +14,7 @@ import (
 	"go.dokimi.dev/eidos/lang/naming"
 	"go.dokimi.dev/eidos/sdk"
 	"go.dokimi.dev/eidos/sdk/emit"
+	"go.dokimi.dev/eidos/sdk/node"
 	"go.dokimi.dev/eidos/sdk/plugin"
 	"go.dokimi.dev/eidos/sdk/symbol"
 )
@@ -235,3 +236,61 @@ func (golangPart) Options() []sdk.TargetOption {
 		}),
 	}
 }
+
+// golangContext is the name of the context of the call of a closure.
+const golangContext = "ctx"
+
+// context returns ctx, the parameter of a Go closure that the probe passes
+// the context of its call.
+func (golangPart) context() string { return golangContext }
+
+// typed returns v as a value of the type ref: the conversion of a literal or
+// a name, whose constant can be untyped, and any other value as it is, which
+// already has its type.
+func (golangPart) typed(ref *emit.TypeRef, v *emit.Value) *emit.Value {
+	if v.Kind == emit.ValueLiteral || v.Kind == emit.ValueName {
+		return new(emit.Conversion(ref, *v))
+	}
+	return v
+}
+
+// converted returns the conversion of v to the type ref, because a Go call
+// generator assigns the sample to a variable whose type the value states.
+func (golangPart) converted(ref *emit.TypeRef, v *emit.Value) *emit.Value {
+	return new(emit.Conversion(ref, *v))
+}
+
+// names returns the names that [NamesOf] returns.
+func (golangPart) names(e *sdk.Emitter, decl string) Names { return NamesOf(e, decl) }
+
+// shape returns the empty string, because the property engine of Go reads the
+// type of each value that it draws.
+func (golangPart) shape(*caller, *node.TypeRef) string { return "" }
+
+// checkOpening returns the name of the check and the words checks that, as a
+// doc comment of Go opens with the name of its declaration.
+func (golangPart) checkOpening(name string) string { return name + checksThat }
+
+// takesCase reports whether ref is a pointer to the case of the property
+// engine, whatever name the file gives the package of the engine.
+func (golangPart) takesCase(ref *node.TypeRef) bool { return pointerTo(ref, propPackage, caseType) }
+
+// caseSpelling returns *prop.Case, the spelling of the case of the property
+// engine in a message.
+func (golangPart) caseSpelling() string { return "*prop.Case" }
+
+// countsAllocations reports true, because the testing package of Go counts
+// the allocations of a call.
+func (golangPart) countsAllocations() bool { return true }
+
+// start returns nil, because the suite of Go registers the generator of the
+// starting value of each type with one.
+func (golangPart) start(*caller, *node.TypeRef) *emit.Value { return nil }
+
+// spelled returns name, because the settle of a Go plan keeps the name of
+// each exported declaration of a suite, which is in Pascal case already.
+func (golangPart) spelled(_ symbol.Kind, name string) string { return name }
+
+// pascal returns word in Pascal case under the initialisms of Go, as ID for
+// id.
+func (golangPart) pascal(word string) string { return naming.Pascal(word) }

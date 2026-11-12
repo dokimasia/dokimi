@@ -27,11 +27,12 @@ import (
 //
 // Field and Type are the field and the type of the callable, as its
 // [Callable] contains them, and Method and Segment are the method and the
-// segment of its identity. Claim and Probe are the names of the constants of
-// the package spec of the Go runtime, Machineries those of the machineries of
-// the check, the deepest first, and Entails the identities of the shallower
-// checks that the law of the check implies. The runtime takes the reason code
-// and the law of the check from its claim. Args are the
+// segment of its identity. Claim and Probe are the identifiers of the claim
+// and of its probe in the conformance spec, Machineries the identifiers of the
+// machineries of the check, the deepest first, and Entails the identities of
+// the shallower checks that the law of the check implies. The template of a
+// language writes each identifier in the form of its runtime. The runtime
+// takes the reason code and the law of the check from its claim. Args are the
 // arguments of the probe after the handle. Defect is the name of the function
 // that returns the planted defect, which every check with the same break of
 // the same callable shares. Bubble reports a probe that runs inside a
@@ -688,10 +689,6 @@ var bubbled = []spec.ProbeID{
 // generated sequences: the probes whose clients the scheduler of the case runs.
 var cased = []spec.ProbeID{spec.ExclusiveUnderConcurrency}
 
-// goName returns the name of the constant of id in the package spec of the
-// Go runtime, as the naming table of the spec spells it.
-func goName[T ~string](id T) string { return naming.Pascal(string(id)) }
-
 // identityOf returns the identity of the derived check c among the callables
 // of s: its field, its method and its segment. A claim that binds once for
 // each instance of a contract has the id of the instance after its segment.
@@ -750,13 +747,13 @@ func (k *caller) derived(s *Suite) {
 		callable, method, segment := identityOf(s, c)
 		d := Derived{
 			Field: callable.Field, Type: callable.Type, Method: method, Base: base[c.Identity], Segment: segment,
-			Statement: c.Statement, Claim: goName(c.Claim.ID), Probe: goName(c.Claim.Probe), Shallow: c.Shallow,
+			Statement: c.Statement, Claim: string(c.Claim.ID), Probe: string(c.Claim.Probe), Shallow: c.Shallow,
 			Bubble: slices.Contains(bubbled, c.Claim.Probe), Generated: c.Generated,
 			World: slices.Contains(worldProbes, c.Claim.Probe),
 		}
 		d.Cased = d.World || slices.Contains(cased, c.Claim.Probe)
 		for _, m := range c.Machineries() {
-			d.Machineries = append(d.Machineries, goName(m))
+			d.Machineries = append(d.Machineries, string(m))
 		}
 		for _, e := range s.Derivation.Edges {
 			if e.Deeper != c.Identity {
@@ -1272,17 +1269,23 @@ func nameOf(v any) string {
 	return ""
 }
 
-// fieldRef returns the type of the field name of the struct that ref refers
-// to, at the witnesses of the declaration.
+// fieldRef returns the type of the field name of the member walk of the
+// declaration that ref refers to, such as a struct of Go or an interface of
+// TypeScript, at the witnesses of the declaration.
 func (k *caller) fieldRef(ref *node.TypeRef, name string) *emit.TypeRef {
 	if ref.Form == symbol.FormOptional {
 		ref = ref.Elems[0]
 	}
 	sym, _ := k.m.Reader().Lookup(ref.Target)
-	st, _ := sym.(*node.Struct)
-	// The derivation binds a field param only to a field of the struct.
-	at := slices.IndexFunc(st.Fields, func(f *node.Field) bool { return f.Name == name })
-	return k.typeOf(st.Fields[at].Type)
+	set, _ := k.b.MembersOf(sym)
+	var field *node.Field
+	for i := range set.Members {
+		if f, isField := set.Members[i].Symbol.(*node.Field); isField && f.Name == name {
+			field = f
+		}
+	}
+	// The derivation binds a field param only to a field of the declaration.
+	return k.typeOf(field.Type)
 }
 
 // resultRef returns the type of the i-th result in the role value of the
@@ -1296,24 +1299,14 @@ func (k *caller) resultRef(f *derive.Facts, i int) *node.TypeRef {
 // zero of its one value, or the pair of the zeros of its two values.
 func (k *caller) zeroOf(f *derive.Facts) *Expr {
 	if len(f.Results) == 1 {
-		return &Expr{Value: typed(k.typeOf(k.resultRef(f, 0)), &f.Results[0].Zero)}
+		return &Expr{Value: k.p.typed(k.typeOf(k.resultRef(f, 0)), &f.Results[0].Zero)}
 	}
 	p := &PairExpr{}
 	for i := range 2 {
 		p.Types[i] = k.typeOf(k.resultRef(f, i))
-		p.Values[i] = Expr{Value: typed(p.Types[i], &f.Results[i].Zero)}
+		p.Values[i] = Expr{Value: k.p.typed(p.Types[i], &f.Results[i].Zero)}
 	}
 	return &Expr{Pair: p}
-}
-
-// typed returns v as a value of the type ref: the conversion of a literal or
-// a name, whose constant can be untyped, and any other value as it is, which
-// already has its type.
-func typed(ref *emit.TypeRef, v *emit.Value) *emit.Value {
-	if v.Kind == emit.ValueLiteral || v.Kind == emit.ValueName {
-		return new(emit.Conversion(ref, *v))
-	}
-	return v
 }
 
 // valueOfParam returns the expression of the value of a param, which names a

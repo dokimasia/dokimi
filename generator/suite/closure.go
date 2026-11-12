@@ -21,8 +21,8 @@ import (
 // registration, the parameter of a closure that takes a value, the two
 // parameters of a closure that combines two values, the handle of a call, the
 // hook of a registrar, the body of a scope, the position of an indexed call,
-// the error of a call, the context of a call, the subject of a durable call
-// and the presence flag of a read.
+// the error of a call, the subject of a durable call and the presence flag of
+// a read. The part of the language names the context of a call.
 const (
 	writtenName  = "w"
 	requestName  = "req"
@@ -36,7 +36,6 @@ const (
 	bodyName     = "body"
 	positionName = "position"
 	errName      = "err"
-	ctxName      = "ctx"
 	subjectName  = "s"
 	flagName     = "ok"
 )
@@ -88,7 +87,7 @@ type input struct {
 // builder of each value of a builder that it takes once, before its call.
 func (k *caller) closure(in *input) *Closure {
 	c := k.closureOf(in)
-	declareBuilt(c)
+	k.declareBuilt(c)
 	return c
 }
 
@@ -321,9 +320,10 @@ func (k *caller) durableOf(d *draws, pair *derive.Pair) *Durable {
 			}
 		}
 		out.Wants[which] = k.argOf(d, pair.Write, pair.Written, which)
-		out.Keys[which] = slices.DeleteFunc(slices.Clone(read.Args), func(e Expr) bool { return e.Word == ctxName })
-		declareBuilt(write)
-		declareBuilt(read)
+		word := k.p.context()
+		out.Keys[which] = slices.DeleteFunc(slices.Clone(read.Args), func(e Expr) bool { return e.Word == word })
+		k.declareBuilt(write)
+		k.declareBuilt(read)
 		out.Writes[which], out.Reads[which] = write, read
 	}
 	return out
@@ -461,7 +461,7 @@ func (k *caller) fieldSamples(f *derive.Facts, i int, name string) (first, secon
 	field := st.Fields[slices.IndexFunc(st.Fields, func(fd *node.Field) bool { return fd.Name == name })]
 	v := k.valueOf(&field.ID, field.Name, field.Type)
 	t = k.typeOf(k.instance(field.Type))
-	return Expr{Value: typed(t, &v.Samples[0].Value)}, Expr{Value: typed(t, &v.Samples[1].Value)}, t
+	return Expr{Value: k.p.typed(t, &v.Samples[0].Value)}, Expr{Value: k.p.typed(t, &v.Samples[1].Value)}, t
 }
 
 // repartition makes the later calls of c write into another partition: each
@@ -499,7 +499,7 @@ func (k *caller) argsOf(d *draws, f *derive.Facts, pair *derive.Pair, which int)
 		for _, a := range pair.Arguments {
 			switch a.Kind {
 			case derive.ArgContext:
-				out = append(out, Expr{Word: ctxName})
+				out = append(out, Expr{Word: k.p.context()})
 			case derive.ArgShared:
 				i := slices.IndexFunc(pair.Write.Inputs, func(v derive.Value) bool { return v.Name == a.Param })
 				out = append(out, k.argOf(d, pair.Write, i, which))
@@ -516,7 +516,7 @@ func (k *caller) argsOf(d *draws, f *derive.Facts, pair *derive.Pair, which int)
 	i := 0
 	for _, p := range f.Signature.Params {
 		if p.Role == rules.ParamContext {
-			out = append(out, Expr{Word: ctxName})
+			out = append(out, Expr{Word: k.p.context()})
 			continue
 		}
 		out = append(out, k.argOf(d, f, i, which))
@@ -528,7 +528,7 @@ func (k *caller) argsOf(d *draws, f *derive.Facts, pair *derive.Pair, which int)
 // sampleOf returns the sample which of the i-th input of the callable of f,
 // converted to the type of the input.
 func (k *caller) sampleOf(f *derive.Facts, i, which int) Expr {
-	return Expr{Value: typed(k.typeOf(k.inputRef(f, i)), &f.Inputs[i].Samples[which].Value)}
+	return Expr{Value: k.p.typed(k.typeOf(k.inputRef(f, i)), &f.Inputs[i].Samples[which].Value)}
 }
 
 // inputRef returns the type of the i-th input of the callable of f.

@@ -224,6 +224,13 @@ func typescriptRecording(result spec.Result, reason spec.ReasonID) spec.SuiteRec
 	}
 }
 
+// tempDirEnv returns the variables of the environment that set the directory
+// of the temporary files of a child process to dir. os.TempDir reads TMPDIR on
+// Unix and TMP on Windows.
+func tempDirEnv(dir string) []string {
+	return []string{"TMPDIR=" + dir, "TMP=" + dir}
+}
+
 // vitestEnv returns the environment of a run of conform in dir that calls the
 // stand-in of Vitest with the report of the tree and the status.
 func vitestEnv(dir string, status int) []string {
@@ -583,7 +590,7 @@ func TestConform(t *testing.T) {
 			tree := typescriptCorpusOf(vitestReportOf("passed", []string{}), noOutcomes)
 			tree["tmp"] = files.Dir()
 			dir := files.Workspace(t, tree)
-			env := append(vitestEnv(dir, 0), "TMPDIR="+filepath.Join(dir, "tmp"))
+			env := append(vitestEnv(dir, 0), tempDirEnv(filepath.Join(dir, "tmp"))...)
 
 			_, stderr, status := runConform(t, dir, env, "--lang", "typescript")
 
@@ -595,7 +602,7 @@ func TestConform(t *testing.T) {
 		t.Run("returns the error of a directory of the report of Vitest that the run cannot make", func(t *testing.T) {
 			t.Parallel()
 			dir := files.Workspace(t, typescriptCorpusOf(vitestReportOf("passed", []string{}), noOutcomes))
-			env := append(vitestEnv(dir, 0), "TMPDIR="+filepath.Join(dir, tsReport))
+			env := append(vitestEnv(dir, 0), tempDirEnv(filepath.Join(dir, tsReport))...)
 
 			_, stderr, status := runConform(t, dir, env, "--lang", "typescript")
 

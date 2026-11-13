@@ -578,6 +578,31 @@ func TestConform(t *testing.T) {
 			assert.Contains(t, stderr, "read the report of Vitest", "the error names the step")
 		})
 
+		t.Run("removes the directory of the report of Vitest after the run", func(t *testing.T) {
+			t.Parallel()
+			tree := typescriptCorpusOf(vitestReportOf("passed", []string{}), noOutcomes)
+			tree["tmp"] = files.Dir()
+			dir := files.Workspace(t, tree)
+			env := append(vitestEnv(dir, 0), "TMPDIR="+filepath.Join(dir, "tmp"))
+
+			_, stderr, status := runConform(t, dir, env, "--lang", "typescript")
+
+			assert.Equal(t, status, 0, "the corpus conforms: "+stderr)
+			files.Equal(t, os.DirFS(filepath.Join(dir, "tmp")), files.Tree{},
+				"the run removes the directory of the report of Vitest")
+		})
+
+		t.Run("returns the error of a directory of the report of Vitest that the run cannot make", func(t *testing.T) {
+			t.Parallel()
+			dir := files.Workspace(t, typescriptCorpusOf(vitestReportOf("passed", []string{}), noOutcomes))
+			env := append(vitestEnv(dir, 0), "TMPDIR="+filepath.Join(dir, tsReport))
+
+			_, stderr, status := runConform(t, dir, env, "--lang", "typescript")
+
+			assert.Equal(t, status, 1, "the gate fails")
+			assert.Contains(t, stderr, "make the directory of the report of Vitest", "the error names the step")
+		})
+
 		t.Run("refuses a working directory that does not exist", func(t *testing.T) {
 			t.Parallel()
 

@@ -8,16 +8,25 @@ import (
 )
 
 // TestSimulation runs the simulation of Replier over random runs and the
-// crash points of each scenario.
+// crash points of each scenario. In short mode it runs 20 random runs and
+// each scenario once.
 func TestSimulation(t *testing.T) {
 	t.Parallel()
 
+	if testing.Short() {
+		sim.TestShort(t, genericsim.ReplierSimulation())
+		return
+	}
 	sim.Test(t, genericsim.ReplierSimulation())
 }
 
 // TestSimulationFalsify proves each rule of a runtime and each invariant
-// of the simulation of Replier on its planted defect.
+// of the simulation of Replier on its planted defect. It skips in short
+// mode.
 func TestSimulationFalsify(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping the proofs of the planted defects in short mode")
+	}
 	t.Parallel()
 
 	sim.Falsify(t, genericsim.ReplierSimulation())

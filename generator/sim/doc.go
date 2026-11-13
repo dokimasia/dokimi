@@ -90,7 +90,8 @@
 // inside an environment of the consumer, such as a seed of crypto/rand. A
 // simulation of components runs conform.Bubble inside it. The tests of a
 // simulation with an around run without t.Parallel, and its Falsify proves
-// each check in a serial subtest.
+// each check in a serial subtest. In the short mode of go test,
+// TestSimulation runs sim.TestShort and TestSimulationFalsify skips.
 //
 // The plugin is dual. Its annotate half stamps the facts of each directive on
 // a type or a function. Its generate half records the model of the

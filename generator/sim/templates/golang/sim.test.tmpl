@@ -5,21 +5,28 @@
 {{- $simulation := spell (simField $d "simulation")}}
 {{- $of := $c.Machine}}{{if $c.Components}}{{$of = printf "the system %s" $c.Machine}}{{end}}
 
-{{docs (wrapdocs (printf `TestSimulation runs the simulation of %s over random runs and the crash points of each scenario.` $of))}}
+{{docs (wrapdocs (printf `TestSimulation runs the simulation of %s over random runs and the crash points of each scenario. In short mode it runs 20 random runs and each scenario once.` $of))}}
 {{- ""}}func TestSimulation(t *{{$testing}}.T) {
 {{- if not $c.Serial}}
 	t.Parallel()
 {{end}}
+	if {{$testing}}.Short() {
+		{{$sim}}.TestShort(t, {{$simulation}}())
+		return
+	}
 	{{$sim}}.Test(t, {{$simulation}}())
 }
 {{- if $c.Components}}
 
-{{docs (wrapdocs (printf `TestSimulationFalsify proves each invariant of the simulation of %s on its planted defect.` $of))}}
+{{docs (wrapdocs (printf `TestSimulationFalsify proves each invariant of the simulation of %s on its planted defect. It skips in short mode.` $of))}}
 {{- else}}
 
-{{docs (wrapdocs (printf `TestSimulationFalsify proves each rule of a runtime and each invariant of the simulation of %s on its planted defect.` $of))}}
+{{docs (wrapdocs (printf `TestSimulationFalsify proves each rule of a runtime and each invariant of the simulation of %s on its planted defect. It skips in short mode.` $of))}}
 {{- end}}
 {{- ""}}func TestSimulationFalsify(t *{{$testing}}.T) {
+	if {{$testing}}.Short() {
+		t.Skip("skipping the proofs of the planted defects in short mode")
+	}
 {{- if not $c.Serial}}
 	t.Parallel()
 {{end}}

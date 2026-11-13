@@ -8,16 +8,24 @@ import (
 )
 
 // TestSimulation runs the simulation of the system cluster over random
-// runs and the crash points of each scenario.
+// runs and the crash points of each scenario. In short mode it runs 20
+// random runs and each scenario once.
 func TestSimulation(t *testing.T) {
 	t.Parallel()
 
+	if testing.Short() {
+		sim.TestShort(t, cellssim.ClusterSimulation())
+		return
+	}
 	sim.Test(t, cellssim.ClusterSimulation())
 }
 
 // TestSimulationFalsify proves each invariant of the simulation of the
-// system cluster on its planted defect.
+// system cluster on its planted defect. It skips in short mode.
 func TestSimulationFalsify(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping the proofs of the planted defects in short mode")
+	}
 	t.Parallel()
 
 	sim.Falsify(t, cellssim.ClusterSimulation())

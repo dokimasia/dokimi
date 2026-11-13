@@ -8,14 +8,22 @@ import (
 )
 
 // TestSimulation runs the simulation of the system scheduled over random
-// runs and the crash points of each scenario.
+// runs and the crash points of each scenario. In short mode it runs 20
+// random runs and each scenario once.
 func TestSimulation(t *testing.T) {
+	if testing.Short() {
+		sim.TestShort(t, taskssim.ScheduledSimulation())
+		return
+	}
 	sim.Test(t, taskssim.ScheduledSimulation())
 }
 
 // TestSimulationFalsify proves each invariant of the simulation of the
-// system scheduled on its planted defect.
+// system scheduled on its planted defect. It skips in short mode.
 func TestSimulationFalsify(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping the proofs of the planted defects in short mode")
+	}
 	sim.Falsify(t, taskssim.ScheduledSimulation())
 }
 

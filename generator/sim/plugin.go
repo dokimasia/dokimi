@@ -731,7 +731,8 @@ type generator struct {
 // simulation. A system of components has no performer. Its anatomy has the
 // field Unknown alone, and only where its directive system states the param
 // unknown. The template of the tests writes TestSimulation,
-// TestSimulationFalsify and FuzzSimulation. sim serves Go,
+// TestSimulationFalsify and FuzzSimulation. In short mode TestSimulation runs
+// sim.TestShort and TestSimulationFalsify skips. sim serves Go,
 // the language of its part, and leaves a declaration of another language
 // alone. It reports the findings of the package documentation and records
 // nothing for a machine interface that it reports. Each call returns a new

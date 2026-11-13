@@ -12,16 +12,25 @@ import (
 )
 
 // TestSimulation runs the simulation of Ledger over random runs and the
-// crash points of each scenario.
+// crash points of each scenario. In short mode it runs 20 random runs and
+// each scenario once.
 func TestSimulation(t *testing.T) {
 	t.Parallel()
 
+	if testing.Short() {
+		sim.TestShort(t, ledgersim.LedgerSimulation())
+		return
+	}
 	sim.Test(t, ledgersim.LedgerSimulation())
 }
 
 // TestSimulationFalsify proves each rule of a runtime and each invariant
-// of the simulation of Ledger on its planted defect.
+// of the simulation of Ledger on its planted defect. It skips in short
+// mode.
 func TestSimulationFalsify(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping the proofs of the planted defects in short mode")
+	}
 	t.Parallel()
 
 	sim.Falsify(t, ledgersim.LedgerSimulation())
@@ -33,4 +42,4 @@ func FuzzSimulation(f *testing.F) {
 	sim.Fuzz(f, ledgersim.LedgerSimulation())
 }
 
-// dokimi:provenance sha256:2b7c3270a513044624ea7521e72a3d6831c45e769a221509e375a9e280d7933e
+// dokimi:provenance sha256:3946fc135302352555f7c8ac9d7cb677a01dc01e8a3c51ac7e5c616e2071deae

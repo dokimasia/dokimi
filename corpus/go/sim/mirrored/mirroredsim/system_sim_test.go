@@ -12,16 +12,24 @@ import (
 )
 
 // TestSimulation runs the simulation of the system system over random runs
-// and the crash points of each scenario.
+// and the crash points of each scenario. In short mode it runs 20 random
+// runs and each scenario once.
 func TestSimulation(t *testing.T) {
 	t.Parallel()
 
+	if testing.Short() {
+		sim.TestShort(t, mirroredsim.SystemSimulation())
+		return
+	}
 	sim.Test(t, mirroredsim.SystemSimulation())
 }
 
 // TestSimulationFalsify proves each invariant of the simulation of the
-// system system on its planted defect.
+// system system on its planted defect. It skips in short mode.
 func TestSimulationFalsify(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping the proofs of the planted defects in short mode")
+	}
 	t.Parallel()
 
 	sim.Falsify(t, mirroredsim.SystemSimulation())
@@ -33,4 +41,4 @@ func FuzzSimulation(f *testing.F) {
 	sim.Fuzz(f, mirroredsim.SystemSimulation())
 }
 
-// dokimi:provenance sha256:0e95baf5afc36a319b80f8fcd9357e068136475c461342d354ff7b256391d194
+// dokimi:provenance sha256:28fd275a358763c27e7e6e8ff0673ba4a695565c1b2fec42b2f52428c7c869bb

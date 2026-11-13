@@ -1,5 +1,12 @@
 # go.dokimi.dev/dokimi
 
+## 0.14.0
+
+### Minor Changes
+
+- a0ad644: Run `sim.TestShort` in the generated `TestSimulation` in the short mode of `go test`.
+- a0ad644: Skip the generated `TestSimulationFalsify` in the short mode of `go test`.
+
 ## 0.13.0
 
 ### Minor Changes

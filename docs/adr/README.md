@@ -33,3 +33,4 @@ Each ADR records one decision and what it cost. Once an ADR is accepted, do not 
 | [0022](0022-a-child-error-value-matches-its-parent-and-opens-with-its-message.md) | A child error value matches its parent and opens with its message | Accepted |
 | [0023](0023-the-requests-of-a-world-depend-only-on-its-choices.md) | The requests of a world depend only on its choices | Accepted |
 | [0024](0024-the-lock-has-the-frame-of-the-brand.md) | The lock has the frame of the brand | Accepted |
+| [0025](0025-a-hosted-fuzz-target-runs-each-input-in-a-bubble.md) | A fuzz target of a hosted application runs each input in a bubble | Accepted |

@@ -60,3 +60,4 @@ Proposals, and the argument that produced them. An RFC is written to be argued w
 | [0049](0049-an-environment-around-each-case-of-a-simulation.md) | An environment of the consumer around each case of a simulation | Accepted |
 | [0050](0050-the-typescript-runtime-at-spec-2-1-0.md) | The TypeScript runtime at spec 2.1.0 | Accepted |
 | [0051](0051-the-dependency-of-each-host-and-the-restarts-of-the-active-phase.md) | The dependency of each host and the restarts of the active phase | Accepted |
+| [0052](0052-the-short-mode-of-the-tests-of-a-simulation.md) | The short mode of the tests of a simulation | Accepted |

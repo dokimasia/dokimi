@@ -7,7 +7,7 @@ go 1.27.3
 
 require (
 	github.com/google/jsonschema-go v0.4.3
-	go.dokimi.dev/assert v0.20.0
+	go.dokimi.dev/assert v0.23.0
 	go.dokimi.dev/eidos/cli v0.3.9
 	go.dokimi.dev/eidos/core v0.16.0
 	go.dokimi.dev/eidos/lang v0.4.7
@@ -18,7 +18,7 @@ require (
 	go.dokimi.dev/spec v0.5.1
 	go.stealthscale.io/cli v0.8.1
 	go.yaml.in/yaml/v3 v3.0.6
-	golang.org/x/mod v0.42.0
+	golang.org/x/mod v0.43.0
 )
 
 require (

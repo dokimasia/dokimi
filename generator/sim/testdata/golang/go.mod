@@ -3,14 +3,14 @@ module example.com/shop
 go 1.27.3
 
 require (
-	go.dokimi.dev/assert v0.20.0
+	go.dokimi.dev/assert v0.23.0
 	go.dokimi.dev/host v0.2.2
-	go.dokimi.dev/sim v0.15.0
+	go.dokimi.dev/sim v0.15.1
 )
 
 require (
 	github.com/google/jsonschema-go v0.4.3 // indirect
-	go.dokimi.dev/conform v0.18.0 // indirect
+	go.dokimi.dev/conform v0.18.1 // indirect
 	go.dokimi.dev/fault v0.2.4 // indirect
 	go.dokimi.dev/medium v0.2.1 // indirect
 	go.dokimi.dev/spec v0.5.1 // indirect
